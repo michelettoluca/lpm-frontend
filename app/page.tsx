@@ -7,91 +7,236 @@ type LeaderboardEntry = {
 
 async function getLeaderboard(): Promise<LeaderboardEntry[]> {
   const res = await fetch(
-    "http://api.legapaupermilano.it/seasons/1/leaderboard",
+    "https://api.legapaupermilano.it/seasons/1/leaderboard",
     { next: { revalidate: 60 } },
   );
   if (!res.ok) throw new Error(`Failed to load leaderboard: ${res.status}`);
   return res.json();
 }
 
-const medalFor = (rank: number) =>
-  rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : null;
+type PodiumProps = {
+  rank: 1 | 2 | 3;
+  entry: LeaderboardEntry;
+};
+
+function PodiumCard({ rank, entry }: PodiumProps) {
+  const isFirst = rank === 1;
+
+  const cardClasses = isFirst
+    ? "bg-red-accent shadow-[0_8px_30px_rgba(239,68,68,0.2),0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_14px_40px_rgba(239,68,68,0.25),0_4px_12px_rgba(0,0,0,0.08)] [animation-delay:0.1s]"
+    : rank === 2
+      ? "bg-card border-2 border-black/[0.06] hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)] [animation-delay:0.2s]"
+      : "bg-card border-2 border-black/[0.06] hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)] [animation-delay:0.3s]";
+
+  const watermarkColor = isFirst ? "text-white/[0.12]" : "text-black/[0.04]";
+  const watermarkSize = isFirst ? "text-[6rem] -top-2" : "text-[5rem] -top-1.5";
+
+  const topPadding = isFirst
+    ? "pt-9 px-4.5 pb-14 sm:pt-9 sm:px-4.5 sm:pb-14"
+    : rank === 3
+      ? "pt-5.5 px-3.5 pb-10"
+      : "pt-7 px-3.5 pb-12";
+
+  const nameColor = isFirst ? "text-white" : "text-ink";
+  const pointsColor = isFirst ? "text-white" : "text-ink";
+  const labelColor = isFirst ? "text-white/50" : "text-ink-light";
+  const statValueColor = isFirst ? "text-white" : "text-ink";
+  const statLabelColor = isFirst ? "text-white/45" : "text-ink-light";
+  const statBorderColor = isFirst ? "border-white/15" : "border-black/[0.05]";
+
+  const pointsSize = isFirst
+    ? "text-[2.6rem] sm:text-[3.4rem]"
+    : "text-[2.1rem] sm:text-[2.8rem]";
+  const nameSize = isFirst
+    ? "text-[0.92rem] sm:text-[1.15rem]"
+    : "text-[0.82rem] sm:text-[1rem]";
+
+  const mobileWatermark = isFirst ? "text-white/[0.12]" : "text-black/[0.04]";
+
+  return (
+    <>
+      {/* Mobile: compact horizontal card */}
+      <div
+        className={`relative flex items-center gap-3 overflow-hidden rounded-2xl px-4 py-3 text-left opacity-0 animate-pop transition-transform duration-200 ease-out sm:hidden ${cardClasses}`}
+      >
+        <span
+          aria-hidden
+          className={`pointer-events-none absolute -left-1 -top-1 select-none font-display text-[3.2rem] font-bold leading-none ${mobileWatermark}`}
+        >
+          #{rank}
+        </span>
+
+        <div className="relative z-10 ml-10 flex-1 min-w-0">
+          <div className={`truncate font-semibold capitalize ${nameColor} text-[0.95rem]`}>
+            {entry.display_name}
+          </div>
+          <div className={`text-[0.65rem] ${labelColor}`}>
+            {entry.events_played} tappe
+          </div>
+        </div>
+
+        <div className="relative z-10 flex flex-shrink-0 items-baseline gap-1">
+          <span
+            className={`font-display font-bold leading-none tracking-[-0.02em] text-[1.6rem] ${pointsColor}`}
+          >
+            {entry.total_points}
+          </span>
+          <span
+            className={`text-[0.55rem] font-semibold uppercase tracking-[0.1em] ${labelColor}`}
+          >
+            Punti
+          </span>
+        </div>
+      </div>
+
+      {/* Desktop: full podium card */}
+      <div
+        className={`relative hidden overflow-hidden rounded-[20px] text-center opacity-0 animate-pop transition-transform duration-200 ease-out hover:-translate-y-1 sm:block ${cardClasses}`}
+      >
+        <div
+          className={`pointer-events-none absolute -left-0.5 select-none font-display font-bold leading-none ${watermarkColor} ${watermarkSize}`}
+        >
+          #{rank}
+        </div>
+
+        <div className={`relative z-10 ${topPadding}`}>
+          <div className={`mb-2 font-semibold capitalize ${nameColor} ${nameSize}`}>
+            {entry.display_name}
+          </div>
+          <div
+            className={`mb-1 font-display font-bold leading-none tracking-[-0.03em] ${pointsColor} ${pointsSize}`}
+          >
+            {entry.total_points}
+          </div>
+          <div
+            className={`text-[0.62rem] font-semibold uppercase tracking-[0.15em] ${labelColor}`}
+          >
+            Punti
+          </div>
+        </div>
+
+        <div
+          className={`relative z-10 border-t-2 px-2 py-2.5 text-center ${statBorderColor}`}
+        >
+          <div
+            className={`mb-0.5 font-display font-bold leading-none text-[0.82rem] sm:text-base ${statValueColor}`}
+          >
+            {entry.events_played}
+          </div>
+          <div
+            className={`text-[0.48rem] font-semibold uppercase tracking-[0.08em] sm:text-[0.55rem] ${statLabelColor}`}
+          >
+            Tappe
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
 
 export default async function Home() {
   const entries = await getLeaderboard();
 
+  const first = entries[0];
+  const second = entries[1];
+  const third = entries[2];
+  const rest = entries.slice(3);
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-zinc-950 font-sans text-zinc-50">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(168,85,247,0.25),transparent_60%),radial-gradient(ellipse_at_bottom,rgba(244,63,94,0.2),transparent_55%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.04)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_85%)]" />
+    <main className="mx-auto w-full max-w-[720px] px-5 pt-10 pb-20 sm:px-5 sm:pt-10 sm:pb-20">
+      <header className="mb-10 text-center animate-pop">
+        <h1 className="mb-1 font-display text-[1.4rem] font-bold tracking-[-0.02em] text-ink sm:text-[1.8rem]">
+          Lega Pauper Milano
+        </h1>
+        <p className="text-[0.82rem] font-medium text-ink-light">
+          Summer 2026
+        </p>
+        <div className="mx-auto mt-3.5 h-[3px] w-8 rounded-sm bg-red-accent" />
+      </header>
 
-      <div className="relative z-10 mx-auto flex w-full max-w-3xl flex-col items-center px-6 pt-24 pb-32">
-        <section className="flex flex-col items-center gap-8 text-center">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 text-xs font-medium uppercase tracking-[0.2em] text-zinc-300 backdrop-blur">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-            Stagione 1 — in corso
-          </span>
-
-          <h1 className="bg-gradient-to-br from-white via-zinc-200 to-zinc-500 bg-clip-text text-6xl font-black tracking-tight text-transparent drop-shadow-[0_0_40px_rgba(168,85,247,0.25)] sm:text-8xl">
-            Lega Pauper
-            <br />
-            Milano
-          </h1>
-
-          <p className="max-w-md text-lg text-zinc-400 sm:text-xl">
-            Tutti i giovedì in{" "}
-            <span className="font-semibold text-zinc-100">UESM</span> alle{" "}
-            <span className="font-semibold text-zinc-100">20:30</span>
-          </p>
-        </section>
-
-        <section className="mt-24 w-full">
-          <div className="mb-6 flex items-end justify-between">
-            <div>
-              <h2 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                Classifica
-              </h2>
-              <p className="mt-1 text-sm text-zinc-500">
-                {entries.length} giocatori
-              </p>
-            </div>
+      <section className="mb-10 flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_1.15fr_1fr] sm:items-end sm:gap-3">
+        {second && (
+          <div className="order-2 sm:order-none">
+            <PodiumCard rank={2} entry={second} />
           </div>
+        )}
+        {first && (
+          <div className="order-1 sm:order-none">
+            <PodiumCard rank={1} entry={first} />
+          </div>
+        )}
+        {third && (
+          <div className="order-3 sm:order-none">
+            <PodiumCard rank={3} entry={third} />
+          </div>
+        )}
+      </section>
 
-          <div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur">
-            <div className="grid grid-cols-[3rem_1fr_auto] gap-4 border-b border-white/10 px-5 py-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-500">
-              <span>#</span>
-              <span>Giocatore</span>
-              <span className="text-right">Punti</span>
-            </div>
-            <ul>
-              {entries.map((entry, index) => {
-                const rank = index + 1;
-                const medal = medalFor(rank);
-                return (
-                  <li
-                    key={entry.player_id}
-                    className="grid grid-cols-[3rem_1fr_auto] items-center gap-4 border-b border-white/5 px-5 py-3 text-sm transition hover:bg-white/[0.04] last:border-b-0"
+      <section className="opacity-0 animate-pop [animation-delay:0.45s]">
+        <ul>
+          {rest.map((entry, i) => {
+            const rank = i + 4;
+            const isTop = rank <= 8;
+
+            if (isTop) {
+              return (
+                <li
+                  key={entry.player_id}
+                  className={`group relative flex items-center overflow-hidden px-3.5 py-3 transition-all duration-150 hover:bg-black/[0.015] hover:pl-5 sm:px-5 sm:py-3.5 ${rank < 8 ? "border-b-2 border-black/[0.04]" : ""}`}
+                >
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute right-[55px] top-1/2 -translate-y-1/2 select-none font-display text-[3.5rem] font-bold leading-none text-black/[0.025]"
                   >
-                    <span className="flex items-center gap-1 font-mono text-zinc-500">
-                      {medal ? (
-                        <span className="text-base">{medal}</span>
-                      ) : (
-                        <span className="tabular-nums">{rank}</span>
-                      )}
-                    </span>
-                    <span className="truncate font-medium text-zinc-100">
+                    #{rank}
+                  </span>
+
+                  <div className="relative z-10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px] bg-black/[0.04] text-[0.8rem] font-bold text-ink-mid">
+                    {rank}
+                  </div>
+
+                  <div className="relative z-10 ml-3.5 flex-1">
+                    <div className="mb-0.5 text-[0.95rem] font-semibold capitalize text-ink">
                       {entry.display_name}
-                    </span>
-                    <span className="w-16 text-right font-bold tabular-nums text-white">
-                      {entry.total_points}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </section>
-      </div>
-    </div>
+                    </div>
+                    <div className="text-[0.68rem] text-ink-light">
+                      {entry.events_played} tappe
+                    </div>
+                  </div>
+
+                  <div className="relative z-10 flex-shrink-0 font-display text-[1.5rem] font-bold tracking-[-0.02em] text-ink">
+                    {entry.total_points}
+                  </div>
+                </li>
+              );
+            }
+
+            return (
+              <li
+                key={entry.player_id}
+                className={`group relative flex items-center overflow-hidden px-3.5 py-1.5 transition-all duration-150 hover:bg-black/[0.015] hover:pl-5 sm:px-5 ${rank === 9 ? "mt-6" : ""}`}
+              >
+                <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-md bg-black/[0.04] text-[0.65rem] font-bold text-ink-mid">
+                  {rank}
+                </div>
+
+                <div className="ml-2.5 flex flex-1 items-baseline gap-2 min-w-0">
+                  <span className="truncate text-[0.78rem] font-semibold capitalize text-ink">
+                    {entry.display_name}
+                  </span>
+                  <span className="flex-shrink-0 text-[0.6rem] text-ink-light">
+                    {entry.events_played} tappe
+                  </span>
+                </div>
+
+                <div className="flex-shrink-0 font-display text-[1rem] font-bold tracking-[-0.02em] text-ink tabular-nums">
+                  {entry.total_points}
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    </main>
   );
 }
