@@ -75,18 +75,11 @@ function PodiumCard({ rank, entry }: PodiumProps) {
           </div>
         </div>
 
-        <div className="relative z-10 flex flex-shrink-0 items-baseline gap-1">
-          <span
-            className={`font-display font-bold leading-none tracking-[-0.02em] text-[1.6rem] ${pointsColor}`}
-          >
-            {entry.total_points}
-          </span>
-          <span
-            className={`text-[0.55rem] font-semibold uppercase tracking-[0.1em] ${labelColor}`}
-          >
-            Punti
-          </span>
-        </div>
+        <span
+          className={`relative z-10 flex-shrink-0 font-display font-bold leading-none tracking-[-0.02em] text-[1.6rem] ${pointsColor}`}
+        >
+          {entry.total_points}
+        </span>
       </div>
 
       {/* Desktop: full podium card */}
@@ -104,14 +97,9 @@ function PodiumCard({ rank, entry }: PodiumProps) {
             {entry.display_name}
           </div>
           <div
-            className={`mb-1 font-display font-bold leading-none tracking-[-0.03em] ${pointsColor} ${pointsSize}`}
+            className={`font-display font-bold leading-none tracking-[-0.03em] ${pointsColor} ${pointsSize}`}
           >
             {entry.total_points}
-          </div>
-          <div
-            className={`text-[0.62rem] font-semibold uppercase tracking-[0.15em] ${labelColor}`}
-          >
-            Punti
           </div>
         </div>
 
