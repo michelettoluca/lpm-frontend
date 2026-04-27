@@ -104,7 +104,7 @@ export default async function EventDetailPage(
               >
                 <span
                   aria-hidden
-                  className={`pointer-events-none absolute -right-2 -top-2 select-none font-display text-[3.2rem] font-bold leading-none ${
+                  className={`pointer-events-none absolute right-2 top-3 select-none font-display text-[3.2rem] font-bold leading-none ${
                     isFirst ? "text-white/[0.15]" : "text-black/[0.04]"
                   }`}
                 >
