@@ -156,7 +156,14 @@ function PodiumCard({ rank, entry }: PodiumProps) {
 }
 
 export default async function Home() {
-  const [entries, events] = await Promise.all([getLeaderboard(), getEvents()]);
+  const [entries, eventsRaw] = await Promise.all([
+    getLeaderboard(),
+    getEvents(),
+  ]);
+  const events = [...eventsRaw].sort(
+    (a, b) =>
+      new Date(b.played_at).getTime() - new Date(a.played_at).getTime(),
+  );
 
   const first = entries[0];
   const second = entries[1];
@@ -165,34 +172,28 @@ export default async function Home() {
   const hasMore = entries.length > 8;
 
   return (
-    <main className="mx-auto w-full max-w-[720px] px-5 pt-10 pb-20 sm:px-5 sm:pt-10 sm:pb-20">
-      <header className="relative mb-12 overflow-hidden rounded-[28px] bg-gradient-to-br from-[#1a1a1a] via-[#222] to-[#0f0f0f] px-6 pt-10 pb-9 text-center shadow-[0_20px_50px_-12px_rgba(0,0,0,0.35)] animate-pop sm:px-8 sm:pt-12 sm:pb-11">
+    <>
+      <header className="relative w-full overflow-hidden bg-gradient-to-br from-[#1a1a1a] via-[#222] to-[#0f0f0f] px-6 pt-12 pb-14 text-center shadow-[0_20px_50px_-20px_rgba(0,0,0,0.35)] animate-pop sm:pt-16 sm:pb-20">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 opacity-[0.07]"
           style={{
             backgroundImage:
               "radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)",
-            backgroundSize: "18px 18px",
+            backgroundSize: "22px 22px",
           }}
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -top-24 -right-16 h-56 w-56 rounded-full bg-red-accent/30 blur-3xl"
+          className="pointer-events-none absolute -top-32 -right-24 h-80 w-80 rounded-full bg-red-accent/30 blur-3xl"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute -bottom-20 -left-12 h-48 w-48 rounded-full bg-red-accent/15 blur-3xl"
+          className="pointer-events-none absolute -bottom-32 -left-20 h-72 w-72 rounded-full bg-red-accent/15 blur-3xl"
         />
 
-        <div className="relative z-10 flex flex-col items-center">
-          <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-red-accent shadow-[0_8px_24px_rgba(239,68,68,0.45)] sm:h-16 sm:w-16">
-            <span className="font-display text-[0.92rem] font-bold tracking-[0.02em] text-white sm:text-[1.05rem]">
-              LPM
-            </span>
-          </div>
-
-          <h1 className="mb-3 font-display text-[1.65rem] font-bold leading-[1.05] tracking-[-0.03em] text-white sm:text-[2.4rem]">
+        <div className="relative z-10 mx-auto flex w-full max-w-[720px] flex-col items-center">
+          <h1 className="mb-3 font-display text-[1.75rem] font-bold leading-[1.05] tracking-[-0.03em] text-white sm:text-[2.6rem]">
             Lega Pauper{" "}
             <span className="text-red-accent">Milano</span>
           </h1>
@@ -225,6 +226,8 @@ export default async function Home() {
           </div>
         </div>
       </header>
+
+      <main className="mx-auto w-full max-w-[720px] px-5 pt-10 pb-20 sm:px-5 sm:pt-12 sm:pb-20">
 
       <section className="mb-10 flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_1.15fr_1fr] sm:items-end sm:gap-3">
         {second && (
@@ -331,5 +334,6 @@ export default async function Home() {
         </ul>
       </section>
     </main>
+    </>
   );
 }

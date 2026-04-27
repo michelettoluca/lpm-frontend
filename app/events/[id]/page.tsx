@@ -125,13 +125,6 @@ export default async function EventDetailPage(
                   }`}
                 >
                   {s.points}
-                  <span
-                    className={`ml-1.5 text-[0.6rem] font-semibold uppercase tracking-[0.08em] ${
-                      isFirst ? "text-white/55" : "text-ink-light"
-                    }`}
-                  >
-                    pt
-                  </span>
                 </div>
                 <div
                   className={`relative z-10 mt-1 text-[0.7rem] ${
