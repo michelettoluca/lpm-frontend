@@ -39,6 +39,11 @@ async function getEvent(id: string): Promise<EventDetail | null> {
   return res.json();
 }
 
+function shortEventName(name: string): string {
+  const match = name.match(/Tappa\s+\d+/i);
+  return match ? match[0] : name;
+}
+
 function formatEventDate(iso: string): string {
   return new Date(iso).toLocaleDateString("it-IT", {
     day: "2-digit",
@@ -69,7 +74,7 @@ export default async function EventDetailPage(
 
       <header className="mt-5 mb-8 animate-pop">
         <h1 className="mb-2 font-display text-[1.35rem] font-bold tracking-[-0.02em] text-ink sm:text-[1.7rem]">
-          {event.name}
+          {shortEventName(event.name)}
         </h1>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.78rem] font-medium text-ink-light">
           <span>{formatEventDate(event.played_at)}</span>
