@@ -47,30 +47,33 @@ export default async function LeaderboardPage() {
               return (
                 <li
                   key={entry.player_id}
-                  className={`flex items-center px-3.5 py-3 sm:px-4 sm:py-3.5 ${
-                    isLast ? "" : "border-b border-black/[0.05]"
-                  }`}
+                  className={isLast ? "" : "border-b border-black/[0.05]"}
                 >
-                  <div
-                    className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px] text-[0.78rem] font-bold ${
-                      rank <= 3
-                        ? "bg-red-bg text-red-accent"
-                        : "bg-black/[0.04] text-ink-mid"
-                    }`}
+                  <Link
+                    href={`/players/${entry.player_id}`}
+                    className="flex items-center px-3.5 py-3 transition-colors duration-150 hover:bg-black/[0.02] sm:px-4 sm:py-3.5"
                   >
-                    {rank}
-                  </div>
-                  <div className="ml-3 flex-1 min-w-0">
-                    <div className="truncate text-[0.92rem] font-semibold capitalize text-ink">
-                      {entry.display_name}
+                    <div
+                      className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px] text-[0.78rem] font-bold ${
+                        rank <= 3
+                          ? "bg-red-bg text-red-accent"
+                          : "bg-black/[0.04] text-ink-mid"
+                      }`}
+                    >
+                      {rank}
                     </div>
-                    <div className="text-[0.66rem] text-ink-light">
-                      {entry.events_played} tappe
+                    <div className="ml-3 flex-1 min-w-0">
+                      <div className="truncate text-[0.92rem] font-semibold capitalize text-ink">
+                        {entry.display_name}
+                      </div>
+                      <div className="text-[0.66rem] text-ink-light">
+                        {entry.events_played} tappe
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex-shrink-0 font-display text-[1.15rem] font-bold tabular-nums tracking-[-0.02em] text-ink">
-                    {entry.total_points}
-                  </div>
+                    <div className="flex-shrink-0 font-display text-[1.15rem] font-bold tabular-nums tracking-[-0.02em] text-ink">
+                      {entry.total_points}
+                    </div>
+                  </Link>
                 </li>
               );
             })}

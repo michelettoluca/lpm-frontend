@@ -89,7 +89,8 @@ function PodiumCard({ rank, entry }: PodiumProps) {
   return (
     <>
       {/* Mobile: compact horizontal card */}
-      <div
+      <Link
+        href={`/players/${entry.player_id}`}
         className={`relative flex items-center gap-3 overflow-hidden rounded-2xl px-4 py-3 text-left opacity-0 animate-pop transition-transform duration-200 ease-out sm:hidden ${cardClasses}`}
       >
         <span
@@ -113,10 +114,11 @@ function PodiumCard({ rank, entry }: PodiumProps) {
         >
           {entry.total_points}
         </span>
-      </div>
+      </Link>
 
       {/* Desktop: full podium card */}
-      <div
+      <Link
+        href={`/players/${entry.player_id}`}
         className={`relative hidden overflow-hidden rounded-[20px] text-center opacity-0 animate-pop transition-transform duration-200 ease-out hover:-translate-y-1 sm:block ${cardClasses}`}
       >
         <div
@@ -150,7 +152,7 @@ function PodiumCard({ rank, entry }: PodiumProps) {
             Tappe
           </div>
         </div>
-      </div>
+      </Link>
     </>
   );
 }
@@ -254,31 +256,36 @@ export default async function Home() {
             return (
               <li
                 key={entry.player_id}
-                className={`group relative flex items-center overflow-hidden px-3.5 py-3 transition-all duration-150 hover:bg-black/[0.015] hover:pl-5 sm:px-5 sm:py-3.5 ${rank < 8 ? "border-b-2 border-black/[0.04]" : ""}`}
+                className={rank < 8 ? "border-b-2 border-black/[0.04]" : ""}
               >
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute right-[55px] top-1/2 -translate-y-1/2 select-none font-display text-[3.5rem] font-bold leading-none text-black/[0.025]"
+                <Link
+                  href={`/players/${entry.player_id}`}
+                  className="group relative flex items-center overflow-hidden px-3.5 py-3 transition-all duration-150 hover:bg-black/[0.015] hover:pl-5 sm:px-5 sm:py-3.5"
                 >
-                  #{rank}
-                </span>
+                  <span
+                    aria-hidden
+                    className="pointer-events-none absolute right-[55px] top-1/2 -translate-y-1/2 select-none font-display text-[3.5rem] font-bold leading-none text-black/[0.025]"
+                  >
+                    #{rank}
+                  </span>
 
-                <div className="relative z-10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px] bg-black/[0.04] text-[0.8rem] font-bold text-ink-mid">
-                  {rank}
-                </div>
-
-                <div className="relative z-10 ml-3.5 flex-1">
-                  <div className="mb-0.5 text-[0.95rem] font-semibold capitalize text-ink">
-                    {entry.display_name}
+                  <div className="relative z-10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px] bg-black/[0.04] text-[0.8rem] font-bold text-ink-mid">
+                    {rank}
                   </div>
-                  <div className="text-[0.68rem] text-ink-light">
-                    {entry.events_played} tappe
-                  </div>
-                </div>
 
-                <div className="relative z-10 flex-shrink-0 font-display text-[1.5rem] font-bold tracking-[-0.02em] text-ink">
-                  {entry.total_points}
-                </div>
+                  <div className="relative z-10 ml-3.5 flex-1">
+                    <div className="mb-0.5 text-[0.95rem] font-semibold capitalize text-ink">
+                      {entry.display_name}
+                    </div>
+                    <div className="text-[0.68rem] text-ink-light">
+                      {entry.events_played} tappe
+                    </div>
+                  </div>
+
+                  <div className="relative z-10 flex-shrink-0 font-display text-[1.5rem] font-bold tracking-[-0.02em] text-ink">
+                    {entry.total_points}
+                  </div>
+                </Link>
               </li>
             );
           })}

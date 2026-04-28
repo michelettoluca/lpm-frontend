@@ -93,9 +93,10 @@ export default async function EventDetailPage(
             const rank = i + 1;
             const isFirst = rank === 1;
             return (
-              <div
+              <Link
                 key={s.player_id}
-                className={`relative overflow-hidden rounded-2xl px-4 py-4 opacity-0 animate-pop ${
+                href={`/players/${s.player_id}`}
+                className={`relative overflow-hidden rounded-2xl px-4 py-4 opacity-0 animate-pop transition-transform duration-150 hover:-translate-y-0.5 ${
                   isFirst
                     ? "bg-red-accent text-white shadow-[0_8px_30px_rgba(239,68,68,0.2)]"
                     : "bg-card border-2 border-black/[0.06]"
@@ -139,7 +140,7 @@ export default async function EventDetailPage(
                   {s.wins}V · {s.losses}S · {s.draws}P
                   {s.byes > 0 ? ` · ${s.byes}B` : ""}
                 </div>
-              </div>
+              </Link>
             );
           })}
         </section>
@@ -156,25 +157,28 @@ export default async function EventDetailPage(
               return (
                 <li
                   key={s.player_id}
-                  className={`flex items-center px-3.5 py-3 sm:px-4 ${
-                    isLast ? "" : "border-b border-black/[0.05]"
-                  }`}
+                  className={isLast ? "" : "border-b border-black/[0.05]"}
                 >
-                  <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-black/[0.04] text-[0.72rem] font-bold text-ink-mid">
-                    {s.rank}
-                  </div>
-                  <div className="ml-3 flex-1 min-w-0">
-                    <div className="truncate text-[0.88rem] font-semibold capitalize text-ink">
-                      {s.player_name}
+                  <Link
+                    href={`/players/${s.player_id}`}
+                    className="flex items-center px-3.5 py-3 transition-colors duration-150 hover:bg-black/[0.02] sm:px-4"
+                  >
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-black/[0.04] text-[0.72rem] font-bold text-ink-mid">
+                      {s.rank}
                     </div>
-                    <div className="text-[0.66rem] text-ink-light">
-                      {s.wins}V · {s.losses}S · {s.draws}P
-                      {s.byes > 0 ? ` · ${s.byes}B` : ""}
+                    <div className="ml-3 flex-1 min-w-0">
+                      <div className="truncate text-[0.88rem] font-semibold capitalize text-ink">
+                        {s.player_name}
+                      </div>
+                      <div className="text-[0.66rem] text-ink-light">
+                        {s.wins}V · {s.losses}S · {s.draws}P
+                        {s.byes > 0 ? ` · ${s.byes}B` : ""}
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex-shrink-0 font-display text-[1.05rem] font-bold tabular-nums tracking-[-0.02em] text-ink">
-                    {s.points}
-                  </div>
+                    <div className="flex-shrink-0 font-display text-[1.05rem] font-bold tabular-nums tracking-[-0.02em] text-ink">
+                      {s.points}
+                    </div>
+                  </Link>
                 </li>
               );
             })}
