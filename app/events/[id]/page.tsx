@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import BackLink from "../../components/BackLink";
 
 type EventInfo = {
   id: number;
@@ -65,12 +66,7 @@ export default async function EventDetailPage(
 
   return (
     <main className="mx-auto w-full max-w-[720px] px-5 pt-8 pb-20 sm:px-5 sm:pt-10 sm:pb-20">
-      <Link
-        href="/"
-        className="inline-flex items-center gap-1.5 text-[0.78rem] font-semibold text-ink-light transition-colors duration-150 hover:text-red-accent"
-      >
-        <span aria-hidden>←</span> Tutte le tappe
-      </Link>
+      <BackLink />
 
       <header className="mt-5 mb-8 animate-pop">
         <h1 className="mb-2 font-display text-[1.35rem] font-bold tracking-[-0.02em] text-ink sm:text-[1.7rem]">

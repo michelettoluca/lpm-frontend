@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import BackLink from "../../components/BackLink";
 
 type Player = {
   id: number;
@@ -87,12 +88,7 @@ export default async function PlayerDetailPage(
 
   return (
     <main className="mx-auto w-full max-w-[720px] px-5 pt-8 pb-20 sm:px-5 sm:pt-10 sm:pb-20">
-      <Link
-        href="/leaderboard"
-        className="inline-flex items-center gap-1.5 text-[0.78rem] font-semibold text-ink-light transition-colors duration-150 hover:text-red-accent"
-      >
-        <span aria-hidden>←</span> Classifica
-      </Link>
+      <BackLink />
 
       <header className="mt-5 mb-8 animate-pop">
         <div className="mb-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-ink-light">
