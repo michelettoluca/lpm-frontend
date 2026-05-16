@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import BackLink from "../../components/BackLink";
+import HeadToHead, { type H2HOpponent } from "./HeadToHead";
 
 type Player = {
   id: number;
@@ -49,6 +50,17 @@ async function getPlayerEvents(id: string): Promise<PlayerEventEntry[]> {
   return res.json();
 }
 
+async function getHeadToHead(id: string): Promise<H2HOpponent[]> {
+  const res = await fetch(
+    `https://api.legapaupermilano.it/players/${id}/head-to-head?season=1`,
+    { next: { revalidate: 60 } },
+  );
+  if (res.status === 404) return [];
+  if (!res.ok) throw new Error(`Failed to load head-to-head: ${res.status}`);
+  const data = await res.json();
+  return data.opponents ?? [];
+}
+
 function shortEventName(name: string): string {
   const match = name.match(/Tappa\s+\d+/i);
   return match ? match[0] : name;
@@ -66,9 +78,10 @@ export default async function PlayerDetailPage(
   props: PageProps<"/players/[id]">,
 ) {
   const { id } = await props.params;
-  const [player, entries] = await Promise.all([
+  const [player, entries, opponents] = await Promise.all([
     getPlayer(id),
     getPlayerEvents(id),
+    getHeadToHead(id),
   ]);
   if (!player) notFound();
 
@@ -148,6 +161,13 @@ export default async function PlayerDetailPage(
             {totalDraws}
           </div>
         </div>
+      </section>
+
+      <section className="mb-8 opacity-0 animate-pop [animation-delay:0.2s]">
+        <h2 className="mb-3 px-1 font-display text-[0.78rem] font-bold uppercase tracking-[0.1em] text-ink-mid">
+          Head-to-head
+        </h2>
+        <HeadToHead opponents={opponents} />
       </section>
 
       <section className="opacity-0 animate-pop [animation-delay:0.25s]">
