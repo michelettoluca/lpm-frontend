@@ -100,6 +100,7 @@ export function PositionTile({ rank, prize }: { rank: number; prize: boolean }) 
       }`}
     >
       {pad2(rank)}
+      <span className="text-[12px] font-semibold lg:text-[13px]">°</span>
     </span>
   );
 }
