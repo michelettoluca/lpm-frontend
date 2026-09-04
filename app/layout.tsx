@@ -10,19 +10,31 @@ const archivo = Archivo({
   display: "swap",
 });
 
-const TITLE = "Lega Pauper Milano";
+const BASE_URL = "https://legapaupermilano.it";
+const NAME = "Lega Pauper Milano";
+const TITLE = `${NAME} (LPM)`;
 
 export async function generateMetadata(): Promise<Metadata> {
   const season = await getLatestSeason();
-  const description = season ? `${TITLE} · ${season.name}` : TITLE;
+  const description = season ? `${NAME} · ${season.name}` : NAME;
 
   return {
+    metadataBase: new URL(BASE_URL),
     title: TITLE,
     description,
+    keywords: [
+      "Lega Pauper Milano",
+      "LPM",
+      "Pauper Milano",
+      "Lega Pauper",
+      "MTG Pauper Milano",
+      "Magic the Gathering Pauper",
+    ],
     openGraph: {
       title: TITLE,
       description,
-      siteName: TITLE,
+      siteName: NAME,
+      url: BASE_URL,
       locale: "it_IT",
       type: "website",
     },
@@ -39,9 +51,28 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SportsOrganization",
+    name: NAME,
+    alternateName: "LPM",
+    url: BASE_URL,
+    sport: "Magic: The Gathering (Pauper)",
+    areaServed: {
+      "@type": "City",
+      name: "Milano",
+    },
+  };
+
   return (
     <html lang="it" className={`${archivo.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col font-sans">{children}</body>
+      <body className="flex min-h-full flex-col font-sans">
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
