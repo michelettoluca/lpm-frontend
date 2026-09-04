@@ -1,159 +1,140 @@
 import Link from "next/link";
+import {
+  getEvent,
+  getEvents,
+  getLeaderboard,
+  type EventSummary,
+  type LeaderboardEntry,
+} from "./lib/api";
+import { eventYear, isPlayed, tappaTitle } from "./lib/format";
+import {
+  AccentCard,
+  Brand,
+  Chip,
+  DashedLink,
+  DateTile,
+  EmptyRow,
+  PAGE,
+  RankRow,
+  SectionHead,
+  TopBar,
+} from "./components/ui";
 
-type LeaderboardEntry = {
-  player_id: number;
-  display_name: string;
-  total_points: number;
-  events_played: number;
-};
-
-type EventSummary = {
-  id: number;
-  season_id: number;
-  name: string;
-  format: string;
-  played_at: string;
-};
-
-async function getLeaderboard(): Promise<LeaderboardEntry[]> {
-  const res = await fetch(
-    "https://api.legapaupermilano.it/seasons/1/leaderboard",
-    { next: { revalidate: 60 } },
-  );
-  if (!res.ok) throw new Error(`Failed to load leaderboard: ${res.status}`);
-  return res.json();
-}
-
-async function getEvents(): Promise<EventSummary[]> {
-  const res = await fetch(
-    "https://api.legapaupermilano.it/seasons/1/events",
-    { next: { revalidate: 60 } },
-  );
-  if (!res.ok) throw new Error(`Failed to load events: ${res.status}`);
-  return res.json();
-}
-
-function shortEventName(name: string): string {
-  const match = name.match(/Tappa\s+\d+/i);
-  return match ? match[0] : name;
-}
-
-function formatEventDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString("it-IT", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-type PodiumProps = {
-  rank: 1 | 2 | 3;
-  entry: LeaderboardEntry;
-};
-
-function PodiumCard({ rank, entry }: PodiumProps) {
-  const isFirst = rank === 1;
-
-  const cardClasses = isFirst
-    ? "bg-red-accent shadow-[0_8px_30px_rgba(239,68,68,0.2),0_2px_8px_rgba(0,0,0,0.06)] hover:shadow-[0_14px_40px_rgba(239,68,68,0.25),0_4px_12px_rgba(0,0,0,0.08)] [animation-delay:0.1s]"
-    : rank === 2
-      ? "bg-card border-2 border-black/[0.06] hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)] [animation-delay:0.2s]"
-      : "bg-card border-2 border-black/[0.06] hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)] [animation-delay:0.3s]";
-
-  const watermarkColor = isFirst ? "text-white/[0.12]" : "text-black/[0.04]";
-  const watermarkSize = isFirst ? "text-[6rem] -top-2" : "text-[5rem] -top-1.5";
-
-  const topPadding = isFirst
-    ? "pt-9 px-4.5 pb-14 sm:pt-9 sm:px-4.5 sm:pb-14"
-    : rank === 3
-      ? "pt-5.5 px-3.5 pb-10"
-      : "pt-7 px-3.5 pb-12";
-
-  const nameColor = isFirst ? "text-white" : "text-ink";
-  const pointsColor = isFirst ? "text-white" : "text-ink";
-  const labelColor = isFirst ? "text-white/50" : "text-ink-light";
-  const statValueColor = isFirst ? "text-white" : "text-ink";
-  const statLabelColor = isFirst ? "text-white/45" : "text-ink-light";
-  const statBorderColor = isFirst ? "border-white/15" : "border-black/[0.05]";
-
-  const pointsSize = isFirst
-    ? "text-[2.6rem] sm:text-[3.4rem]"
-    : "text-[2.1rem] sm:text-[2.8rem]";
-  const nameSize = isFirst
-    ? "text-[0.92rem] sm:text-[1.15rem]"
-    : "text-[0.82rem] sm:text-[1rem]";
-
-  const mobileWatermark = isFirst ? "text-white/[0.12]" : "text-black/[0.04]";
-
+function Stat({
+  value,
+  suffix,
+  label,
+}: {
+  value: number;
+  suffix?: string;
+  label: string;
+}) {
   return (
-    <>
-      {/* Mobile: compact horizontal card */}
+    <div>
+      <div className="tn text-[28px] font-extrabold leading-none tracking-[-0.03em] lg:text-[36px]">
+        {value}
+        {suffix && (
+          <span className="text-[16px] font-semibold text-ink/45 lg:text-[20px]">
+            {suffix}
+          </span>
+        )}
+      </div>
+      <div className="lbl mt-1 lg:mt-1.5">{label}</div>
+    </div>
+  );
+}
+
+function tappeLabel(n: number) {
+  return `${n} ${n === 1 ? "tappa" : "tappe"}`;
+}
+
+function PodiumSide({ entry }: { entry: LeaderboardEntry }) {
+  return (
+    <Link
+      href={`/players/${entry.player_id}`}
+      className="mb-2.5 block rounded-[20px] border border-ink/10 bg-white px-1.5 pt-3.5 pb-3 transition-colors hover:bg-ink/4 lg:mb-0 lg:px-2.5 lg:pt-[18px] lg:pb-4"
+    >
+      <div className="truncate text-[12px] font-bold capitalize leading-[1.2] lg:text-[14px]">
+        {entry.display_name}
+      </div>
+      <div className="tn mt-1.5 text-[40px] font-extrabold leading-none tracking-[-0.04em] text-accent lg:mt-2 lg:text-[52px]">
+        {entry.total_points}
+      </div>
+      <div className="mt-2.5 text-[11px] text-ink/50 lg:mt-3 lg:text-[12px]">
+        {tappeLabel(entry.events_played)}
+      </div>
+    </Link>
+  );
+}
+
+function PodiumCenter({ entry }: { entry: LeaderboardEntry }) {
+  return (
+    <AccentCard
+      outer="rounded-[24px] shadow-[0_12px_30px_rgba(255,45,26,0.14)] lg:rounded-[26px] lg:shadow-[0_14px_34px_rgba(255,45,26,0.14)]"
+      inner="rounded-[23px] lg:rounded-[25px]"
+    >
       <Link
         href={`/players/${entry.player_id}`}
-        className={`relative flex items-center gap-3 overflow-hidden rounded-2xl px-4 py-3 text-left opacity-0 animate-pop transition-transform duration-200 ease-out sm:hidden ${cardClasses}`}
+        className="block rounded-[23px] px-2 pt-5 pb-3.5 transition-colors hover:bg-ink/4 lg:rounded-[25px] lg:px-2.5 lg:pt-[26px] lg:pb-[18px]"
       >
-        <span
-          aria-hidden
-          className={`pointer-events-none absolute -left-1 -top-1 select-none font-display text-[3.2rem] font-bold leading-none ${mobileWatermark}`}
-        >
-          #{rank}
-        </span>
-
-        <div className="relative z-10 ml-10 flex-1 min-w-0">
-          <div className={`truncate font-semibold capitalize ${nameColor} text-[0.95rem]`}>
-            {entry.display_name}
-          </div>
-          <div className={`text-[0.65rem] ${labelColor}`}>
-            {entry.events_played} tappe
-          </div>
+        <div className="truncate text-[13px] font-extrabold capitalize leading-[1.2] lg:text-[15px]">
+          {entry.display_name}
         </div>
-
-        <span
-          className={`relative z-10 flex-shrink-0 font-display font-bold leading-none tracking-[-0.02em] text-[1.6rem] ${pointsColor}`}
-        >
+        <div className="tn mt-1.5 text-[56px] font-extrabold leading-none tracking-[-0.05em] text-accent lg:mt-2 lg:text-[76px]">
           {entry.total_points}
-        </span>
-      </Link>
-
-      {/* Desktop: full podium card */}
-      <Link
-        href={`/players/${entry.player_id}`}
-        className={`relative hidden overflow-hidden rounded-[20px] text-center opacity-0 animate-pop transition-transform duration-200 ease-out hover:-translate-y-1 sm:block ${cardClasses}`}
-      >
-        <div
-          className={`pointer-events-none absolute -left-0.5 select-none font-display font-bold leading-none ${watermarkColor} ${watermarkSize}`}
-        >
-          #{rank}
         </div>
-
-        <div className={`relative z-10 ${topPadding}`}>
-          <div className={`mb-2 font-semibold capitalize ${nameColor} ${nameSize}`}>
-            {entry.display_name}
-          </div>
-          <div
-            className={`font-display font-bold leading-none tracking-[-0.03em] ${pointsColor} ${pointsSize}`}
-          >
-            {entry.total_points}
-          </div>
-        </div>
-
-        <div
-          className={`relative z-10 border-t-2 px-2 py-2.5 text-center ${statBorderColor}`}
-        >
-          <div
-            className={`mb-0.5 font-display font-bold leading-none text-[0.82rem] sm:text-base ${statValueColor}`}
-          >
-            {entry.events_played}
-          </div>
-          <div
-            className={`text-[0.48rem] font-semibold uppercase tracking-[0.08em] sm:text-[0.55rem] ${statLabelColor}`}
-          >
-            Tappe
-          </div>
+        <div className="mt-3 text-[11px] text-ink/50 lg:mt-3.5 lg:text-[12px]">
+          {tappeLabel(entry.events_played)}
         </div>
       </Link>
-    </>
+    </AccentCard>
+  );
+}
+
+function TappaRow({
+  event,
+  players,
+}: {
+  event: EventSummary;
+  players?: number;
+}) {
+  const grid =
+    "grid grid-cols-[48px_1fr_auto] items-center gap-2.5 py-2.5 pr-4 pl-3 lg:grid-cols-[52px_1fr_auto] lg:gap-3 lg:py-[11px] lg:pr-5";
+  const upcoming = players === undefined;
+  return (
+    <li className="border-b border-ink/8 last:border-b-0">
+      {upcoming ? (
+        <div aria-disabled="true" className={`${grid} opacity-45`}>
+          <DateTile iso={event.played_at} ghost />
+          <div className="min-w-0">
+            <div className="text-[14px] font-bold leading-[1.2] lg:text-[15px]">
+              {tappaTitle(event.name)}
+            </div>
+            <div className="mt-px text-[12px] text-ink/60">
+              Sede da annunciare
+            </div>
+          </div>
+          <span className="text-[11px] font-bold uppercase tracking-[0.08em] lg:text-[10px]">
+            Prossima
+          </span>
+        </div>
+      ) : (
+        <Link href={`/events/${event.id}`} className={`row-link ${grid}`}>
+          <DateTile iso={event.played_at} />
+          <div className="min-w-0">
+            <div className="text-[14px] font-bold leading-[1.2] lg:text-[15px]">
+              {tappaTitle(event.name)}
+            </div>
+            <div className="mt-px text-[12px] text-ink/50">
+              {players} giocatori
+            </div>
+          </div>
+          <span aria-hidden className="text-[16px] text-ink/50">
+            →
+          </span>
+        </Link>
+      )}
+    </li>
   );
 }
 
@@ -162,185 +143,105 @@ export default async function Home() {
     getLeaderboard(),
     getEvents(),
   ]);
-  const events = [...eventsRaw].sort(
+
+  const byDateDesc = [...eventsRaw].sort(
     (a, b) =>
       new Date(b.played_at).getTime() - new Date(a.played_at).getTime(),
   );
+  const played = byDateDesc.filter((e) => isPlayed(e.played_at));
+  const upcoming = byDateDesc.filter((e) => !isPlayed(e.played_at)).reverse();
+  const playerCounts = await Promise.all(
+    played.map((e) => getEvent(e.id).then((d) => d?.standings.length ?? 0)),
+  );
 
-  const first = entries[0];
-  const second = entries[1];
-  const third = entries[2];
-  const top58 = entries.slice(3, 8);
-  const hasMore = entries.length > 8;
+  const year = eventsRaw[0]
+    ? eventYear(eventsRaw[0].played_at)
+    : new Date().getFullYear();
+  const [first, second, third] = entries;
+  const rest = entries.slice(3, 11);
 
   return (
-    <>
-      <header className="relative w-full overflow-hidden bg-gradient-to-br from-[#1a1a1a] via-[#222] to-[#0f0f0f] px-6 pt-12 pb-14 text-center shadow-[0_20px_50px_-20px_rgba(0,0,0,0.35)] animate-pop sm:pt-16 sm:pb-20">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-[0.07]"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, rgba(255,255,255,0.9) 1px, transparent 1px)",
-            backgroundSize: "22px 22px",
-          }}
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -top-32 -right-24 h-80 w-80 rounded-full bg-red-accent/30 blur-3xl"
-        />
-        <div
-          aria-hidden
-          className="pointer-events-none absolute -bottom-32 -left-20 h-72 w-72 rounded-full bg-red-accent/15 blur-3xl"
-        />
+    <main className={PAGE}>
+      <TopBar
+        className="lg:mb-9"
+        left={<Brand year={year} />}
+        right={<Chip rotate={-4}>summer {year}</Chip>}
+      />
 
-        <div className="relative z-10 mx-auto flex w-full max-w-[720px] flex-col items-center">
-          <h1 className="mb-3 font-display text-[1.75rem] font-bold leading-[1.05] tracking-[-0.03em] text-white sm:text-[2.6rem]">
-            Lega Pauper{" "}
-            <span className="text-red-accent">Milano</span>
+      <div className="lg:grid lg:grid-cols-[1fr_1.1fr] lg:items-start lg:gap-x-12 lg:gap-y-10">
+        <section className="lg:col-start-1 lg:row-start-1">
+          <h1 className="mt-[26px] mb-3.5 text-[44px] font-extrabold leading-[0.95] tracking-[-0.04em] lg:mt-0 lg:mb-[22px] lg:text-[84px] lg:leading-[0.92] lg:tracking-[-0.045em]">
+            Lega Pauper
+            <br />
+            <span className="text-accent">Milano</span>
           </h1>
-
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.06] px-3.5 py-1 backdrop-blur-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-accent animate-pulse" />
-            <span className="text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-white/80">
-              Summer 2026
-            </span>
+          <div className="mb-7 flex items-center gap-6 lg:mb-0 lg:gap-8">
+            <Stat value={entries.length} label="Giocatori" />
+            <div className="h-9 w-px bg-ink/15 lg:h-11" />
+            <Stat
+              value={played.length}
+              suffix={`/${eventsRaw.length}`}
+              label="Tappe"
+            />
           </div>
+        </section>
 
-          <div className="flex items-center gap-5 text-white/85 sm:gap-7">
-            <div className="text-center">
-              <div className="font-display text-[1.4rem] font-bold leading-none tracking-[-0.02em] text-white sm:text-[1.7rem]">
-                {entries.length}
-              </div>
-              <div className="mt-1 text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-white/55">
-                Giocatori
-              </div>
+        <section className="lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:flex lg:flex-col lg:gap-6">
+          {first && (
+            <div className="grid grid-cols-[1fr_1.2fr_1fr] items-end gap-2 text-center lg:gap-3">
+              {second ? <PodiumSide entry={second} /> : <div />}
+              <PodiumCenter entry={first} />
+              {third ? <PodiumSide entry={third} /> : <div />}
             </div>
-            <div className="h-7 w-px bg-white/15" />
-            <div className="text-center">
-              <div className="font-display text-[1.4rem] font-bold leading-none tracking-[-0.02em] text-white sm:text-[1.7rem]">
-                {events.length}
-              </div>
-              <div className="mt-1 text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-white/55">
-                Tappe
-              </div>
+          )}
+
+          <div>
+            <div className="card mt-3 lg:mt-0">
+              {rest.length === 0 ? (
+                <EmptyRow>Nessun altro giocatore in classifica.</EmptyRow>
+              ) : (
+                <ul>
+                  {rest.map((entry, i) => (
+                    <RankRow
+                      key={entry.player_id}
+                      href={`/players/${entry.player_id}`}
+                      rank={i + 4}
+                      name={entry.display_name}
+                      sub={tappeLabel(entry.events_played)}
+                      points={entry.total_points}
+                      className={i >= 5 ? "hidden lg:block" : ""}
+                      desktopPadding="lg:py-[13px]"
+                    />
+                  ))}
+                </ul>
+              )}
             </div>
+            <DashedLink href="/leaderboard">Classifica completa →</DashedLink>
           </div>
-        </div>
-      </header>
+        </section>
 
-      <main className="mx-auto w-full max-w-[720px] px-5 pt-10 pb-20 sm:px-5 sm:pt-12 sm:pb-20">
-
-      <section className="mb-10 flex flex-col gap-3 sm:grid sm:grid-cols-[1fr_1.15fr_1fr] sm:items-end sm:gap-3">
-        {second && (
-          <div className="order-2 sm:order-none">
-            <PodiumCard rank={2} entry={second} />
+        <section className="mt-8 lg:col-start-1 lg:row-start-2 lg:mt-0">
+          <SectionHead
+            className="mb-2.5 lg:mb-3"
+            title="Tappe"
+            aside={`${played.length} di ${eventsRaw.length} giocate`}
+          />
+          <div className="card">
+            {byDateDesc.length === 0 ? (
+              <EmptyRow>Nessuna tappa in programma.</EmptyRow>
+            ) : (
+              <ul>
+                {played.map((event, i) => (
+                  <TappaRow key={event.id} event={event} players={playerCounts[i]} />
+                ))}
+                {upcoming.map((event) => (
+                  <TappaRow key={event.id} event={event} />
+                ))}
+              </ul>
+            )}
           </div>
-        )}
-        {first && (
-          <div className="order-1 sm:order-none">
-            <PodiumCard rank={1} entry={first} />
-          </div>
-        )}
-        {third && (
-          <div className="order-3 sm:order-none">
-            <PodiumCard rank={3} entry={third} />
-          </div>
-        )}
-      </section>
-
-      <section className="opacity-0 animate-pop [animation-delay:0.45s]">
-        <ul>
-          {top58.map((entry, i) => {
-            const rank = i + 4;
-            return (
-              <li
-                key={entry.player_id}
-                className={rank < 8 ? "border-b-2 border-black/[0.04]" : ""}
-              >
-                <Link
-                  href={`/players/${entry.player_id}`}
-                  className="group relative flex items-center overflow-hidden px-3.5 py-3 transition-all duration-150 hover:bg-black/[0.015] hover:pl-5 sm:px-5 sm:py-3.5"
-                >
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute right-[55px] top-1/2 -translate-y-1/2 select-none font-display text-[3.5rem] font-bold leading-none text-black/[0.025]"
-                  >
-                    #{rank}
-                  </span>
-
-                  <div className="relative z-10 flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-[10px] bg-black/[0.04] text-[0.8rem] font-bold text-ink-mid">
-                    {rank}
-                  </div>
-
-                  <div className="relative z-10 ml-3.5 flex-1">
-                    <div className="mb-0.5 text-[0.95rem] font-semibold capitalize text-ink">
-                      {entry.display_name}
-                    </div>
-                    <div className="text-[0.68rem] text-ink-light">
-                      {entry.events_played} tappe
-                    </div>
-                  </div>
-
-                  <div className="relative z-10 flex-shrink-0 font-display text-[1.5rem] font-bold tracking-[-0.02em] text-ink">
-                    {entry.total_points}
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-
-        {hasMore && (
-          <Link
-            href="/leaderboard"
-            className="group mt-4 flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-black/[0.08] px-5 py-3.5 text-[0.82rem] font-semibold text-ink-mid transition-all duration-150 hover:border-red-accent/40 hover:bg-red-bg hover:text-red-accent"
-          >
-            Classifica completa
-            <span
-              aria-hidden
-              className="text-[1.05rem] transition-transform duration-150 group-hover:translate-x-1"
-            >
-              →
-            </span>
-          </Link>
-        )}
-      </section>
-
-      <section className="mt-14 opacity-0 animate-pop [animation-delay:0.6s]">
-        <h2 className="mb-4 font-display text-[1.05rem] font-bold uppercase tracking-[0.08em] text-ink-mid sm:text-[1.15rem]">
-          Tappe
-        </h2>
-        <ul className="flex flex-col gap-2">
-          {events.map((event) => (
-            <li key={event.id}>
-              <Link
-                href={`/events/${event.id}`}
-                className="group flex items-center gap-3 rounded-2xl bg-card border-2 border-black/[0.06] px-4 py-3.5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:px-5 sm:py-4"
-              >
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] bg-red-bg text-[0.95rem] font-bold text-red-accent">
-                  {event.id}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[0.9rem] font-semibold text-ink sm:text-[0.98rem]">
-                    {shortEventName(event.name)}
-                  </div>
-                  <div className="text-[0.68rem] text-ink-light">
-                    {formatEventDate(event.played_at)}
-                  </div>
-                </div>
-                <span
-                  aria-hidden
-                  className="flex-shrink-0 text-[1.1rem] text-ink-light transition-transform duration-150 group-hover:translate-x-1 group-hover:text-red-accent"
-                >
-                  →
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </section>
+        </section>
+      </div>
     </main>
-    </>
   );
 }

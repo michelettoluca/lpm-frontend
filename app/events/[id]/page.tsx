@@ -1,186 +1,83 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import BackLink from "../../components/BackLink";
-
-type EventInfo = {
-  id: number;
-  season_id: number;
-  name: string;
-  format: string;
-  played_at: string;
-};
-
-type Standing = {
-  event_id: number;
-  player_id: number;
-  player_name: string;
-  rank: number;
-  points: number;
-  wins: number;
-  losses: number;
-  draws: number;
-  byes: number;
-  mwp: number;
-  gwp: number;
-  omw: number;
-  ogw: number;
-};
-
-type EventDetail = {
-  event: EventInfo;
-  standings: Standing[];
-};
-
-async function getEvent(id: string): Promise<EventDetail | null> {
-  const res = await fetch(`https://api.legapaupermilano.it/events/${id}`, {
-    next: { revalidate: 60 },
-  });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`Failed to load event: ${res.status}`);
-  return res.json();
-}
-
-function shortEventName(name: string): string {
-  const match = name.match(/Tappa\s+\d+/i);
-  return match ? match[0] : name;
-}
-
-function formatEventDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("it-IT", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-}
+import { Chip, NARROW, PAGE, TopBar } from "../../components/ui";
+import { getEvent, getPairings } from "../../lib/api";
+import {
+  eventStatus,
+  formatDateMeta,
+  pad2,
+  tappaNumber,
+  tappaSubtitle,
+} from "../../lib/format";
+import RoundPanels from "./RoundPanels";
 
 export default async function EventDetailPage(
   props: PageProps<"/events/[id]">,
 ) {
   const { id } = await props.params;
-  const data = await getEvent(id);
+  const [data, pairings] = await Promise.all([getEvent(id), getPairings(id)]);
   if (!data) notFound();
 
   const { event, standings } = data;
-  const podium = standings.slice(0, 3);
-  const rest = standings.slice(3);
+  const n = tappaNumber(event.name);
+  const status = eventStatus(event.played_at);
+  const roundsPlayed = standings.reduce(
+    (max, s) => Math.max(max, s.wins + s.losses + s.draws + s.byes),
+    0,
+  );
+  const rounds = Math.max(
+    roundsPlayed,
+    pairings.reduce((max, p) => Math.max(max, p.round), 0),
+  );
+  const meta = [
+    formatDateMeta(event.played_at),
+    rounds > 0 ? `Svizzera ${rounds} turni` : null,
+    `${standings.length} giocatori`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
+  const hero = (
+    <div>
+      <div className="mt-[22px] mb-1.5 flex items-end gap-3 lg:mt-0 lg:mb-0 lg:gap-[18px]">
+        <span className="tn text-[96px] font-extrabold leading-[0.82] tracking-[-0.06em] text-accent lg:text-[150px] lg:leading-[0.8]">
+          {n === null ? "—" : pad2(n)}
+        </span>
+        <div className="min-w-0 pb-1.5 lg:pb-2">
+          <div className="text-[20px] font-extrabold leading-[1.05] tracking-[-0.02em] lg:text-[34px] lg:leading-[1.02] lg:tracking-[-0.03em]">
+            {tappaSubtitle(event.name)}
+          </div>
+          <div className="mt-2.5 hidden text-[14px] text-ink/60 lg:block">
+            {meta}
+          </div>
+        </div>
+      </div>
+      <div className="mb-[18px] text-[13px] text-ink/60 lg:hidden">{meta}</div>
+    </div>
+  );
 
   return (
-    <main className="mx-auto w-full max-w-[720px] px-5 pt-8 pb-20 sm:px-5 sm:pt-10 sm:pb-20">
-      <BackLink />
-
-      <header className="mt-5 mb-8 animate-pop">
-        <h1 className="mb-2 font-display text-[1.35rem] font-bold tracking-[-0.02em] text-ink sm:text-[1.7rem]">
-          {shortEventName(event.name)}
-        </h1>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.78rem] font-medium text-ink-light">
-          <span>{formatEventDate(event.played_at)}</span>
-          <span aria-hidden>·</span>
-          <span>
-            <strong className="font-bold text-ink">{standings.length}</strong>{" "}
-            giocatori
-          </span>
-        </div>
-        <div className="mt-3.5 h-[3px] w-8 rounded-sm bg-red-accent" />
-      </header>
-
-      {podium.length > 0 && (
-        <section className="mb-8 grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {podium.map((s, i) => {
-            const rank = i + 1;
-            const isFirst = rank === 1;
-            return (
-              <Link
-                key={s.player_id}
-                href={`/players/${s.player_id}`}
-                className={`relative overflow-hidden rounded-2xl px-4 py-4 opacity-0 animate-pop transition-transform duration-150 hover:-translate-y-0.5 ${
-                  isFirst
-                    ? "bg-red-accent text-white shadow-[0_8px_30px_rgba(239,68,68,0.2)]"
-                    : "bg-card border-2 border-black/[0.06]"
-                }`}
-                style={{ animationDelay: `${0.1 + i * 0.1}s` }}
-              >
-                <span
-                  aria-hidden
-                  className={`pointer-events-none absolute right-2 top-3 select-none font-display text-[3.2rem] font-bold leading-none ${
-                    isFirst ? "text-white/[0.15]" : "text-black/[0.04]"
-                  }`}
-                >
-                  #{rank}
-                </span>
-                <div
-                  className={`relative z-10 text-[0.62rem] font-semibold uppercase tracking-[0.1em] ${
-                    isFirst ? "text-white/60" : "text-ink-light"
-                  }`}
-                >
-                  {rank}° posto
-                </div>
-                <div
-                  className={`relative z-10 mt-1 truncate font-semibold capitalize ${
-                    isFirst ? "text-white" : "text-ink"
-                  } text-[1rem]`}
-                >
-                  {s.player_name}
-                </div>
-                <div
-                  className={`relative z-10 mt-1 font-display text-[1.5rem] font-bold leading-none tracking-[-0.02em] ${
-                    isFirst ? "text-white" : "text-ink"
-                  }`}
-                >
-                  {s.points}
-                </div>
-                <div
-                  className={`relative z-10 mt-1 text-[0.7rem] ${
-                    isFirst ? "text-white/70" : "text-ink-light"
-                  }`}
-                >
-                  {s.wins}V · {s.losses}S · {s.draws}P
-                  {s.byes > 0 ? ` · ${s.byes}B` : ""}
-                </div>
-              </Link>
-            );
-          })}
-        </section>
-      )}
-
-      <section className="opacity-0 animate-pop [animation-delay:0.4s]">
-        <h2 className="mb-3 px-1 font-display text-[0.78rem] font-bold uppercase tracking-[0.1em] text-ink-mid">
-          Standings
-        </h2>
-        <div className="overflow-hidden rounded-2xl bg-card border-2 border-black/[0.06]">
-          <ul>
-            {rest.map((s, i) => {
-              const isLast = i === rest.length - 1;
-              return (
-                <li
-                  key={s.player_id}
-                  className={isLast ? "" : "border-b border-black/[0.05]"}
-                >
-                  <Link
-                    href={`/players/${s.player_id}`}
-                    className="flex items-center px-3.5 py-3 transition-colors duration-150 hover:bg-black/[0.02] sm:px-4"
-                  >
-                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-black/[0.04] text-[0.72rem] font-bold text-ink-mid">
-                      {s.rank}
-                    </div>
-                    <div className="ml-3 flex-1 min-w-0">
-                      <div className="truncate text-[0.88rem] font-semibold capitalize text-ink">
-                        {s.player_name}
-                      </div>
-                      <div className="text-[0.66rem] text-ink-light">
-                        {s.wins}V · {s.losses}S · {s.draws}P
-                        {s.byes > 0 ? ` · ${s.byes}B` : ""}
-                      </div>
-                    </div>
-                    <div className="flex-shrink-0 font-display text-[1.05rem] font-bold tabular-nums tracking-[-0.02em] text-ink">
-                      {s.points}
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      </section>
+    <main className={PAGE}>
+      <div className={NARROW}>
+        <TopBar
+          className="lg:mb-7"
+          left={<BackLink href="/" label="Tappe" />}
+          right={
+            <Chip rotate={3}>
+              {status === "conclusa" ? "conclusa ✦" : status}
+            </Chip>
+          }
+        />
+        <Suspense fallback={hero}>
+          <RoundPanels
+            hero={hero}
+            standings={standings}
+            pairings={pairings}
+            rounds={rounds}
+          />
+        </Suspense>
+      </div>
     </main>
   );
 }

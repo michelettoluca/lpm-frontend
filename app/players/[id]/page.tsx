@@ -1,228 +1,276 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import BackLink from "../../components/BackLink";
-import HeadToHead, { type H2HOpponent } from "./HeadToHead";
+import {
+  AccentCard,
+  Chip,
+  DateTile,
+  EmptyRow,
+  PAGE,
+  PointsChip,
+  SectionHead,
+  TopBar,
+} from "../../components/ui";
+import {
+  getEvents,
+  getLeaderboard,
+  getPlayer,
+  getPlayerEvents,
+} from "../../lib/api";
+import {
+  eventYear,
+  isPlayed,
+  pad2,
+  record,
+  splitName,
+  tappaTitle,
+  winPct,
+} from "../../lib/format";
 
-type Player = {
-  id: number;
-  external_id: number;
-  display_name: string;
-};
+const PRIZE_POINTS = 9;
 
-type EventInfo = {
-  id: number;
-  season_id: number;
-  name: string;
-  format: string;
-  played_at: string;
-};
-
-type PlayerEventEntry = {
-  event: EventInfo;
-  rank: number;
-  points: number;
-  wins: number;
-  losses: number;
-  draws: number;
-  byes: number;
-  mwp: number;
-  gwp: number;
-  omw: number;
-  ogw: number;
-};
-
-async function getPlayer(id: string): Promise<Player | null> {
-  const res = await fetch(`https://api.legapaupermilano.it/players/${id}`, {
-    next: { revalidate: 60 },
-  });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`Failed to load player: ${res.status}`);
-  return res.json();
-}
-
-async function getPlayerEvents(id: string): Promise<PlayerEventEntry[]> {
-  const res = await fetch(
-    `https://api.legapaupermilano.it/players/${id}/events?season=1`,
-    { next: { revalidate: 60 } },
+function Tile({
+  label,
+  children,
+  className = "",
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rounded-[20px] border border-ink/10 bg-white px-3 pt-3 pb-2.5 lg:px-3.5 lg:pt-3.5 lg:pb-3 ${className}`}
+    >
+      <div className="lbl">{label}</div>
+      <div className="tn mt-1.5 text-[30px] font-extrabold leading-none tracking-[-0.04em] lg:mt-2 lg:text-[36px]">
+        {children}
+      </div>
+    </div>
   );
-  if (res.status === 404) return [];
-  if (!res.ok) throw new Error(`Failed to load player events: ${res.status}`);
-  return res.json();
 }
 
-async function getHeadToHead(id: string): Promise<H2HOpponent[]> {
-  const res = await fetch(
-    `https://api.legapaupermilano.it/players/${id}/head-to-head?season=1`,
-    { next: { revalidate: 60 } },
+function Legend() {
+  return (
+    <div className="lbl flex gap-3.5">
+      <span>
+        <span className="text-accent">■</span> Vinte
+      </span>
+      <span>
+        <span className="text-ink">■</span> Perse
+      </span>
+      <span>
+        <span className="text-draw">■</span> Pari
+      </span>
+    </div>
   );
-  if (res.status === 404) return [];
-  if (!res.ok) throw new Error(`Failed to load head-to-head: ${res.status}`);
-  const data = await res.json();
-  return data.opponents ?? [];
 }
 
-function shortEventName(name: string): string {
-  const match = name.match(/Tappa\s+\d+/i);
-  return match ? match[0] : name;
-}
-
-function formatEventDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("it-IT", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+function Bar({ w, l, d, className }: { w: number; l: number; d: number; className: string }) {
+  if (w + l + d === 0) return <div className={`${className} rounded-full bg-draw`} />;
+  return (
+    <div className={`flex gap-0.5 overflow-hidden rounded-full ${className}`}>
+      {w > 0 && <div style={{ flex: w }} className="bg-accent" />}
+      {l > 0 && <div style={{ flex: l }} className="bg-ink" />}
+      {d > 0 && <div style={{ flex: d }} className="bg-draw" />}
+    </div>
+  );
 }
 
 export default async function PlayerDetailPage(
   props: PageProps<"/players/[id]">,
 ) {
   const { id } = await props.params;
-  const [player, entries, opponents] = await Promise.all([
+  const [player, entries, leaderboard, events] = await Promise.all([
     getPlayer(id),
     getPlayerEvents(id),
-    getHeadToHead(id),
+    getLeaderboard(),
+    getEvents(),
   ]);
   if (!player) notFound();
 
-  const sorted = [...entries].sort(
+  const tappe = [...entries].sort(
     (a, b) =>
       new Date(b.event.played_at).getTime() -
       new Date(a.event.played_at).getTime(),
   );
-
-  const totalPoints = entries.reduce((sum, e) => sum + e.points, 0);
-  const totalWins = entries.reduce((sum, e) => sum + e.wins, 0);
-  const totalLosses = entries.reduce((sum, e) => sum + e.losses, 0);
-  const totalDraws = entries.reduce((sum, e) => sum + e.draws, 0);
-  const bestRank = entries.length
-    ? Math.min(...entries.map((e) => e.rank))
-    : null;
+  const rankIndex = leaderboard.findIndex((e) => e.player_id === player.id);
+  const seasonRank = rankIndex >= 0 ? rankIndex + 1 : null;
+  const seasonPoints =
+    rankIndex >= 0
+      ? leaderboard[rankIndex].total_points
+      : entries.reduce((s, e) => s + e.points, 0);
+  const w = entries.reduce((s, e) => s + e.wins, 0);
+  const l = entries.reduce((s, e) => s + e.losses, 0);
+  const d = entries.reduce((s, e) => s + e.draws, 0);
+  const matches = w + l + d;
+  const playedSoFar = events.filter((e) => isPlayed(e.played_at)).length;
+  const year = events[0]
+    ? eventYear(events[0].played_at)
+    : new Date().getFullYear();
+  const { first, last } = splitName(player.display_name);
 
   return (
-    <main className="mx-auto w-full max-w-[720px] px-5 pt-8 pb-20 sm:px-5 sm:pt-10 sm:pb-20">
-      <BackLink />
+    <main className={PAGE}>
+      <TopBar
+        className="lg:mb-7"
+        left={<BackLink href="/leaderboard" label="Classifica" />}
+        right={
+          <Chip rotate={-3}>
+            {seasonRank === null ? "fuori classifica" : `posizione #${pad2(seasonRank)}`}
+          </Chip>
+        }
+      />
 
-      <header className="mt-5 mb-8 animate-pop">
-        <div className="mb-1 text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-ink-light">
-          Giocatore
+      <div className="lg:mb-9 lg:grid lg:grid-cols-[1fr_auto] lg:items-end lg:gap-12">
+        <div>
+          <h1 className="mt-[26px] mb-1.5 text-[44px] font-extrabold capitalize leading-[0.95] tracking-[-0.04em] lg:mt-0 lg:mb-3 lg:text-[84px] lg:leading-[0.92] lg:tracking-[-0.045em]">
+            {first}
+            {last && (
+              <>
+                <br className="lg:hidden" />
+                <span className="hidden lg:inline"> </span>
+                {last}
+              </>
+            )}
+          </h1>
+          <div className="mb-[18px] text-[13px] text-ink/60 lg:mb-0 lg:text-[14px]">
+            Lega Pauper Milano · Summer {year}
+            <span className="hidden lg:inline">
+              {" "}· {matches} {matches === 1 ? "partita" : "partite"}
+            </span>
+          </div>
         </div>
-        <h1 className="mb-2 font-display text-[1.6rem] font-bold capitalize tracking-[-0.02em] text-ink sm:text-[2rem]">
-          {player.display_name}
-        </h1>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.78rem] font-medium text-ink-light">
-          <span>
-            <strong className="font-bold text-ink">{entries.length}</strong>{" "}
-            tappe
-          </span>
-          {bestRank !== null && (
-            <>
-              <span aria-hidden>·</span>
-              <span>
-                Best:{" "}
-                <strong className="font-bold text-ink">#{bestRank}</strong>
-              </span>
-            </>
-          )}
-        </div>
-        <div className="mt-3.5 h-[3px] w-8 rounded-sm bg-red-accent" />
-      </header>
 
-      <section className="mb-8 grid grid-cols-2 gap-2 opacity-0 animate-pop [animation-delay:0.1s] sm:grid-cols-4">
-        <div className="rounded-2xl bg-red-accent px-4 py-3.5 text-white shadow-[0_8px_30px_rgba(239,68,68,0.2)]">
-          <div className="text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-white/60">
-            Punti totali
-          </div>
-          <div className="mt-1 font-display text-[1.7rem] font-bold leading-none tracking-[-0.02em]">
-            {totalPoints}
-          </div>
+        <div className="mb-[22px] grid grid-cols-3 gap-2 lg:mb-0 lg:grid-cols-[repeat(4,132px)] lg:gap-2.5">
+          <AccentCard outer="rounded-[20px]" inner="rounded-[19px]">
+            <div className="px-3 pt-3 pb-2.5 lg:px-3.5 lg:pt-3.5 lg:pb-3">
+              <div className="lbl">Punti</div>
+              <div className="tn mt-1.5 text-[30px] font-extrabold leading-none tracking-[-0.04em] text-accent lg:mt-2 lg:text-[36px]">
+                {seasonPoints}
+              </div>
+            </div>
+          </AccentCard>
+          <Tile label="Posizione">{seasonRank === null ? "–" : pad2(seasonRank)}</Tile>
+          <Tile label="Tappe">
+            {entries.length}
+            <span className="text-[16px] font-semibold text-ink/45 lg:text-[18px]">
+              /{playedSoFar}
+            </span>
+          </Tile>
+          <Tile label="Win" className="hidden lg:block">
+            {winPct(w, l, d)}
+          </Tile>
         </div>
-        <div className="rounded-2xl bg-card border-2 border-black/[0.06] px-4 py-3.5">
-          <div className="text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-ink-light">
-            Vittorie
-          </div>
-          <div className="mt-1 font-display text-[1.7rem] font-bold leading-none tracking-[-0.02em] text-ink">
-            {totalWins}
-          </div>
-        </div>
-        <div className="rounded-2xl bg-card border-2 border-black/[0.06] px-4 py-3.5">
-          <div className="text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-ink-light">
-            Sconfitte
-          </div>
-          <div className="mt-1 font-display text-[1.7rem] font-bold leading-none tracking-[-0.02em] text-ink">
-            {totalLosses}
-          </div>
-        </div>
-        <div className="rounded-2xl bg-card border-2 border-black/[0.06] px-4 py-3.5">
-          <div className="text-[0.58rem] font-semibold uppercase tracking-[0.12em] text-ink-light">
-            Patte
-          </div>
-          <div className="mt-1 font-display text-[1.7rem] font-bold leading-none tracking-[-0.02em] text-ink">
-            {totalDraws}
-          </div>
-        </div>
-      </section>
+      </div>
 
-      <section className="mb-8 opacity-0 animate-pop [animation-delay:0.2s]">
-        <h2 className="mb-3 px-1 font-display text-[0.78rem] font-bold uppercase tracking-[0.1em] text-ink-mid">
-          Head-to-head
-        </h2>
-        <HeadToHead opponents={opponents} />
-      </section>
-
-      <section className="opacity-0 animate-pop [animation-delay:0.25s]">
-        <h2 className="mb-3 px-1 font-display text-[0.78rem] font-bold uppercase tracking-[0.1em] text-ink-mid">
-          Tappe giocate
-        </h2>
-        {sorted.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-black/[0.08] px-5 py-8 text-center text-[0.85rem] text-ink-light">
-            Nessuna tappa giocata.
+      <div className="lg:grid lg:grid-cols-[1.5fr_1fr] lg:items-start lg:gap-8">
+        <div>
+          <div className="lbl grid grid-cols-[48px_1fr_auto_auto] gap-2.5 pr-4 pb-2 pl-3 lg:grid-cols-[52px_1fr_auto_auto] lg:gap-3 lg:pr-5 lg:pb-2.5">
+            <span />
+            <span>Tappe giocate</span>
+            <span>Pos.</span>
+            <span className="min-w-[34px] text-center lg:min-w-[38px]">Pt</span>
           </div>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {sorted.map((entry) => {
-              const { event } = entry;
-              const isPodium = entry.rank <= 3;
-              return (
-                <li key={event.id}>
-                  <Link
-                    href={`/events/${event.id}`}
-                    className="group flex items-center gap-3 rounded-2xl bg-card border-2 border-black/[0.06] px-4 py-3.5 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[0_10px_30px_rgba(0,0,0,0.06)] sm:px-5 sm:py-4"
-                  >
-                    <div
-                      className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] text-[0.85rem] font-bold ${
-                        isPodium
-                          ? "bg-red-bg text-red-accent"
-                          : "bg-black/[0.04] text-ink-mid"
-                      }`}
-                    >
-                      #{entry.rank}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[0.92rem] font-semibold text-ink sm:text-[0.98rem]">
-                        {shortEventName(event.name)}
-                      </div>
-                      <div className="text-[0.66rem] text-ink-light">
-                        {formatEventDate(event.played_at)} · {entry.wins}V ·{" "}
-                        {entry.losses}S · {entry.draws}P
-                        {entry.byes > 0 ? ` · ${entry.byes}B` : ""}
-                      </div>
-                    </div>
-                    <div className="flex-shrink-0 text-right">
-                      <div className="font-display text-[1.25rem] font-bold tabular-nums tracking-[-0.02em] text-ink">
-                        {entry.points}
-                      </div>
-                      <div className="text-[0.58rem] font-semibold uppercase tracking-[0.1em] text-ink-light">
-                        Punti
-                      </div>
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+          <div className="card">
+            {tappe.length === 0 ? (
+              <EmptyRow>Nessuna tappa giocata.</EmptyRow>
+            ) : (
+              <ul>
+                {tappe.map((t) => {
+                  const prize = t.points >= PRIZE_POINTS;
+                  return (
+                    <li key={t.event.id} className="border-b border-ink/8 last:border-b-0">
+                      <Link
+                        href={`/events/${t.event.id}`}
+                        className="row-link grid grid-cols-[48px_1fr_auto_auto] items-center gap-2.5 py-2.5 pr-4 pl-3 lg:grid-cols-[52px_1fr_auto_auto] lg:gap-3 lg:py-3 lg:pr-5"
+                      >
+                        <DateTile iso={t.event.played_at} />
+                        <div className="min-w-0">
+                          <div className="truncate text-[14px] font-bold leading-[1.2] lg:text-[15px]">
+                            {tappaTitle(t.event.name)}
+                          </div>
+                          <div className="tn mt-px text-[12px] text-ink/50">
+                            {record(t.wins, t.losses, t.draws)}
+                          </div>
+                        </div>
+                        <span
+                          className={`tn text-[18px] font-extrabold tracking-[-0.03em] lg:text-[20px] ${
+                            t.rank <= 3 ? "text-accent" : ""
+                          }`}
+                        >
+                          {pad2(t.rank)}
+                        </span>
+                        <PointsChip points={t.points} prize={prize} />
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          {/* Stagione — mobile */}
+          <div className="lg:hidden">
+            <SectionHead
+              className="mt-7 mb-2.5"
+              title="Stagione"
+              aside={`${matches} ${matches === 1 ? "partita" : "partite"}`}
+            />
+            <div className="mb-2.5 grid grid-cols-4 gap-2">
+              {[
+                ["V", w, ""],
+                ["S", l, ""],
+                ["P", d, ""],
+                ["Win", winPct(w, l, d), "text-accent"],
+              ].map(([label, value, cls]) => (
+                <div
+                  key={label}
+                  className="rounded-[18px] border border-ink/10 bg-white p-3"
+                >
+                  <div className="lbl">{label}</div>
+                  <div className={`tn text-[26px] font-extrabold tracking-[-0.03em] ${cls}`}>
+                    {value}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-col gap-2 rounded-[18px] border border-ink/10 bg-white px-4 py-3">
+              <Bar w={w} l={l} d={d} className="h-2" />
+              <Legend />
+            </div>
+          </div>
+
+        </div>
+
+        {/* Stagione — desktop */}
+        <div className="hidden lg:block">
+          <div className="lbl flex items-baseline justify-between px-5 pb-2.5">
+            <span>Stagione</span>
+            <span>V-S-P</span>
+          </div>
+          <div className="flex flex-col gap-4 rounded-[18px] border border-ink/10 bg-white px-5 py-4">
+            <div className="flex gap-6">
+              {[
+                ["V", w],
+                ["S", l],
+                ["P", d],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <div className="lbl">{label}</div>
+                  <div className="tn text-[28px] font-extrabold tracking-[-0.03em]">
+                    {value}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-col gap-2">
+              <Bar w={w} l={l} d={d} className="h-2.5" />
+              <Legend />
+            </div>
+          </div>
+        </div>
+      </div>
     </main>
   );
 }
