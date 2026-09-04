@@ -4,10 +4,10 @@ import BackLink from "../../components/BackLink";
 import {
   AccentCard,
   Chip,
-  DateTile,
   EmptyRow,
   PAGE,
   PointsChip,
+  PositionTile,
   SectionHead,
   TopBar,
 } from "../../components/ui";
@@ -164,10 +164,9 @@ export default async function PlayerDetailPage(
 
       <div className="lg:grid lg:grid-cols-[1.5fr_1fr] lg:items-start lg:gap-8">
         <div>
-          <div className="lbl grid grid-cols-[48px_1fr_auto_auto] gap-2.5 pr-4 pb-2 pl-3 lg:grid-cols-[52px_1fr_auto_auto] lg:gap-3 lg:pr-5 lg:pb-2.5">
+          <div className="lbl grid grid-cols-[48px_1fr_auto] gap-2.5 pr-4 pb-2 pl-3 lg:grid-cols-[52px_1fr_auto] lg:gap-3 lg:pr-5 lg:pb-2.5">
             <span />
             <span>Tappe giocate</span>
-            <span>Pos.</span>
             <span className="min-w-[34px] text-center lg:min-w-[38px]">Pt</span>
           </div>
           <div className="card">
@@ -181,9 +180,9 @@ export default async function PlayerDetailPage(
                     <li key={t.event.id} className="border-b border-ink/8 last:border-b-0">
                       <Link
                         href={`/events/${t.event.id}`}
-                        className="row-link grid grid-cols-[48px_1fr_auto_auto] items-center gap-2.5 py-2.5 pr-4 pl-3 lg:grid-cols-[52px_1fr_auto_auto] lg:gap-3 lg:py-3 lg:pr-5"
+                        className="row-link grid grid-cols-[48px_1fr_auto] items-center gap-2.5 py-2.5 pr-4 pl-3 lg:grid-cols-[52px_1fr_auto] lg:gap-3 lg:py-3 lg:pr-5"
                       >
-                        <DateTile iso={t.event.played_at} />
+                        <PositionTile rank={t.rank} prize={prize} />
                         <div className="min-w-0">
                           <div className="truncate text-[14px] font-bold leading-[1.2] lg:text-[15px]">
                             {tappaTitle(t.event.name)}
@@ -192,13 +191,6 @@ export default async function PlayerDetailPage(
                             {record(t.wins, t.losses, t.draws)}
                           </div>
                         </div>
-                        <span
-                          className={`tn text-[18px] font-extrabold tracking-[-0.03em] lg:text-[20px] ${
-                            t.rank <= 3 ? "text-accent" : ""
-                          }`}
-                        >
-                          {pad2(t.rank)}
-                        </span>
                         <PointsChip points={t.points} prize={prize} />
                       </Link>
                     </li>

@@ -92,6 +92,18 @@ export function DateTile({ iso, ghost = false }: { iso: string; ghost?: boolean 
   );
 }
 
+export function PositionTile({ rank, prize }: { rank: number; prize: boolean }) {
+  return (
+    <span
+      className={`tn grid h-11 w-12 place-items-center rounded-xl text-center text-[18px] font-extrabold leading-none lg:h-[46px] lg:w-[52px] lg:text-[20px] ${
+        prize ? "bg-tint text-accent" : "bg-ink/5 text-ink"
+      }`}
+    >
+      {pad2(rank)}
+    </span>
+  );
+}
+
 export function PointsChip({
   points,
   prize,
