@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useRef, type KeyboardEvent, type ReactNode } from "react";
 import type { Pairing, Standing } from "../../lib/api";
-import { pad2, record } from "../../lib/format";
+import { record } from "../../lib/format";
 import { EmptyRow, PointsChip } from "../../components/ui";
 
 const PRIZE_POINTS = 9;
@@ -111,7 +111,7 @@ function FinalePanel({ standings }: { standings: Standing[] }) {
                         prize ? "text-accent" : ""
                       }`}
                     >
-                      {pad2(s.rank)}
+                      {s.rank}
                     </span>
                     <span className="truncate text-[14px] font-bold capitalize lg:text-[15px]">
                       {s.player_name}

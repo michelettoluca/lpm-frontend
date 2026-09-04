@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { dateTile, pad2 } from "../lib/format";
+import { dateTile } from "../lib/format";
 
 /** Page container: mobile ≤640, centered ≤560 on tablets, 1280 frame on desktop. */
 export const PAGE =
@@ -99,8 +99,10 @@ export function PositionTile({ rank, prize }: { rank: number; prize: boolean }) 
         prize ? "bg-tint text-accent" : "bg-ink/5 text-ink"
       }`}
     >
-      {pad2(rank)}
-      <span className="text-[12px] font-semibold lg:text-[13px]">°</span>
+      <span>
+        {rank}
+        <span className="text-[12px] font-semibold lg:text-[13px]">°</span>
+      </span>
     </span>
   );
 }
@@ -186,7 +188,7 @@ export function RankRow({
         className={`row-link grid grid-cols-[40px_1fr_auto] items-center gap-2 px-4 py-[11px] lg:grid-cols-[48px_1fr_auto] lg:gap-3 lg:px-5 ${desktopPadding}`}
       >
         <span className="tn text-[22px] font-extrabold leading-none tracking-[-0.03em] text-accent lg:text-[24px]">
-          {pad2(rank)}
+          {rank}
         </span>
         <div className="min-w-0">
           <div className="truncate text-[15px] font-bold capitalize leading-[1.2] lg:text-[16px]">

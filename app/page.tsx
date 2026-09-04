@@ -97,23 +97,17 @@ function TappeSection({
   played,
   upcoming,
   playerCounts,
-  eventsRaw,
   className = "",
 }: {
   byDateDesc: EventSummary[];
   played: EventSummary[];
   upcoming: EventSummary[];
   playerCounts: number[];
-  eventsRaw: EventSummary[];
   className?: string;
 }) {
   return (
     <section className={className}>
-      <SectionHead
-        className="mb-2.5 lg:mb-3"
-        title="Tappe"
-        aside={`${eventsRaw.length} totali`}
-      />
+      <SectionHead className="mb-2.5 lg:mb-3" title="Tappe" />
       <div className="card">
         {byDateDesc.length === 0 ? (
           <EmptyRow>Nessuna tappa in programma.</EmptyRow>
@@ -231,7 +225,6 @@ export default async function Home() {
             played={played}
             upcoming={upcoming}
             playerCounts={playerCounts}
-            eventsRaw={eventsRaw}
           />
         </div>
 
@@ -274,7 +267,6 @@ export default async function Home() {
           played={played}
           upcoming={upcoming}
           playerCounts={playerCounts}
-          eventsRaw={eventsRaw}
         />
       </div>
     </main>

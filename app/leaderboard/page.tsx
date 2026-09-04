@@ -1,12 +1,11 @@
 import BackLink from "../components/BackLink";
 import { Chip, NARROW, PAGE, TopBar } from "../components/ui";
-import { getEvents, getLatestSeason, getLeaderboard } from "../lib/api";
+import { getLatestSeason, getLeaderboard } from "../lib/api";
 import ClassificaList from "./ClassificaList";
 
 export default async function LeaderboardPage() {
-  const [entries, events, season] = await Promise.all([
+  const [entries, season] = await Promise.all([
     getLeaderboard(),
-    getEvents(),
     getLatestSeason(),
   ]);
 
@@ -20,7 +19,7 @@ export default async function LeaderboardPage() {
         />
         <ClassificaList
           entries={entries}
-          meta={`${entries.length} giocatori · ${events.length} tappe`}
+          meta={`${entries.length} giocatori`}
         />
       </div>
     </main>

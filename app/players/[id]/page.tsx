@@ -20,7 +20,6 @@ import {
 } from "../../lib/api";
 import {
   isPlayed,
-  pad2,
   record,
   splitName,
   tappaTitle,
@@ -115,7 +114,7 @@ export default async function PlayerDetailPage(
         left={<BackLink href="/leaderboard" label="Classifica" />}
         right={
           <Chip rotate={-3}>
-            {seasonRank === null ? "fuori classifica" : `posizione #${pad2(seasonRank)}`}
+            {seasonRank === null ? "fuori classifica" : `posizione #${seasonRank}`}
           </Chip>
         }
       />
@@ -149,7 +148,7 @@ export default async function PlayerDetailPage(
               </div>
             </div>
           </AccentCard>
-          <Tile label="Posizione">{seasonRank === null ? "–" : pad2(seasonRank)}</Tile>
+          <Tile label="Posizione">{seasonRank === null ? "–" : seasonRank}</Tile>
           <Tile label="Tappe">
             {entries.length}
             <span className="text-[16px] font-semibold text-ink/45 lg:text-[18px]">
