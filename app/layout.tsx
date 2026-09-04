@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Archivo } from "next/font/google";
+import { getLatestSeason } from "./lib/api";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -9,10 +10,29 @@ const archivo = Archivo({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: "Lega Pauper Milano",
-  description: "Classifica Lega Pauper Milano",
-};
+const TITLE = "Lega Pauper Milano";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const season = await getLatestSeason();
+  const description = season ? `${TITLE} · ${season.name}` : TITLE;
+
+  return {
+    title: TITLE,
+    description,
+    openGraph: {
+      title: TITLE,
+      description,
+      siteName: TITLE,
+      locale: "it_IT",
+      type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title: TITLE,
+      description,
+    },
+  };
+}
 
 export default function RootLayout({
   children,
