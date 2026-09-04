@@ -214,8 +214,6 @@ export default async function Home() {
             </h1>
             <div className="mb-7 flex items-center gap-6 lg:mb-0 lg:gap-8">
               <Stat value={entries.length} label="Giocatori" />
-              <div className="h-9 w-px bg-ink/15 lg:h-11" />
-              <Stat value={eventsRaw.length} label="Tappe" />
             </div>
           </section>
 
