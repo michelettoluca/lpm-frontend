@@ -57,7 +57,7 @@ function Legend() {
         <span className="text-accent">■</span> Vinte
       </span>
       <span>
-        <span className="text-ink">■</span> Perse
+        <span className="text-ink">■</span> Sconfitte
       </span>
       <span>
         <span className="text-draw">■</span> Pari
@@ -215,23 +215,28 @@ export default async function PlayerDetailPage(
               title="Stagione"
               aside={`${matches} ${matches === 1 ? "partita" : "partite"}`}
             />
-            <div className="mb-2.5 grid grid-cols-4 gap-2">
+            <div className="mb-2 grid grid-cols-3 gap-2">
               {[
-                ["V", w, ""],
-                ["S", l, ""],
-                ["P", d, ""],
-                ["Win", winPct(w, l, d), "text-accent"],
-              ].map(([label, value, cls]) => (
+                ["V", w],
+                ["S", l],
+                ["P", d],
+              ].map(([label, value]) => (
                 <div
                   key={label}
                   className="rounded-[18px] border border-ink/10 bg-white p-3"
                 >
                   <div className="lbl">{label}</div>
-                  <div className={`tn text-[26px] font-extrabold tracking-[-0.03em] ${cls}`}>
+                  <div className="tn text-[26px] font-extrabold tracking-[-0.03em]">
                     {value}
                   </div>
                 </div>
               ))}
+            </div>
+            <div className="mb-2.5 rounded-[18px] border border-ink/10 bg-white p-3">
+              <div className="lbl">Win</div>
+              <div className="tn text-[26px] font-extrabold tracking-[-0.03em] text-accent">
+                {winPct(w, l, d)}
+              </div>
             </div>
             <div className="flex flex-col gap-2 rounded-[18px] border border-ink/10 bg-white px-4 py-3">
               <Bar w={w} l={l} d={d} className="h-2" />

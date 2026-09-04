@@ -55,7 +55,7 @@ function PodiumSide({ entry }: { entry: LeaderboardEntry }) {
       href={`/players/${entry.player_id}`}
       className="mb-2.5 block rounded-[20px] border border-ink/10 bg-white px-1.5 pt-3.5 pb-3 transition-colors hover:bg-ink/4 lg:mb-0 lg:px-2.5 lg:pt-[18px] lg:pb-4"
     >
-      <div className="truncate text-[12px] font-bold capitalize leading-[1.2] lg:text-[14px]">
+      <div className="break-words text-[12px] font-bold capitalize leading-[1.2] lg:text-[14px]">
         {entry.display_name}
       </div>
       <div className="tn mt-1.5 text-[40px] font-extrabold leading-none tracking-[-0.04em] text-accent lg:mt-2 lg:text-[52px]">
@@ -78,7 +78,7 @@ function PodiumCenter({ entry }: { entry: LeaderboardEntry }) {
         href={`/players/${entry.player_id}`}
         className="block rounded-[23px] px-2 pt-5 pb-3.5 transition-colors hover:bg-ink/4 lg:rounded-[25px] lg:px-2.5 lg:pt-[26px] lg:pb-[18px]"
       >
-        <div className="truncate text-[13px] font-extrabold capitalize leading-[1.2] lg:text-[15px]">
+        <div className="break-words text-[13px] font-extrabold capitalize leading-[1.2] lg:text-[15px]">
           {entry.display_name}
         </div>
         <div className="tn mt-1.5 text-[56px] font-extrabold leading-none tracking-[-0.05em] text-accent lg:mt-2 lg:text-[76px]">
@@ -170,25 +170,49 @@ export default async function Home() {
         right={season && <Chip rotate={-4}>{season.name}</Chip>}
       />
 
-      <div className="lg:grid lg:grid-cols-[1fr_1.1fr] lg:items-start lg:gap-x-12 lg:gap-y-10">
-        <section className="lg:col-start-1 lg:row-start-1">
-          <h1 className="mt-[26px] mb-3.5 text-[44px] font-extrabold leading-[0.95] tracking-[-0.04em] lg:mt-0 lg:mb-[22px] lg:text-[84px] lg:leading-[0.92] lg:tracking-[-0.045em]">
-            Lega Pauper
-            <br />
-            <span className="text-accent">Milano</span>
-          </h1>
-          <div className="mb-7 flex items-center gap-6 lg:mb-0 lg:gap-8">
-            <Stat value={entries.length} label="Giocatori" />
-            <div className="h-9 w-px bg-ink/15 lg:h-11" />
-            <Stat
-              value={played.length}
-              suffix={`/${eventsRaw.length}`}
-              label="Tappe"
-            />
-          </div>
-        </section>
+      <div className="lg:grid lg:grid-cols-[1fr_1.1fr] lg:items-start lg:gap-x-12">
+        <div className="lg:flex lg:flex-col lg:gap-y-10">
+          <section>
+            <h1 className="mt-[26px] mb-3.5 text-[44px] font-extrabold leading-[0.95] tracking-[-0.04em] lg:mt-0 lg:mb-[22px] lg:text-[84px] lg:leading-[0.92] lg:tracking-[-0.045em]">
+              Lega Pauper
+              <br />
+              <span className="text-accent">Milano</span>
+            </h1>
+            <div className="mb-7 flex items-center gap-6 lg:mb-0 lg:gap-8">
+              <Stat value={entries.length} label="Giocatori" />
+              <div className="h-9 w-px bg-ink/15 lg:h-11" />
+              <Stat
+                value={played.length}
+                suffix={`/${eventsRaw.length}`}
+                label="Tappe"
+              />
+            </div>
+          </section>
 
-        <section className="lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:flex lg:flex-col lg:gap-6">
+          <section className="mt-8 lg:mt-0">
+            <SectionHead
+              className="mb-2.5 lg:mb-3"
+              title="Tappe"
+              aside={`${played.length} di ${eventsRaw.length} giocate`}
+            />
+            <div className="card">
+              {byDateDesc.length === 0 ? (
+                <EmptyRow>Nessuna tappa in programma.</EmptyRow>
+              ) : (
+                <ul>
+                  {played.map((event, i) => (
+                    <TappaRow key={event.id} event={event} players={playerCounts[i]} />
+                  ))}
+                  {upcoming.map((event) => (
+                    <TappaRow key={event.id} event={event} />
+                  ))}
+                </ul>
+              )}
+            </div>
+          </section>
+        </div>
+
+        <section className="mt-8 lg:mt-0 lg:flex lg:flex-col lg:gap-6">
           {first && (
             <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)] items-end gap-2 text-center lg:gap-3">
               {second ? <PodiumSide entry={second} /> : <div />}
@@ -218,28 +242,6 @@ export default async function Home() {
               )}
             </div>
             <DashedLink href="/leaderboard">Classifica completa →</DashedLink>
-          </div>
-        </section>
-
-        <section className="mt-8 lg:col-start-1 lg:row-start-2 lg:mt-0">
-          <SectionHead
-            className="mb-2.5 lg:mb-3"
-            title="Tappe"
-            aside={`${played.length} di ${eventsRaw.length} giocate`}
-          />
-          <div className="card">
-            {byDateDesc.length === 0 ? (
-              <EmptyRow>Nessuna tappa in programma.</EmptyRow>
-            ) : (
-              <ul>
-                {played.map((event, i) => (
-                  <TappaRow key={event.id} event={event} players={playerCounts[i]} />
-                ))}
-                {upcoming.map((event) => (
-                  <TappaRow key={event.id} event={event} />
-                ))}
-              </ul>
-            )}
           </div>
         </section>
       </div>

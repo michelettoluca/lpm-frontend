@@ -90,7 +90,7 @@ function FinalePanel({ standings }: { standings: Standing[] }) {
       <div className="lbl grid grid-cols-[44px_1fr_auto_auto] gap-2.5 px-4 pb-2 lg:grid-cols-[48px_1fr_auto_auto] lg:gap-3 lg:px-5">
         <span>#</span>
         <span>Classifica finale</span>
-        <span className="text-accent">≥ {PRIZE_POINTS} pt · premi</span>
+        <span />
         <span className="min-w-[24px] text-right lg:min-w-[38px] lg:text-center">Pt</span>
       </div>
       <div className="card">
