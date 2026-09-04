@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   getEvent,
   getEvents,
+  getLatestSeason,
   getLeaderboard,
   type EventSummary,
   type LeaderboardEntry,
@@ -139,9 +140,10 @@ function TappaRow({
 }
 
 export default async function Home() {
-  const [entries, eventsRaw] = await Promise.all([
+  const [entries, eventsRaw, season] = await Promise.all([
     getLeaderboard(),
     getEvents(),
+    getLatestSeason(),
   ]);
 
   const byDateDesc = [...eventsRaw].sort(
@@ -158,14 +160,14 @@ export default async function Home() {
     ? eventYear(eventsRaw[0].played_at)
     : new Date().getFullYear();
   const [first, second, third] = entries;
-  const rest = entries.slice(3, 11);
+  const rest = entries.slice(3, 8);
 
   return (
     <main className={PAGE}>
       <TopBar
         className="lg:mb-9"
         left={<Brand year={year} />}
-        right={<Chip rotate={-4}>summer {year}</Chip>}
+        right={season && <Chip rotate={-4}>{season.name}</Chip>}
       />
 
       <div className="lg:grid lg:grid-cols-[1fr_1.1fr] lg:items-start lg:gap-x-12 lg:gap-y-10">
@@ -188,7 +190,7 @@ export default async function Home() {
 
         <section className="lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:flex lg:flex-col lg:gap-6">
           {first && (
-            <div className="grid grid-cols-[1fr_1.2fr_1fr] items-end gap-2 text-center lg:gap-3">
+            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)] items-end gap-2 text-center lg:gap-3">
               {second ? <PodiumSide entry={second} /> : <div />}
               <PodiumCenter entry={first} />
               {third ? <PodiumSide entry={third} /> : <div />}
@@ -209,7 +211,6 @@ export default async function Home() {
                       name={entry.display_name}
                       sub={tappeLabel(entry.events_played)}
                       points={entry.total_points}
-                      className={i >= 5 ? "hidden lg:block" : ""}
                       desktopPadding="lg:py-[13px]"
                     />
                   ))}

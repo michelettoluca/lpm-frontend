@@ -1,15 +1,16 @@
 import BackLink from "../components/BackLink";
 import { Chip, NARROW, PAGE, TopBar } from "../components/ui";
-import { getEvents, getLeaderboard } from "../lib/api";
-import { eventYear, isPlayed } from "../lib/format";
+import { getEvents, getLatestSeason, getLeaderboard } from "../lib/api";
+import { isPlayed } from "../lib/format";
 import ClassificaList from "./ClassificaList";
 
 export default async function LeaderboardPage() {
-  const [entries, events] = await Promise.all([getLeaderboard(), getEvents()]);
+  const [entries, events, season] = await Promise.all([
+    getLeaderboard(),
+    getEvents(),
+    getLatestSeason(),
+  ]);
   const played = events.filter((e) => isPlayed(e.played_at)).length;
-  const year = events[0]
-    ? eventYear(events[0].played_at)
-    : new Date().getFullYear();
 
   return (
     <main className={PAGE}>
@@ -17,7 +18,7 @@ export default async function LeaderboardPage() {
         <TopBar
           className="lg:mb-7"
           left={<BackLink href="/" label="Home" />}
-          right={<Chip rotate={-4}>summer {year}</Chip>}
+          right={season && <Chip rotate={-4}>{season.name}</Chip>}
         />
         <ClassificaList
           entries={entries}

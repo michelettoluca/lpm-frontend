@@ -1,6 +1,13 @@
 const BASE = "https://api.legapaupermilano.it";
 export const SEASON_ID = 1;
 
+export type Season = {
+  id: number;
+  name: string;
+  started_at: string;
+  ended_at: string | null;
+};
+
 export type LeaderboardEntry = {
   player_id: number;
   display_name: string;
@@ -96,6 +103,17 @@ async function get<T>(path: string): Promise<T | null> {
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
   return res.json();
+}
+
+export async function getSeasons(): Promise<Season[]> {
+  return (await get<Season[]>(`/seasons`)) ?? [];
+}
+
+/** Most recently created season, i.e. the one with the highest id. */
+export async function getLatestSeason(): Promise<Season | null> {
+  const seasons = await getSeasons();
+  if (seasons.length === 0) return null;
+  return seasons.reduce((latest, s) => (s.id > latest.id ? s : latest));
 }
 
 export async function getLeaderboard(): Promise<LeaderboardEntry[]> {

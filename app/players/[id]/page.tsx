@@ -13,12 +13,12 @@ import {
 } from "../../components/ui";
 import {
   getEvents,
+  getLatestSeason,
   getLeaderboard,
   getPlayer,
   getPlayerEvents,
 } from "../../lib/api";
 import {
-  eventYear,
   isPlayed,
   pad2,
   record,
@@ -81,11 +81,12 @@ export default async function PlayerDetailPage(
   props: PageProps<"/players/[id]">,
 ) {
   const { id } = await props.params;
-  const [player, entries, leaderboard, events] = await Promise.all([
+  const [player, entries, leaderboard, events, season] = await Promise.all([
     getPlayer(id),
     getPlayerEvents(id),
     getLeaderboard(),
     getEvents(),
+    getLatestSeason(),
   ]);
   if (!player) notFound();
 
@@ -105,9 +106,6 @@ export default async function PlayerDetailPage(
   const d = entries.reduce((s, e) => s + e.draws, 0);
   const matches = w + l + d;
   const playedSoFar = events.filter((e) => isPlayed(e.played_at)).length;
-  const year = events[0]
-    ? eventYear(events[0].played_at)
-    : new Date().getFullYear();
   const { first, last } = splitName(player.display_name);
 
   return (
@@ -135,7 +133,7 @@ export default async function PlayerDetailPage(
             )}
           </h1>
           <div className="mb-[18px] text-[13px] text-ink/60 lg:mb-0 lg:text-[14px]">
-            Lega Pauper Milano · Summer {year}
+            Lega Pauper Milano{season && ` · ${season.name}`}
             <span className="hidden lg:inline">
               {" "}· {matches} {matches === 1 ? "partita" : "partite"}
             </span>
