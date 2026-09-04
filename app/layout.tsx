@@ -43,6 +43,9 @@ export async function generateMetadata(): Promise<Metadata> {
       title: TITLE,
       description,
     },
+    verification: {
+      google: "b6GurfUaQuG9JQi-remizUCQOpN4SjYNFyU8_RtG3-o",
+    },
   };
 }
 
