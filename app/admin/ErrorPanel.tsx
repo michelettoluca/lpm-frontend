@@ -40,13 +40,12 @@ export function ErrorPanel({
   onUseReset?: () => void;
 }) {
   switch (error.kind) {
-    case "not_configured":
+    case "missing_key":
       return (
-        <Panel title="Chiave admin non configurata">
+        <Panel title="Chiave admin mancante">
           <p>
-            Questo server web non ha una <code>ADMIN_API_KEY</code>, quindi non
-            può firmare le richieste admin. Va impostata nell&apos;ambiente del
-            server e poi serve un riavvio.
+            La richiesta è partita senza chiave. Scrivila nel campo in cima alla
+            pagina e riprova.
           </p>
           <Raw message={error.message} />
         </Panel>
@@ -68,9 +67,9 @@ export function ErrorPanel({
       return (
         <Panel title="Chiave admin rifiutata">
           <p>
-            Il backend ha risposto che la chiave non è valida. Controlla il
-            valore di <code>ADMIN_API_KEY</code> su questo server web: se è
-            stata ruotata, va aggiornata anche qui.
+            Il backend ha risposto che la chiave non è valida. Controlla di
+            averla scritta per intero, senza spazi in fondo. Se è stata ruotata
+            di recente, chiedi quella nuova.
           </p>
           <Raw message={error.message} />
         </Panel>

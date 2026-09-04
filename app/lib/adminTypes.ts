@@ -1,13 +1,13 @@
 /**
  * Types shared between the admin proxy routes and the client UI.
  *
- * Kept apart from `adminApi.ts` so Client Components can import them without
- * pulling in the module that reads `ADMIN_API_KEY`.
+ * Kept apart from `adminApi.ts` so Client Components import only types, never
+ * the module that talks to the upstream API.
  */
 
 /** Discriminator the client UI switches on to pick an error presentation. */
 export type AdminErrorKind =
-  | "not_configured"
+  | "missing_key"
   | "unauthorized"
   | "disabled"
   | "conflict"

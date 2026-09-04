@@ -14,16 +14,21 @@ function isAdminError(value: unknown): value is AdminError {
 }
 
 /**
- * Call one of our own `/api/admin/*` proxy routes. Never called with a retry
- * wrapper: every admin action here is destructive or non-idempotent.
+ * Call one of our own `/api/admin/*` proxy routes, passing along the key the
+ * organiser typed. Never called with a retry wrapper: every admin action here
+ * is destructive or non-idempotent.
  */
 export async function callAdmin<T>(
   url: string,
+  apiKey: string,
   init: RequestInit,
 ): Promise<CallResult<T>> {
   let res: Response;
   try {
-    res = await fetch(url, init);
+    res = await fetch(url, {
+      ...init,
+      headers: { ...init.headers, "X-Admin-Key": apiKey },
+    });
   } catch {
     return {
       ok: false,

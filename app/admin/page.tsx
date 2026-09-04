@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import BackLink from "../components/BackLink";
 import { Brand, PAGE, NARROW, TopBar } from "../components/ui";
-import { adminKeyConfigured, listSeasons } from "../lib/adminApi";
+import { listSeasons } from "../lib/adminApi";
 import type { Season } from "../lib/adminTypes";
-import { DangerZone } from "./DangerZone";
-import { ImportForm } from "./ImportForm";
+import { AdminPanel } from "./AdminPanel";
 
 export const metadata: Metadata = {
   title: "Admin · Lega Pauper Milano",
@@ -48,14 +47,6 @@ export default async function AdminPage() {
           <span className="block text-accent">tornei</span>
         </h1>
 
-        {!adminKeyConfigured() && (
-          <Notice title="Chiave admin non configurata">
-            Questo server web non ha una <code>ADMIN_API_KEY</code>
-            nell&apos;ambiente, quindi import e reset falliranno. Impostala e
-            riavvia il server.
-          </Notice>
-        )}
-
         {seasonsFailed && (
           <Notice title="Stagioni non caricate">
             Non è stato possibile leggere l&apos;elenco delle stagioni
@@ -64,8 +55,7 @@ export default async function AdminPage() {
           </Notice>
         )}
 
-        <ImportForm initialSeasons={seasons} />
-        <DangerZone />
+        <AdminPanel initialSeasons={seasons} />
       </div>
     </main>
   );

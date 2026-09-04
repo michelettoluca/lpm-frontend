@@ -1,10 +1,13 @@
 import { importMelee } from "@/app/lib/adminApi";
-import { badRequest, toResponse } from "@/app/lib/adminRoute";
+import { badRequest, missingKey, readKey, toResponse } from "@/app/lib/adminRoute";
 
 /** The API caps the request body at 16 MiB. Reject early rather than upload and fail. */
 const MAX_BODY_BYTES = 16 * 1024 * 1024;
 
 export async function POST(request: Request) {
+  const apiKey = readKey(request);
+  if (!apiKey) return missingKey();
+
   const declaredSize = Number(request.headers.get("content-length"));
   if (Number.isFinite(declaredSize) && declaredSize > MAX_BODY_BYTES) {
     return badRequest({
@@ -84,5 +87,5 @@ export async function POST(request: Request) {
     upstream.set("confirm", "RESET");
   }
 
-  return toResponse(await importMelee(seasonId, upstream));
+  return toResponse(await importMelee(apiKey, seasonId, upstream));
 }

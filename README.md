@@ -41,33 +41,27 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 organiser downloads from the tournament page on melee.gg, and holds the
 destructive database reset.
 
-### `ADMIN_API_KEY`
+### The admin key
 
 The admin endpoints on `https://api.legapaupermilano.it` are protected by a
-shared secret sent as `X-API-Key`. It must stay server-side, both because it is
-a secret and because the Go API has no CORS middleware, so the browser cannot
-call it directly anyway.
+shared secret sent as `X-API-Key`.
 
-Set it in the server environment — never in the repo, and never with a
-`NEXT_PUBLIC_` prefix:
+There is no `ADMIN_API_KEY` environment variable and nothing to configure on the
+server. The organiser types the key into the field at the top of `/admin`, and
+it is held in component state for as long as the page is open — not in
+`localStorage`, not in a cookie, not on disk. Reloading the page loses it, which
+is deliberate: nothing is left behind on a shared machine.
 
-```bash
-# local development
-echo 'ADMIN_API_KEY=<the key>' > .env.local
-```
-
-In production it comes from the `ADMIN_API_KEY` repository secret and has to be
-present in the container environment on the deploy host (`/opt/lpm`, the `web`
-service in `docker-compose.yml`). Without it the page still renders, but says
-the key is not configured and every admin action fails.
-
-If the key ever leaks, rotate it in repo settings and re-run the deploy
+If the key ever leaks, rotate it in repo settings and re-run the backend deploy
 workflow.
 
 ### How the calls are routed
 
-The browser only ever talks to this app. Three route handlers attach the header
-and forward to the Go API:
+The browser only ever talks to this app. It sends the typed key as
+`X-Admin-Key`; three route handlers swap that for the `X-API-Key` the Go API
+expects and forward the call. The hop through the server is required regardless
+of where the key lives, because the Go API has no CORS middleware and a direct
+cross-origin request would be blocked at preflight.
 
 | Route                | Forwards to                          |
 | -------------------- | ------------------------------------ |
@@ -75,6 +69,6 @@ and forward to the Go API:
 | `/api/admin/seasons` | `POST /admin/seasons`                |
 | `/api/admin/reset`   | `POST /admin/reset?confirm=RESET`    |
 
-`app/lib/adminApi.ts` is the only module that reads the key. Do not import it
-from a Client Component — the shared types live in `app/lib/adminTypes.ts` for
-that.
+`app/lib/adminApi.ts` is the only module that talks to the upstream API, and it
+takes the key as an argument rather than reading it from anywhere. Client
+components import types from `app/lib/adminTypes.ts`.

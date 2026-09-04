@@ -26,7 +26,13 @@ function defaultSeason(seasons: Season[]): number | null {
   return (running ?? seasons[0])?.id ?? null;
 }
 
-export function ImportForm({ initialSeasons }: { initialSeasons: Season[] }) {
+export function ImportForm({
+  initialSeasons,
+  apiKey,
+}: {
+  initialSeasons: Season[];
+  apiKey: string;
+}) {
   const [seasons, setSeasons] = useState(initialSeasons);
   const [seasonId, setSeasonId] = useState<number | null>(
     defaultSeason(initialSeasons),
@@ -60,7 +66,11 @@ export function ImportForm({ initialSeasons }: { initialSeasons: Season[] }) {
   };
 
   const ready =
-    seasonId !== null && name.trim() !== "" && standings !== null && matches !== null;
+    apiKey !== "" &&
+    seasonId !== null &&
+    name.trim() !== "" &&
+    standings !== null &&
+    matches !== null;
 
   const fieldError = (field: string) =>
     error?.kind === "bad_request" && error.field === field ? error.message : null;
@@ -81,7 +91,7 @@ export function ImportForm({ initialSeasons }: { initialSeasons: Season[] }) {
       body.set("confirm", "RESET");
     }
 
-    const res = await callAdmin<ImportResult>("/api/admin/import", {
+    const res = await callAdmin<ImportResult>("/api/admin/import", apiKey, {
       method: "POST",
       body,
     });
@@ -110,12 +120,12 @@ export function ImportForm({ initialSeasons }: { initialSeasons: Season[] }) {
 
   async function createSeason() {
     const trimmed = newSeasonName.trim();
-    if (!trimmed || creatingSeason) return;
+    if (!trimmed || creatingSeason || apiKey === "") return;
 
     setCreatingSeason(true);
     setSeasonError(null);
 
-    const res = await callAdmin<Season>("/api/admin/seasons", {
+    const res = await callAdmin<Season>("/api/admin/seasons", apiKey, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: trimmed }),
@@ -197,7 +207,9 @@ export function ImportForm({ initialSeasons }: { initialSeasons: Season[] }) {
                 <button
                   type="button"
                   onClick={() => void createSeason()}
-                  disabled={newSeasonName.trim() === "" || creatingSeason}
+                  disabled={
+                    newSeasonName.trim() === "" || creatingSeason || apiKey === ""
+                  }
                   className="shrink-0 rounded-xl bg-accent px-3.5 text-[13px] font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   {creatingSeason ? "…" : "Crea"}
@@ -305,7 +317,9 @@ export function ImportForm({ initialSeasons }: { initialSeasons: Season[] }) {
 
         {!ready && !pending && (
           <p className="text-center text-[12px] text-ink/45">
-            Servono stagione, nome e entrambi i file.
+            {apiKey === ""
+              ? "Inserisci la chiave admin qui sopra."
+              : "Servono stagione, nome e entrambi i file."}
           </p>
         )}
       </form>

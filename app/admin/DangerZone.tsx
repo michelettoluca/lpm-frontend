@@ -24,7 +24,7 @@ function describe(deleted: DeletedCounts): string {
   return `${parts.slice(0, -1).join(", ")} e ${parts[parts.length - 1]}`;
 }
 
-export function DangerZone() {
+export function DangerZone({ apiKey }: { apiKey: string }) {
   const [includeSeasons, setIncludeSeasons] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -37,7 +37,7 @@ export function DangerZone() {
     setError(null);
     setResult(null);
 
-    const res = await callAdmin<ResetResult>("/api/admin/reset", {
+    const res = await callAdmin<ResetResult>("/api/admin/reset", apiKey, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ confirm: "RESET", include_seasons: includeSeasons }),
@@ -90,7 +90,7 @@ export function DangerZone() {
         <button
           type="button"
           onClick={() => setConfirmOpen(true)}
-          disabled={pending}
+          disabled={pending || apiKey === ""}
           className="mt-4 w-full rounded-xl bg-accent px-4 py-3 text-[15px] font-extrabold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {pending ? "Cancellazione in corso…" : "Svuota il database"}

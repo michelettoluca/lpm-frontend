@@ -1,7 +1,10 @@
 import { createSeason } from "@/app/lib/adminApi";
-import { badRequest, toResponse } from "@/app/lib/adminRoute";
+import { badRequest, missingKey, readKey, toResponse } from "@/app/lib/adminRoute";
 
 export async function POST(request: Request) {
+  const apiKey = readKey(request);
+  if (!apiKey) return missingKey();
+
   let name: unknown;
   try {
     const body: unknown = await request.json();
@@ -19,5 +22,5 @@ export async function POST(request: Request) {
     });
   }
 
-  return toResponse(await createSeason(trimmed));
+  return toResponse(await createSeason(apiKey, trimmed));
 }
