@@ -92,6 +92,46 @@ function PodiumCenter({ entry }: { entry: LeaderboardEntry }) {
   );
 }
 
+function TappeSection({
+  byDateDesc,
+  played,
+  upcoming,
+  playerCounts,
+  eventsRaw,
+  className = "",
+}: {
+  byDateDesc: EventSummary[];
+  played: EventSummary[];
+  upcoming: EventSummary[];
+  playerCounts: number[];
+  eventsRaw: EventSummary[];
+  className?: string;
+}) {
+  return (
+    <section className={className}>
+      <SectionHead
+        className="mb-2.5 lg:mb-3"
+        title="Tappe"
+        aside={`${played.length} di ${eventsRaw.length} giocate`}
+      />
+      <div className="card">
+        {byDateDesc.length === 0 ? (
+          <EmptyRow>Nessuna tappa in programma.</EmptyRow>
+        ) : (
+          <ul>
+            {played.map((event, i) => (
+              <TappaRow key={event.id} event={event} players={playerCounts[i]} />
+            ))}
+            {upcoming.map((event) => (
+              <TappaRow key={event.id} event={event} />
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
+  );
+}
+
 function TappaRow({
   event,
   players,
@@ -189,27 +229,14 @@ export default async function Home() {
             </div>
           </section>
 
-          <section className="mt-8 lg:mt-0">
-            <SectionHead
-              className="mb-2.5 lg:mb-3"
-              title="Tappe"
-              aside={`${played.length} di ${eventsRaw.length} giocate`}
-            />
-            <div className="card">
-              {byDateDesc.length === 0 ? (
-                <EmptyRow>Nessuna tappa in programma.</EmptyRow>
-              ) : (
-                <ul>
-                  {played.map((event, i) => (
-                    <TappaRow key={event.id} event={event} players={playerCounts[i]} />
-                  ))}
-                  {upcoming.map((event) => (
-                    <TappaRow key={event.id} event={event} />
-                  ))}
-                </ul>
-              )}
-            </div>
-          </section>
+          <TappeSection
+            className="mt-8 hidden lg:mt-0 lg:block"
+            byDateDesc={byDateDesc}
+            played={played}
+            upcoming={upcoming}
+            playerCounts={playerCounts}
+            eventsRaw={eventsRaw}
+          />
         </div>
 
         <section className="mt-8 lg:mt-0 lg:flex lg:flex-col lg:gap-6">
@@ -244,6 +271,15 @@ export default async function Home() {
             <DashedLink href="/leaderboard">Classifica completa →</DashedLink>
           </div>
         </section>
+
+        <TappeSection
+          className="mt-8 lg:hidden"
+          byDateDesc={byDateDesc}
+          played={played}
+          upcoming={upcoming}
+          playerCounts={playerCounts}
+          eventsRaw={eventsRaw}
+        />
       </div>
     </main>
   );
