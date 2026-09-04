@@ -1,7 +1,6 @@
 import BackLink from "../components/BackLink";
 import { Chip, NARROW, PAGE, TopBar } from "../components/ui";
 import { getEvents, getLatestSeason, getLeaderboard } from "../lib/api";
-import { isPlayed } from "../lib/format";
 import ClassificaList from "./ClassificaList";
 
 export default async function LeaderboardPage() {
@@ -10,7 +9,6 @@ export default async function LeaderboardPage() {
     getEvents(),
     getLatestSeason(),
   ]);
-  const played = events.filter((e) => isPlayed(e.played_at)).length;
 
   return (
     <main className={PAGE}>
@@ -22,7 +20,7 @@ export default async function LeaderboardPage() {
         />
         <ClassificaList
           entries={entries}
-          meta={`${entries.length} giocatori · ${played} di ${events.length} tappe`}
+          meta={`${entries.length} giocatori · ${events.length} tappe`}
         />
       </div>
     </main>

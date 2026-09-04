@@ -112,7 +112,7 @@ function TappeSection({
       <SectionHead
         className="mb-2.5 lg:mb-3"
         title="Tappe"
-        aside={`${played.length} di ${eventsRaw.length} giocate`}
+        aside={`${eventsRaw.length} totali`}
       />
       <div className="card">
         {byDateDesc.length === 0 ? (
@@ -221,11 +221,7 @@ export default async function Home() {
             <div className="mb-7 flex items-center gap-6 lg:mb-0 lg:gap-8">
               <Stat value={entries.length} label="Giocatori" />
               <div className="h-9 w-px bg-ink/15 lg:h-11" />
-              <Stat
-                value={played.length}
-                suffix={`/${eventsRaw.length}`}
-                label="Tappe"
-              />
+              <Stat value={eventsRaw.length} label="Tappe" />
             </div>
           </section>
 
