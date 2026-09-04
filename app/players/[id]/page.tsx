@@ -123,8 +123,8 @@ export default async function PlayerDetailPage(
       />
 
       <div className="lg:mb-9 lg:grid lg:grid-cols-[1fr_auto] lg:items-end lg:gap-12">
-        <div>
-          <h1 className="mt-[26px] mb-1.5 text-[44px] font-extrabold capitalize leading-[0.95] tracking-[-0.04em] lg:mt-0 lg:mb-3 lg:text-[84px] lg:leading-[0.92] lg:tracking-[-0.045em]">
+        <div className="min-w-0">
+          <h1 className="mt-[26px] mb-1.5 line-clamp-2 overflow-hidden text-[44px] font-extrabold capitalize leading-[0.95] tracking-[-0.04em] break-words lg:mt-0 lg:mb-3 lg:text-[84px] lg:leading-[0.92] lg:tracking-[-0.045em]">
             {first}
             {last && (
               <>
