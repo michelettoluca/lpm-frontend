@@ -43,12 +43,12 @@ export function TopBar({
   );
 }
 
+/** Wordmark typography, shared so anything sitting beside the brand matches it. */
+export const BRAND_TEXT =
+  "text-[12px] font-extrabold tracking-[0.04em] lg:text-[14px]";
+
 export function Brand({ year }: { year: number }) {
-  return (
-    <span className="text-[12px] font-extrabold tracking-[0.04em] lg:text-[14px]">
-      LPM ✦ {year}
-    </span>
-  );
+  return <span className={BRAND_TEXT}>LPM ✦ {year}</span>;
 }
 
 /** Accent-edged card: 1.5px accent frame with soft glow around a white body. */

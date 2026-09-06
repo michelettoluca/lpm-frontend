@@ -11,6 +11,7 @@ import { eventYear, isCompleted, tappaTitle } from "./lib/format";
 import {
   AccentCard,
   Brand,
+  BRAND_TEXT,
   Chip,
   DashedLink,
   DateTile,
@@ -110,7 +111,6 @@ function TappeSection({
         <div className="card">
           <EmptyRow>Nessuna tappa in programma.</EmptyRow>
         </div>
-        <DashedLink href="/rules">Regolamento e informazioni →</DashedLink>
       </section>
     );
   }
@@ -150,8 +150,6 @@ function TappeSection({
           </ul>
         )}
       </div>
-
-      <DashedLink href="/rules">Regolamento e informazioni →</DashedLink>
     </section>
   );
 }
@@ -226,7 +224,17 @@ export default async function Home() {
     <main className={PAGE}>
       <TopBar
         className="lg:mb-9"
-        left={<Brand year={year} />}
+        left={
+          <div className="flex items-center gap-3 lg:gap-4">
+            <Brand year={year} />
+            <Link
+              href="/rules"
+              className={`${BRAND_TEXT} transition-colors hover:text-accent`}
+            >
+              Regolamento
+            </Link>
+          </div>
+        }
         right={season && <Chip rotate={-4}>{season.name}</Chip>}
       />
 
