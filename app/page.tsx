@@ -110,6 +110,7 @@ function TappeSection({
         <div className="card">
           <EmptyRow>Nessuna tappa in programma.</EmptyRow>
         </div>
+        <DashedLink href="/rules">Regolamento e informazioni →</DashedLink>
       </section>
     );
   }
@@ -149,6 +150,8 @@ function TappeSection({
           </ul>
         )}
       </div>
+
+      <DashedLink href="/rules">Regolamento e informazioni →</DashedLink>
     </section>
   );
 }
