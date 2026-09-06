@@ -2,7 +2,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import BackLink from "../../components/BackLink";
 import {
-  AccentCard,
   Chip,
   EmptyRow,
   PAGE,
@@ -19,7 +18,7 @@ import {
   getPlayerEvents,
 } from "../../lib/api";
 import {
-  isPlayed,
+  isCompleted,
   record,
   splitName,
   tappaTitle,
@@ -104,7 +103,7 @@ export default async function PlayerDetailPage(
   const l = entries.reduce((s, e) => s + e.losses, 0);
   const d = entries.reduce((s, e) => s + e.draws, 0);
   const matches = w + l + d;
-  const playedSoFar = events.filter((e) => isPlayed(e.played_at)).length;
+  const playedSoFar = events.filter(isCompleted).length;
   const { first, last } = splitName(player.display_name);
 
   return (
@@ -140,14 +139,9 @@ export default async function PlayerDetailPage(
         </div>
 
         <div className="mb-[22px] grid grid-cols-3 gap-2 lg:mb-0 lg:grid-cols-[repeat(4,132px)] lg:gap-2.5">
-          <AccentCard outer="rounded-[20px]" inner="rounded-[19px]">
-            <div className="px-3 pt-3 pb-2.5 lg:px-3.5 lg:pt-3.5 lg:pb-3">
-              <div className="lbl">Punti</div>
-              <div className="tn mt-1.5 text-[30px] font-extrabold leading-none tracking-[-0.04em] text-accent lg:mt-2 lg:text-[36px]">
-                {seasonPoints}
-              </div>
-            </div>
-          </AccentCard>
+          <Tile label="Punti">
+            <span className="text-accent">{seasonPoints}</span>
+          </Tile>
           <Tile label="Posizione">{seasonRank === null ? "–" : seasonRank}</Tile>
           <Tile label="Tappe">
             {entries.length}

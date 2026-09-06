@@ -76,7 +76,7 @@ export function DateTile({ iso, ghost = false }: { iso: string; ghost?: boolean 
     <span
       className={`grid h-11 w-12 place-items-center rounded-xl text-center leading-none lg:h-[46px] lg:w-[52px] ${
         ghost
-          ? "border-[1.5px] border-dashed border-ink/35"
+          ? "border-[1.5px] border-dashed border-ink/25 text-ink/55"
           : "bg-tint text-accent"
       }`}
     >
@@ -163,7 +163,7 @@ export function DashedLink({
   );
 }
 
-/** Season-ranking row: two-digit rank, name + tappe line, points with "pts". */
+/** Season-ranking row: two-digit rank, name + tappe line, points. */
 export function RankRow({
   href,
   rank,
@@ -198,9 +198,6 @@ export function RankRow({
         </div>
         <span className="tn text-[16px] font-extrabold lg:text-[18px]">
           {points}
-          <span className="ml-[3px] text-[11px] font-semibold text-ink/50">
-            pts
-          </span>
         </span>
       </Link>
     </li>

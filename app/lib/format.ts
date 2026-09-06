@@ -73,6 +73,14 @@ export function isPlayed(iso: string, now = new Date()): boolean {
   return eventStatus(iso, now) !== "prossima";
 }
 
+/**
+ * An event counts as completed once results are attached. Older API payloads
+ * without `has_results` fall back to the date.
+ */
+export function isCompleted(event: { has_results?: boolean; played_at: string }): boolean {
+  return event.has_results ?? isPlayed(event.played_at);
+}
+
 export function record(w: number, l: number, d: number): string {
   return `${w}-${l}-${d}`;
 }

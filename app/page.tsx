@@ -7,7 +7,7 @@ import {
   type EventSummary,
   type LeaderboardEntry,
 } from "./lib/api";
-import { eventYear, isPlayed, tappaTitle } from "./lib/format";
+import { eventYear, isCompleted, tappaTitle } from "./lib/format";
 import {
   AccentCard,
   Brand,
@@ -93,31 +93,58 @@ function PodiumCenter({ entry }: { entry: LeaderboardEntry }) {
 }
 
 function TappeSection({
-  byDateDesc,
   played,
   upcoming,
   playerCounts,
   className = "",
 }: {
-  byDateDesc: EventSummary[];
   played: EventSummary[];
   upcoming: EventSummary[];
   playerCounts: number[];
   className?: string;
 }) {
+  if (played.length === 0 && upcoming.length === 0) {
+    return (
+      <section className={className}>
+        <SectionHead className="mb-2.5 lg:mb-3" title="Tappe" />
+        <div className="card">
+          <EmptyRow>Nessuna tappa in programma.</EmptyRow>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className={className}>
-      <SectionHead className="mb-2.5 lg:mb-3" title="Tappe" />
+      <SectionHead
+        className="mb-2.5 lg:mb-3"
+        title="Tappe concluse"
+        aside={played.length > 0 ? tappeLabel(played.length) : undefined}
+      />
       <div className="card">
-        {byDateDesc.length === 0 ? (
+        {played.length === 0 ? (
+          <EmptyRow>Nessuna tappa giocata finora.</EmptyRow>
+        ) : (
+          <ul>
+            {played.map((event, i) => (
+              <TappaRow key={event.id} event={event} players={playerCounts[i]} />
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <SectionHead
+        className="mt-7 mb-2.5 lg:mt-8 lg:mb-3"
+        title="Prossime tappe"
+        aside={upcoming.length > 0 ? tappeLabel(upcoming.length) : undefined}
+      />
+      <div className="card">
+        {upcoming.length === 0 ? (
           <EmptyRow>Nessuna tappa in programma.</EmptyRow>
         ) : (
           <ul>
             {upcoming.map((event) => (
               <TappaRow key={event.id} event={event} />
-            ))}
-            {played.map((event, i) => (
-              <TappaRow key={event.id} event={event} players={playerCounts[i]} />
             ))}
           </ul>
         )}
@@ -139,17 +166,17 @@ function TappaRow({
   return (
     <li className="border-b border-ink/8 last:border-b-0">
       {upcoming ? (
-        <Link href={`/events/${event.id}`} className={`row-link ${grid}`}>
+        <Link href={`/events/${event.id}`} className={`row-link ${grid} text-ink/60`}>
           <DateTile iso={event.played_at} ghost />
           <div className="min-w-0">
             <div className="text-[14px] font-bold leading-[1.2] lg:text-[15px]">
               {tappaTitle(event.name)}
             </div>
-            <div className="mt-px text-[12px] text-ink/60">
+            <div className="mt-px text-[12px] text-ink/45">
               {event.format || "Risultati non ancora disponibili"}
             </div>
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-[0.08em] lg:text-[10px]">
+          <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-ink/45 lg:text-[10px]">
             Prossima
           </span>
         </Link>
@@ -180,12 +207,11 @@ export default async function Home() {
     getActiveSeason(),
   ]);
 
-  const byDateDesc = [...eventsRaw].sort(
-    (a, b) =>
-      new Date(b.played_at).getTime() - new Date(a.played_at).getTime(),
-  );
-  const played = byDateDesc.filter((e) => (e.has_results ?? isPlayed(e.played_at)));
-  const upcoming = byDateDesc.filter((e) => !(e.has_results ?? isPlayed(e.played_at))).reverse();
+  // A scheduled event stays "upcoming" until its results are imported, even
+  // once its date has passed.
+  const time = (e: EventSummary) => new Date(e.played_at).getTime();
+  const played = eventsRaw.filter(isCompleted).sort((a, b) => time(b) - time(a));
+  const upcoming = eventsRaw.filter((e) => !isCompleted(e)).sort((a, b) => time(a) - time(b));
   const playerCounts = await Promise.all(
     played.map((e) => getEvent(e.id).then((d) => d?.standings.length ?? 0)),
   );
@@ -214,12 +240,13 @@ export default async function Home() {
             </h1>
             <div className="mb-7 flex items-center gap-6 lg:mb-0 lg:gap-8">
               <Stat value={entries.length} label="Giocatori" />
+              <div className="h-9 w-px bg-ink/15 lg:h-11" />
+              <Stat value={played.length} suffix={`/${eventsRaw.length}`} label="Tappe" />
             </div>
           </section>
 
           <TappeSection
             className="mt-8 hidden lg:mt-0 lg:block"
-            byDateDesc={byDateDesc}
             played={played}
             upcoming={upcoming}
             playerCounts={playerCounts}
@@ -261,7 +288,6 @@ export default async function Home() {
 
         <TappeSection
           className="mt-8 lg:hidden"
-          byDateDesc={byDateDesc}
           played={played}
           upcoming={upcoming}
           playerCounts={playerCounts}
