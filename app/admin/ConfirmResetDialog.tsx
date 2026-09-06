@@ -3,9 +3,9 @@
 import { useEffect, useId, useState } from "react";
 import type { ReactNode } from "react";
 
-const WORD = "RESET";
-
 type Props = {
+  /** Word the organiser has to type. Defaults to RESET. */
+  word?: string;
   title: string;
   children: ReactNode;
   confirmLabel: string;
@@ -27,6 +27,7 @@ export function ConfirmResetDialog({ open, ...props }: Props & { open: boolean }
 }
 
 function Dialog({
+  word = "RESET",
   title,
   children,
   confirmLabel,
@@ -46,7 +47,7 @@ function Dialog({
     return () => document.removeEventListener("keydown", onKey);
   }, [pending, onCancel]);
 
-  const matches = typed === WORD;
+  const matches = typed === word;
 
   return (
     <div
@@ -73,7 +74,7 @@ function Dialog({
         </div>
 
         <label htmlFor={inputId} className="lbl mt-4 block">
-          Scrivi {WORD} per confermare
+          Scrivi {word} per confermare
         </label>
         <input
           id={inputId}
@@ -86,7 +87,7 @@ function Dialog({
           autoComplete="off"
           spellCheck={false}
           disabled={pending}
-          placeholder={WORD}
+          placeholder={word}
           className="tn mt-1.5 w-full rounded-xl border-[1.5px] border-ink/20 bg-white px-3 py-2.5 text-[15px] font-bold tracking-[0.08em] outline-none focus:border-accent disabled:opacity-60"
         />
 

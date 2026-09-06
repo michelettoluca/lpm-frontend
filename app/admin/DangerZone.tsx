@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import type { AdminError, DeletedCounts, ResetResult } from "@/app/lib/adminTypes";
-import { callAdmin } from "./client";
+import { useAdmin } from "./AdminShell";
 import { ConfirmResetDialog } from "./ConfirmResetDialog";
 import { ErrorPanel } from "./ErrorPanel";
 
@@ -24,7 +24,8 @@ function describe(deleted: DeletedCounts): string {
   return `${parts.slice(0, -1).join(", ")} e ${parts[parts.length - 1]}`;
 }
 
-export function DangerZone({ apiKey }: { apiKey: string }) {
+export function DangerZone() {
+  const { call, refresh } = useAdmin();
   const [includeSeasons, setIncludeSeasons] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -37,19 +38,21 @@ export function DangerZone({ apiKey }: { apiKey: string }) {
     setError(null);
     setResult(null);
 
-    const res = await callAdmin<ResetResult>("/api/admin/reset", apiKey, {
+    const res = await call<ResetResult>("/api/admin/reset", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ confirm: "RESET", include_seasons: includeSeasons }),
     });
 
-    setPending(false);
     if (res.ok) {
       setResult(res.data);
       setIncludeSeasons(false);
+      // Events are gone and seasons may be too: pull fresh lists for every section.
+      await refresh();
     } else {
       setError(res.error);
     }
+    setPending(false);
   }
 
   const summary = result ? describe(result.deleted) : "";
@@ -59,13 +62,13 @@ export function DangerZone({ apiKey }: { apiKey: string }) {
       <h2 className="text-[16px] font-extrabold uppercase tracking-[0.08em] text-accent">
         Zona pericolosa
       </h2>
-      <p className="mt-1.5 text-[13px] leading-[1.5] text-ink/55">
-        Svuota il database senza importare niente. Serve solo se vuoi ripartire
-        da zero: per reimportare un torneo già presente basta la casella
-        «sostituisci tutti i dati» qui sopra.
+      <p className="mt-1.5 max-w-xl text-[13px] leading-[1.5] text-ink/55">
+        Svuota il database: tutti gli eventi, i match, le classifiche e i
+        giocatori. Serve solo per ripartire da zero. Per rifare un singolo
+        torneo basta eliminare il suo evento e importarlo di nuovo.
       </p>
 
-      <div className="mt-4 rounded-[22px] border-[1.5px] border-accent bg-white p-4">
+      <div className="mt-4 max-w-xl rounded-[22px] border-[1.5px] border-accent bg-white p-4">
         <label htmlFor={seasonsId} className="flex items-start gap-2.5">
           <input
             id={seasonsId}
@@ -80,9 +83,9 @@ export function DangerZone({ apiKey }: { apiKey: string }) {
               Cancella anche le stagioni
             </span>
             <span className="mt-0.5 block text-[12px] leading-[1.4] text-ink/55">
-              Invalida tutti gli id di stagione esistenti: dopo dovrai crearne
-              una nuova prima di poter importare. Senza questa opzione le
-              stagioni restano e il prossimo import funziona subito.
+              Rimuove ogni stagione e la selezione di quella attiva: dopo dovrai
+              crearne una nuova e renderla attiva. Senza questa opzione le
+              stagioni restano e puoi programmare subito nuovi eventi.
             </span>
           </span>
         </label>
@@ -90,7 +93,7 @@ export function DangerZone({ apiKey }: { apiKey: string }) {
         <button
           type="button"
           onClick={() => setConfirmOpen(true)}
-          disabled={pending || apiKey === ""}
+          disabled={pending}
           className="mt-4 w-full rounded-xl bg-accent px-4 py-3 text-[15px] font-extrabold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
         >
           {pending ? "Cancellazione in corso…" : "Svuota il database"}
@@ -98,7 +101,7 @@ export function DangerZone({ apiKey }: { apiKey: string }) {
       </div>
 
       {result && (
-        <div className="panel-in mt-4 rounded-[18px] border-[1.5px] border-accent bg-tint p-4">
+        <div className="panel-in mt-4 max-w-xl rounded-[18px] border-[1.5px] border-accent bg-tint p-4">
           <div className="text-[13px] font-extrabold uppercase tracking-[0.06em] text-accent">
             Database svuotato
           </div>
@@ -107,8 +110,8 @@ export function DangerZone({ apiKey }: { apiKey: string }) {
           </p>
           <p className="mt-1.5 text-[12px] leading-[1.45] text-ink/55">
             {result.seasons_cleared
-              ? "Anche le stagioni sono state cancellate: creane una nuova prima del prossimo import."
-              : "Le stagioni sono state mantenute, quindi puoi importare subito."}
+              ? "Anche le stagioni sono state cancellate: creane una nuova e rendila attiva."
+              : "Le stagioni sono state mantenute."}
           </p>
         </div>
       )}
@@ -132,7 +135,7 @@ export function DangerZone({ apiKey }: { apiKey: string }) {
         </p>
         <p>
           {includeSeasons
-            ? "Anche le stagioni verranno cancellate: ogni id di stagione esistente smetterà di essere valido."
+            ? "Anche le stagioni verranno cancellate, compresa la selezione di quella attiva."
             : "Le stagioni verranno mantenute."}
         </p>
       </ConfirmResetDialog>

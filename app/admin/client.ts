@@ -13,29 +13,24 @@ function isAdminError(value: unknown): value is AdminError {
   );
 }
 
+/** Errors that mean the session is gone and the gate has to be shown again. */
+export function isAuthLoss(error: AdminError): boolean {
+  return error.kind === "missing_key" || error.kind === "unauthorized" || error.kind === "throttled";
+}
+
 /**
- * Call one of our own `/api/admin/*` proxy routes, passing along the key the
- * organiser typed. Never called with a retry wrapper: every admin action here
- * is destructive or non-idempotent.
+ * Call one of our own `/api/admin/*` proxy routes. The session cookie rides
+ * along by itself. Never wrapped in a retry: every admin action here is
+ * destructive or non-idempotent.
  */
-export async function callAdmin<T>(
-  url: string,
-  apiKey: string,
-  init: RequestInit,
-): Promise<CallResult<T>> {
+export async function callAdmin<T>(url: string, init: RequestInit = {}): Promise<CallResult<T>> {
   let res: Response;
   try {
-    res = await fetch(url, {
-      ...init,
-      headers: { ...init.headers, "X-Admin-Key": apiKey },
-    });
+    res = await fetch(url, init);
   } catch {
     return {
       ok: false,
-      error: {
-        kind: "network",
-        message: "la richiesta non è partita dal browser",
-      },
+      error: { kind: "network", message: "la richiesta non è partita dal browser" },
     };
   }
 
@@ -46,10 +41,7 @@ export async function callAdmin<T>(
     // A proxy route crashed and returned an HTML error page rather than JSON.
     return {
       ok: false,
-      error: {
-        kind: "server",
-        message: `risposta non valida dal server (HTTP ${res.status})`,
-      },
+      error: { kind: "server", message: `risposta non valida dal server (HTTP ${res.status})` },
     };
   }
 
@@ -57,9 +49,7 @@ export async function callAdmin<T>(
     const wrapped = (body as { error?: unknown })?.error;
     return {
       ok: false,
-      error: isAdminError(wrapped)
-        ? wrapped
-        : { kind: "server", message: `HTTP ${res.status}` },
+      error: isAdminError(wrapped) ? wrapped : { kind: "server", message: `HTTP ${res.status}` },
     };
   }
 

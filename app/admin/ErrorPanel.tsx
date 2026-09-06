@@ -39,10 +39,10 @@ export function ErrorPanel({
   switch (error.kind) {
     case "missing_key":
       return (
-        <Panel title="Chiave admin mancante">
+        <Panel title="Sessione scaduta">
           <p>
-            La richiesta è partita senza chiave. Scrivila nel campo in cima alla
-            pagina e riprova.
+            Non c&apos;è più una sessione admin valida. Inserisci di nuovo la
+            chiave per continuare.
           </p>
           <Raw message={error.message} />
         </Panel>
@@ -66,7 +66,20 @@ export function ErrorPanel({
           <p>
             Il backend ha risposto che la chiave non è valida. Controlla di
             averla scritta per intero, senza spazi in fondo. Se è stata ruotata
-            di recente, chiedi quella nuova.
+            di recente, chiedi quella nuova. Se eri già dentro, la sessione è
+            stata chiusa.
+          </p>
+          <Raw message={error.message} />
+        </Panel>
+      );
+
+    case "throttled":
+      return (
+        <Panel title="Troppi tentativi">
+          <p>
+            Da questo indirizzo sono arrivate troppe chiavi sbagliate, quindi il
+            server rifiuta ogni tentativo per un quarto d&apos;ora, anche con la
+            chiave giusta. Recuperala e riprova più tardi.
           </p>
           <Raw message={error.message} />
         </Panel>
@@ -74,7 +87,7 @@ export function ErrorPanel({
 
     case "conflict":
       return (
-        <Panel title="Torneo già importato">
+        <Panel title="Conflitto con i dati esistenti">
           <p>
             Il torneo è già stato importato oppure l&apos;evento selezionato ha
             già dei risultati. Aggiorna l&apos;elenco e verifica l&apos;evento scelto.

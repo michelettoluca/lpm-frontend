@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Archivo } from "next/font/google";
-import { getLatestSeason } from "./lib/api";
+import { getActiveSeason } from "./lib/api";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -15,7 +15,7 @@ const NAME = "Lega Pauper Milano";
 const TITLE = `${NAME} (LPM)`;
 
 export async function generateMetadata(): Promise<Metadata> {
-  const season = await getLatestSeason();
+  const season = await getActiveSeason();
   const description = season ? `${NAME} · ${season.name}` : NAME;
 
   return {

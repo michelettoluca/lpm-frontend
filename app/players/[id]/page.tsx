@@ -13,7 +13,7 @@ import {
 } from "../../components/ui";
 import {
   getEvents,
-  getLatestSeason,
+  getActiveSeason,
   getLeaderboard,
   getPlayer,
   getPlayerEvents,
@@ -85,7 +85,7 @@ export default async function PlayerDetailPage(
     getPlayerEvents(id),
     getLeaderboard(),
     getEvents(),
-    getLatestSeason(),
+    getActiveSeason(),
   ]);
   if (!player) notFound();
 

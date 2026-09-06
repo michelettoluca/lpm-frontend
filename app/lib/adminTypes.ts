@@ -9,6 +9,7 @@
 export type AdminErrorKind =
   | "missing_key"
   | "unauthorized"
+  | "throttled"
   | "disabled"
   | "conflict"
   | "verification"
@@ -16,11 +17,14 @@ export type AdminErrorKind =
   | "server"
   | "network";
 
+/** Form fields a 400 can be attributed to, across the import and CRUD forms. */
 export type ImportField =
   | "event_id"
   | "season_id"
   | "name"
   | "played_at"
+  | "started_at"
+  | "ended_at"
   | "standings"
   | "matches"
   | "confirm";
@@ -34,6 +38,7 @@ export type AdminError = {
 };
 
 export type Season = {
+  is_active: boolean;
   id: number;
   name: string;
   started_at: string;

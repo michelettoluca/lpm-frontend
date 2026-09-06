@@ -1,10 +1,7 @@
-import { resetDatabase } from "@/app/lib/adminApi";
-import { badRequest, missingKey, readKey, toResponse } from "@/app/lib/adminRoute";
+import { resetPath } from "@/app/lib/adminApi";
+import { badRequest, proxy } from "@/app/lib/adminRoute";
 
 export async function POST(request: Request) {
-  const apiKey = readKey(request);
-  if (!apiKey) return missingKey();
-
   let body: { confirm?: unknown; include_seasons?: unknown };
   try {
     body = await request.json();
@@ -22,5 +19,5 @@ export async function POST(request: Request) {
     });
   }
 
-  return toResponse(await resetDatabase(apiKey, body.include_seasons === true));
+  return proxy(request, resetPath(body.include_seasons === true), { method: "POST" });
 }

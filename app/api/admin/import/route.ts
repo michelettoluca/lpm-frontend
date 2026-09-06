@@ -1,13 +1,10 @@
-import { importMelee } from "@/app/lib/adminApi";
-import { badRequest, missingKey, readKey, toResponse } from "@/app/lib/adminRoute";
+import { importPath } from "@/app/lib/adminApi";
+import { badRequest, proxy } from "@/app/lib/adminRoute";
 
 /** The API caps the request body at 16 MiB. Reject early rather than upload and fail. */
 const MAX_BODY_BYTES = 16 * 1024 * 1024;
 
 export async function POST(request: Request) {
-  const apiKey = readKey(request);
-  if (!apiKey) return missingKey();
-
   const declaredSize = Number(request.headers.get("content-length"));
   if (Number.isFinite(declaredSize) && declaredSize > MAX_BODY_BYTES) {
     return badRequest({
@@ -29,7 +26,13 @@ export async function POST(request: Request) {
   }
 
   const eventId = Number(form.get("event_id"));
-  if (!Number.isSafeInteger(eventId) || eventId <= 0) return badRequest({kind:"bad_request", message:"pick an event before importing", field:"event_id"});
+  if (!Number.isSafeInteger(eventId) || eventId <= 0) {
+    return badRequest({
+      kind: "bad_request",
+      message: "pick an event before importing",
+      field: "event_id",
+    });
+  }
 
   const standings = form.get("standings");
   const matches = form.get("matches");
@@ -51,5 +54,5 @@ export async function POST(request: Request) {
   const upstream = new FormData();
   upstream.set("standings", standings, standings.name);
   upstream.set("matches", matches, matches.name);
-  return toResponse(await importMelee(apiKey, eventId, upstream));
+  return proxy(request, importPath(eventId), { method: "POST", body: upstream });
 }

@@ -2,7 +2,7 @@ import Link from "next/link";
 import {
   getEvent,
   getEvents,
-  getLatestSeason,
+  getActiveSeason,
   getLeaderboard,
   type EventSummary,
   type LeaderboardEntry,
@@ -177,7 +177,7 @@ export default async function Home() {
   const [entries, eventsRaw, season] = await Promise.all([
     getLeaderboard(),
     getEvents(),
-    getLatestSeason(),
+    getActiveSeason(),
   ]);
 
   const byDateDesc = [...eventsRaw].sort(

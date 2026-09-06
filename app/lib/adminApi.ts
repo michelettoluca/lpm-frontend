@@ -9,13 +9,7 @@
  * blocked at preflight regardless of where the key came from.
  */
 
-import type {
-  AdminError,
-  ImportField,
-  ImportResult,
-  ResetResult,
-  Season,
-} from "./adminTypes";
+import type { AdminError, ImportField } from "./adminTypes";
 
 const BASE = "https://api.legapaupermilano.it";
 
@@ -39,6 +33,8 @@ function fieldForMessage(message: string): ImportField | undefined {
   if (m.includes("season_id") || m.includes("season id")) return "season_id";
   if (m.includes("confirm")) return "confirm";
   if (m.includes("played_at") || m.includes("played at")) return "played_at";
+  if (m.includes("ended_at")) return "ended_at";
+  if (m.includes("started_at")) return "started_at";
   if (m.includes("standings")) return "standings";
   if (m.includes("matches")) return "matches";
   if (m.includes("name")) return "name";
@@ -64,6 +60,7 @@ async function readError(res: Response): Promise<string> {
 
 function classify(status: number, message: string): AdminError {
   if (status === 401) return { kind: "unauthorized", message };
+  if (status === 429) return { kind: "throttled", message };
   if (status === 503) return { kind: "disabled", message };
   if (status === 409) return { kind: "conflict", message };
   if (status === 400) {
@@ -76,15 +73,17 @@ function classify(status: number, message: string): AdminError {
 /**
  * Send a request to an admin endpoint with the shared secret attached.
  * `body` is forwarded untouched, which keeps multipart uploads streaming
- * through without being re-encoded.
+ * through without being re-encoded. `forwardedFor` carries the browser's
+ * address so the API's per-client attempt limit applies to the right client.
  */
 export async function adminFetch<T>(
   path: string,
   apiKey: string,
-  init: { method: string; body?: BodyInit; contentType?: string },
+  init: { method: string; body?: BodyInit; contentType?: string; forwardedFor?: string },
 ): Promise<AdminResult<T>> {
   const headers: Record<string, string> = { "X-API-Key": apiKey };
   if (init.contentType) headers["Content-Type"] = init.contentType;
+  if (init.forwardedFor) headers["X-Forwarded-For"] = init.forwardedFor;
 
   let res: Response;
   try {
@@ -116,46 +115,24 @@ export async function adminFetch<T>(
   return { ok: true, status: res.status, data: (await res.json()) as T };
 }
 
-/** Public endpoint, but proxied through the server because the API sends no CORS headers. */
-export async function listSeasons(): Promise<Season[]> {
-  const res = await fetch(`${BASE}/seasons`, { cache: "no-store" });
-  if (!res.ok) throw new Error(`GET /seasons failed: ${res.status}`);
-  return res.json();
+/** Validate a key without doing anything else. */
+export function checkKey(
+  apiKey: string,
+  forwardedFor?: string,
+): Promise<AdminResult<{ ok: true }>> {
+  return adminFetch<{ ok: true }>("/admin/auth", apiKey, { method: "GET", forwardedFor });
 }
 
-export function createSeason(
-  apiKey: string,
-  name: string,
-): Promise<AdminResult<Season>> {
-  return adminFetch<Season>("/admin/seasons", apiKey, {
-    method: "POST",
-    contentType: "application/json",
-    body: JSON.stringify({ name }),
-  });
+/**
+ * event_id selects the existing event; the CSV files are multipart.
+ * Content-Type is left unset so fetch writes the multipart boundary itself.
+ */
+export function importPath(eventId: number): string {
+  return `/admin/import/melee?event_id=${eventId}`;
 }
 
-export function importMelee(
-  apiKey: string,
-  eventId: number,
-  body: FormData,
-): Promise<AdminResult<ImportResult>> {
-  // event_id selects the existing event; the CSV files are multipart.
-  // Content-Type is left unset so fetch writes the multipart boundary itself.
-  return adminFetch<ImportResult>(
-    `/admin/import/melee?event_id=${eventId}`,
-    apiKey,
-    { method: "POST", body },
-  );
-}
-
-export function resetDatabase(
-  apiKey: string,
-  includeSeasons: boolean,
-): Promise<AdminResult<ResetResult>> {
-  const query = includeSeasons
-    ? "?confirm=RESET&include_seasons=true"
-    : "?confirm=RESET";
-  return adminFetch<ResetResult>(`/admin/reset${query}`, apiKey, {
-    method: "POST",
-  });
+export function resetPath(includeSeasons: boolean): string {
+  return includeSeasons
+    ? "/admin/reset?confirm=RESET&include_seasons=true"
+    : "/admin/reset?confirm=RESET";
 }

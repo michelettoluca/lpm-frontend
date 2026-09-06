@@ -1,12 +1,12 @@
 import BackLink from "../components/BackLink";
 import { Chip, NARROW, PAGE, TopBar } from "../components/ui";
-import { getLatestSeason, getLeaderboard } from "../lib/api";
+import { getActiveSeason, getLeaderboard } from "../lib/api";
 import ClassificaList from "./ClassificaList";
 
 export default async function LeaderboardPage() {
   const [entries, season] = await Promise.all([
     getLeaderboard(),
-    getLatestSeason(),
+    getActiveSeason(),
   ]);
 
   return (
