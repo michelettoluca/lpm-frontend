@@ -16,6 +16,7 @@ export type LeaderboardEntry = {
 };
 
 export type EventSummary = {
+  has_results?: boolean;
   id: number;
   season_id: number;
   name: string;

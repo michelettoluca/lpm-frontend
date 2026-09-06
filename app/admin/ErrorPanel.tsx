@@ -33,11 +33,8 @@ function Raw({ message }: { message: string }) {
 
 export function ErrorPanel({
   error,
-  onUseReset,
 }: {
   error: AdminError;
-  /** Offered on a 409 as the way to re-import an existing tournament. */
-  onUseReset?: () => void;
 }) {
   switch (error.kind) {
     case "missing_key":
@@ -79,19 +76,9 @@ export function ErrorPanel({
       return (
         <Panel title="Torneo già importato">
           <p>
-            Questo torneo è già presente nel database, quindi non è stato
-            importato di nuovo. Per reimportarlo devi prima svuotare il
-            database.
+            Il torneo è già stato importato oppure l&apos;evento selezionato ha
+            già dei risultati. Aggiorna l&apos;elenco e verifica l&apos;evento scelto.
           </p>
-          {onUseReset && (
-            <button
-              type="button"
-              onClick={onUseReset}
-              className="rounded-xl border-[1.5px] border-accent px-3 py-2 text-[13px] font-bold text-accent transition-colors hover:bg-accent hover:text-white"
-            >
-              Attiva «sostituisci tutti i dati»
-            </button>
-          )}
           <Raw message={error.message} />
         </Panel>
       );
@@ -102,9 +89,8 @@ export function ErrorPanel({
           <p>
             Il backend ha ricalcolato la classifica dai match e non torna con il
             file delle standings, quindi ha annullato l&apos;import.{" "}
-            <strong>Non è stato scritto nulla</strong>: anche con «sostituisci
-            tutti i dati» attivo, la cancellazione e l&apos;import stanno nella
-            stessa transazione, quindi il database è rimasto com&apos;era.
+            <strong>Non è stato scritto nulla</strong>: l&apos;evento e i dati
+            esistenti sono rimasti invariati.
           </p>
           <p>
             Quasi sempre vuol dire che i due file sono stati scaricati in
@@ -131,7 +117,7 @@ export function ErrorPanel({
 
     default:
       return (
-        <Panel title="Import non riuscito">
+        <Panel title="Operazione non riuscita">
           <pre className="whitespace-pre-wrap break-words font-mono text-[12px] leading-[1.5] text-ink/80">
             {error.message}
           </pre>

@@ -28,23 +28,8 @@ export async function POST(request: Request) {
     });
   }
 
-  const seasonId = Number(form.get("season_id"));
-  if (!Number.isInteger(seasonId) || seasonId <= 0) {
-    return badRequest({
-      kind: "bad_request",
-      message: "pick a season before importing",
-      field: "season_id",
-    });
-  }
-
-  const name = String(form.get("name") ?? "").trim();
-  if (!name) {
-    return badRequest({
-      kind: "bad_request",
-      message: "the event needs a name",
-      field: "name",
-    });
-  }
+  const eventId = Number(form.get("event_id"));
+  if (!Number.isSafeInteger(eventId) || eventId <= 0) return badRequest({kind:"bad_request", message:"pick an event before importing", field:"event_id"});
 
   const standings = form.get("standings");
   const matches = form.get("matches");
@@ -63,29 +48,8 @@ export async function POST(request: Request) {
     });
   }
 
-  const reset = form.get("reset") === "true";
-  if (reset && form.get("confirm") !== "RESET") {
-    return badRequest({
-      kind: "bad_request",
-      message: "destructive request needs confirm=RESET",
-      field: "confirm",
-    });
-  }
-
-  // Rebuild the body: season_id belongs in the query string, not the multipart
-  // payload, and only the fields the API expects are forwarded.
   const upstream = new FormData();
-  upstream.set("name", name);
   upstream.set("standings", standings, standings.name);
   upstream.set("matches", matches, matches.name);
-
-  const playedAt = String(form.get("played_at") ?? "").trim();
-  if (playedAt) upstream.set("played_at", playedAt);
-
-  if (reset) {
-    upstream.set("reset", "true");
-    upstream.set("confirm", "RESET");
-  }
-
-  return toResponse(await importMelee(apiKey, seasonId, upstream));
+  return toResponse(await importMelee(apiKey, eventId, upstream));
 }

@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useId, useRef, useState } from "react";
-import type { AdminError, ImportResult, Season } from "@/app/lib/adminTypes";
+import type { AdminError, ImportResult, Season, ManagedEvent } from "@/app/lib/adminTypes";
 import { callAdmin } from "./client";
-import { ConfirmResetDialog } from "./ConfirmResetDialog";
+import { EventManager } from "./EventManager";
 import { ErrorPanel, FieldError } from "./ErrorPanel";
 import { CONTROL, CONTROL_INVALID, Field, FileInput, SubmitButton, Warning } from "./fields";
 
@@ -38,16 +38,16 @@ export function ImportForm({
     defaultSeason(initialSeasons),
   );
 
-  const [name, setName] = useState("");
-  const [playedAt, setPlayedAt] = useState("");
+  const [events, setEvents] = useState<ManagedEvent[]>([]);
+  const [eventId, setEventId] = useState("");
   const [standings, setStandings] = useState<File | null>(null);
   const [matches, setMatches] = useState<File | null>(null);
-  const [replaceAll, setReplaceAll] = useState(false);
+
 
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AdminError | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
-  const [confirmOpen, setConfirmOpen] = useState(false);
+
 
   const [newSeasonOpen, setNewSeasonOpen] = useState(false);
   const [newSeasonName, setNewSeasonName] = useState("");
@@ -68,7 +68,7 @@ export function ImportForm({
   const ready =
     apiKey !== "" &&
     seasonId !== null &&
-    name.trim() !== "" &&
+    events.some(e => String(e.id) === eventId && e.season_id === seasonId && !e.has_results) &&
     standings !== null &&
     matches !== null;
 
@@ -81,16 +81,9 @@ export function ImportForm({
     setResult(null);
 
     const body = new FormData();
-    body.set("season_id", String(seasonId));
-    body.set("name", name.trim());
+    body.set("event_id", eventId);
     body.set("standings", standings!);
     body.set("matches", matches!);
-    if (playedAt) body.set("played_at", playedAt);
-    if (replaceAll) {
-      body.set("reset", "true");
-      body.set("confirm", "RESET");
-    }
-
     const res = await callAdmin<ImportResult>("/api/admin/import", apiKey, {
       method: "POST",
       body,
@@ -99,9 +92,8 @@ export function ImportForm({
     setPending(false);
     if (res.ok) {
       setResult(res.data);
-      setReplaceAll(false);
-      setName("");
-      setPlayedAt("");
+      setEvents(prev => prev.map(e => e.id === res.data.event_id ? {...e, has_results:true} : e));
+      setEventId("");
       setStandings(null);
       setMatches(null);
       formRef.current?.reset();
@@ -113,9 +105,7 @@ export function ImportForm({
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!ready || pending) return;
-    // Wiping the database always goes through the typed confirmation.
-    if (replaceAll) setConfirmOpen(true);
-    else void runImport();
+    void runImport();
   }
 
   async function createSeason() {
@@ -146,6 +136,7 @@ export function ImportForm({
 
   return (
     <section>
+      <EventManager apiKey={apiKey} seasons={seasons} seasonId={seasonId} events={events} onEvents={setEvents} />
       <h2 className="text-[16px] font-extrabold uppercase tracking-[0.08em]">
         Importa torneo
       </h2>
@@ -223,32 +214,12 @@ export function ImportForm({
           )}
         </Field>
 
-        <Field label="Nome evento" htmlFor={ids.name}>
-          <input
-            id={ids.name}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Lega Pauper Milano … - Tappa 10"
-            disabled={pending}
-            className={`${CONTROL} ${fieldError("name") ? CONTROL_INVALID : ""}`}
-          />
-          {fieldError("name") && <FieldError message={fieldError("name")!} />}
-        </Field>
-
-        <Field
-          label="Data"
-          htmlFor={ids.playedAt}
-          hint="Facoltativa. Se la lasci vuota vale la data dentro il file delle standings."
-        >
-          <input
-            id={ids.playedAt}
-            type="date"
-            value={playedAt}
-            onChange={(e) => setPlayedAt(e.target.value)}
-            disabled={pending}
-            className={`${CONTROL} ${fieldError("played_at") ? CONTROL_INVALID : ""}`}
-          />
-          {fieldError("played_at") && <FieldError message={fieldError("played_at")!} />}
+        <Field label="Evento da completare" htmlFor={ids.name}>
+          <select id={ids.name} value={eventId} onChange={e=>setEventId(e.target.value)} disabled={pending} className={CONTROL}>
+            <option value="">Seleziona un evento senza risultati</option>
+            {events.filter(e=>e.season_id===seasonId && !e.has_results).map(e=><option key={e.id} value={e.id}>{e.name} · {new Date(e.played_at).toLocaleDateString("it-IT")}</option>)}
+          </select>
+          {fieldError("event_id") && <FieldError message={fieldError("event_id")!} />}
         </Field>
 
         <Field label="Standings-tournament-….csv" htmlFor={ids.standings}>
@@ -285,41 +256,19 @@ export function ImportForm({
           {fieldError("matches") && <FieldError message={fieldError("matches")!} />}
         </Field>
 
-        <div className="rounded-xl border-[1.5px] border-dashed border-ink/25 p-3">
-          <label htmlFor={ids.replace} className="flex items-start gap-2.5">
-            <input
-              id={ids.replace}
-              type="checkbox"
-              checked={replaceAll}
-              onChange={(e) => setReplaceAll(e.target.checked)}
-              disabled={pending}
-              className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-accent)]"
-            />
-            <span>
-              <span className="block text-[14px] font-bold">
-                Sostituisci tutti i dati esistenti
-              </span>
-              <span className="mt-0.5 block text-[12px] leading-[1.4] text-ink/55">
-                Cancella eventi, giocatori e match prima di importare. Le
-                stagioni restano. Ti verrà chiesta una conferma scritta.
-              </span>
-            </span>
-          </label>
-        </div>
-
         <SubmitButton
           pending={pending}
           disabled={!ready}
           pendingLabel="Import in corso…"
         >
-          {replaceAll ? "Sostituisci e importa" : "Importa torneo"}
+          Importa risultati
         </SubmitButton>
 
         {!ready && !pending && (
           <p className="text-center text-[12px] text-ink/45">
             {apiKey === ""
               ? "Inserisci la chiave admin qui sopra."
-              : "Servono stagione, nome e entrambi i file."}
+              : "Seleziona un evento e entrambi i file."}
           </p>
         )}
       </form>
@@ -343,40 +292,7 @@ export function ImportForm({
         </div>
       )}
 
-      {error && (
-        <ErrorPanel
-          error={error}
-          onUseReset={
-            error.kind === "conflict"
-              ? () => {
-                  setReplaceAll(true);
-                  setError(null);
-                }
-              : undefined
-          }
-        />
-      )}
-
-      <ConfirmResetDialog
-        open={confirmOpen}
-        title="Sostituisci tutti i dati"
-        confirmLabel="Sostituisci e importa"
-        pending={pending}
-        onCancel={() => setConfirmOpen(false)}
-        onConfirm={() => {
-          setConfirmOpen(false);
-          void runImport();
-        }}
-      >
-        <p>
-          Tutti gli eventi, i giocatori e i match esistenti verranno cancellati,
-          poi verrà importato questo torneo. Le stagioni non vengono toccate.
-        </p>
-        <p>
-          Cancellazione e import stanno nella stessa transazione: se l&apos;import
-          fallisce, non viene cancellato nulla.
-        </p>
-      </ConfirmResetDialog>
+      {error && <ErrorPanel error={error} />}
     </section>
   );
 }

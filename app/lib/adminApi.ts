@@ -35,6 +35,7 @@ function isVerificationFailure(message: string): boolean {
  */
 function fieldForMessage(message: string): ImportField | undefined {
   const m = message.toLowerCase();
+  if (m.includes("event_id")) return "event_id";
   if (m.includes("season_id") || m.includes("season id")) return "season_id";
   if (m.includes("confirm")) return "confirm";
   if (m.includes("played_at") || m.includes("played at")) return "played_at";
@@ -77,7 +78,7 @@ function classify(status: number, message: string): AdminError {
  * `body` is forwarded untouched, which keeps multipart uploads streaming
  * through without being re-encoded.
  */
-async function adminFetch<T>(
+export async function adminFetch<T>(
   path: string,
   apiKey: string,
   init: { method: string; body?: BodyInit; contentType?: string },
@@ -135,13 +136,13 @@ export function createSeason(
 
 export function importMelee(
   apiKey: string,
-  seasonId: number,
+  eventId: number,
   body: FormData,
 ): Promise<AdminResult<ImportResult>> {
-  // season_id goes in the query string; everything else is multipart.
+  // event_id selects the existing event; the CSV files are multipart.
   // Content-Type is left unset so fetch writes the multipart boundary itself.
   return adminFetch<ImportResult>(
-    `/admin/import/melee?season_id=${seasonId}`,
+    `/admin/import/melee?event_id=${eventId}`,
     apiKey,
     { method: "POST", body },
   );

@@ -184,8 +184,8 @@ export default async function Home() {
     (a, b) =>
       new Date(b.played_at).getTime() - new Date(a.played_at).getTime(),
   );
-  const played = byDateDesc.filter((e) => isPlayed(e.played_at));
-  const upcoming = byDateDesc.filter((e) => !isPlayed(e.played_at)).reverse();
+  const played = byDateDesc.filter((e) => (e.has_results ?? isPlayed(e.played_at)));
+  const upcoming = byDateDesc.filter((e) => !(e.has_results ?? isPlayed(e.played_at))).reverse();
   const playerCounts = await Promise.all(
     played.map((e) => getEvent(e.id).then((d) => d?.standings.length ?? 0)),
   );

@@ -43,8 +43,8 @@ export default async function AdminPage() {
         />
 
         <h1 className="mt-4 mb-6 text-[30px] font-extrabold leading-[0.95] tracking-[-0.03em] lg:text-[40px]">
-          Import
-          <span className="block text-accent">tornei</span>
+          Gestione
+          <span className="block text-accent">eventi</span>
         </h1>
 
         {seasonsFailed && (

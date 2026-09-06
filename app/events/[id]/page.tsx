@@ -21,7 +21,7 @@ export default async function EventDetailPage(
 
   const { event, standings } = data;
   const n = tappaNumber(event.name);
-  const status = eventStatus(event.played_at);
+  const status = event.has_results === false ? "in programma" : eventStatus(event.played_at);
   const roundsPlayed = standings.reduce(
     (max, s) => Math.max(max, s.wins + s.losses + s.draws + s.byes),
     0,
@@ -69,14 +69,14 @@ export default async function EventDetailPage(
             </Chip>
           }
         />
-        <Suspense fallback={hero}>
+        {event.has_results === false ? <>{hero}<p className="mt-6 text-ink/60">Risultati non ancora disponibili.</p></> : <Suspense fallback={hero}>
           <RoundPanels
             hero={hero}
             standings={standings}
             pairings={pairings}
             rounds={rounds}
           />
-        </Suspense>
+        </Suspense>}
       </div>
     </main>
   );

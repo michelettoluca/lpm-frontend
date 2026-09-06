@@ -17,6 +17,7 @@ export type AdminErrorKind =
   | "network";
 
 export type ImportField =
+  | "event_id"
   | "season_id"
   | "name"
   | "played_at"
@@ -56,3 +57,5 @@ export type ResetResult = {
   deleted: DeletedCounts;
   seasons_cleared: boolean;
 };
+
+export type ManagedEvent = { id: number; season_id: number; name: string; format: string | null; played_at: string; has_results: boolean };
