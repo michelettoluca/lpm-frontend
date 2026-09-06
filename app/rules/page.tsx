@@ -14,7 +14,6 @@ const DISCORD = "https://discord.gg/s7DAXvBh9u";
 
 const SPECS: Array<[string, ReactNode]> = [
   ["Cadenza", "Una tappa a settimana, festività escluse"],
-  ["Periodo", "Da settembre a novembre 2026"],
   ["Giorno", "Giovedì sera, primo turno alle 20.30"],
   ["Formato", "4 turni di svizzera"],
   [
