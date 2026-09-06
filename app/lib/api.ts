@@ -1,5 +1,4 @@
 const BASE = "https://api.legapaupermilano.it";
-export const SEASON_ID = 1;
 
 export type Season = {
   id: number;
@@ -118,11 +117,15 @@ export async function getLatestSeason(): Promise<Season | null> {
 }
 
 export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
-  return (await get<LeaderboardEntry[]>(`/seasons/${SEASON_ID}/leaderboard`)) ?? [];
+  const season = await getLatestSeason();
+  if (!season) return [];
+  return (await get<LeaderboardEntry[]>(`/seasons/${season.id}/leaderboard`)) ?? [];
 }
 
 export async function getEvents(): Promise<EventSummary[]> {
-  return (await get<EventSummary[]>(`/seasons/${SEASON_ID}/events`)) ?? [];
+  const season = await getLatestSeason();
+  if (!season) return [];
+  return (await get<EventSummary[]>(`/seasons/${season.id}/events`)) ?? [];
 }
 
 export function getEvent(id: string | number): Promise<EventDetail | null> {
@@ -149,9 +152,11 @@ export function getPlayer(id: string | number): Promise<Player | null> {
 export async function getPlayerEvents(
   id: string | number,
 ): Promise<PlayerEventEntry[]> {
+  const season = await getLatestSeason();
+  if (!season) return [];
   return (
     (await get<PlayerEventEntry[]>(
-      `/players/${id}/events?season=${SEASON_ID}`,
+      `/players/${id}/events?season=${season.id}`,
     )) ?? []
   );
 }
@@ -159,8 +164,10 @@ export async function getPlayerEvents(
 export async function getHeadToHead(
   id: string | number,
 ): Promise<H2HOpponent[]> {
+  const season = await getLatestSeason();
+  if (!season) return [];
   const data = await get<{ opponents?: H2HOpponent[] }>(
-    `/players/${id}/head-to-head?season=${SEASON_ID}`,
+    `/players/${id}/head-to-head?season=${season.id}`,
   );
   return data?.opponents ?? [];
 }

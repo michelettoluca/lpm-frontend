@@ -113,11 +113,11 @@ function TappeSection({
           <EmptyRow>Nessuna tappa in programma.</EmptyRow>
         ) : (
           <ul>
-            {played.map((event, i) => (
-              <TappaRow key={event.id} event={event} players={playerCounts[i]} />
-            ))}
             {upcoming.map((event) => (
               <TappaRow key={event.id} event={event} />
+            ))}
+            {played.map((event, i) => (
+              <TappaRow key={event.id} event={event} players={playerCounts[i]} />
             ))}
           </ul>
         )}
@@ -139,20 +139,20 @@ function TappaRow({
   return (
     <li className="border-b border-ink/8 last:border-b-0">
       {upcoming ? (
-        <div aria-disabled="true" className={`${grid} opacity-45`}>
+        <Link href={`/events/${event.id}`} className={`row-link ${grid}`}>
           <DateTile iso={event.played_at} ghost />
           <div className="min-w-0">
             <div className="text-[14px] font-bold leading-[1.2] lg:text-[15px]">
               {tappaTitle(event.name)}
             </div>
             <div className="mt-px text-[12px] text-ink/60">
-              Sede da annunciare
+              {event.format || "Risultati non ancora disponibili"}
             </div>
           </div>
           <span className="text-[11px] font-bold uppercase tracking-[0.08em] lg:text-[10px]">
             Prossima
           </span>
-        </div>
+        </Link>
       ) : (
         <Link href={`/events/${event.id}`} className={`row-link ${grid}`}>
           <DateTile iso={event.played_at} />
