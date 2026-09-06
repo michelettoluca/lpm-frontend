@@ -70,21 +70,41 @@ export function AccentCard({
   );
 }
 
-export function DateTile({ iso, ghost = false }: { iso: string; ghost?: boolean }) {
+export function DateTile({
+  iso,
+  ghost = false,
+  compact = false,
+}: {
+  iso: string;
+  ghost?: boolean;
+  /** Smaller tile for rows that carry only a date and a title. */
+  compact?: boolean;
+}) {
   const { day, mon } = dateTile(iso);
+  const size = compact
+    ? "h-8 w-10 lg:h-[34px] lg:w-[44px]"
+    : "h-11 w-12 lg:h-[46px] lg:w-[52px]";
   return (
     <span
-      className={`grid h-11 w-12 place-items-center rounded-xl text-center leading-none lg:h-[46px] lg:w-[52px] ${
+      className={`grid place-items-center rounded-xl text-center leading-none ${size} ${
         ghost
           ? "border-[1.5px] border-dashed border-ink/25 text-ink/55"
           : "bg-tint text-accent"
       }`}
     >
       <span>
-        <span className="tn block text-[16px] font-extrabold lg:text-[17px]">
+        <span
+          className={`tn block font-extrabold ${
+            compact ? "text-[13px] lg:text-[14px]" : "text-[16px] lg:text-[17px]"
+          }`}
+        >
           {day}
         </span>
-        <span className="mt-0.5 block text-[9px] font-bold uppercase tracking-[0.08em]">
+        <span
+          className={`block font-bold uppercase tracking-[0.08em] ${
+            compact ? "text-[8px]" : "mt-0.5 text-[9px]"
+          }`}
+        >
           {mon}
         </span>
       </span>

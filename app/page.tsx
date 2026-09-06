@@ -166,19 +166,16 @@ function TappaRow({
   return (
     <li className="border-b border-ink/8 last:border-b-0">
       {upcoming ? (
-        <Link href={`/events/${event.id}`} className={`row-link ${grid} text-ink/60`}>
-          <DateTile iso={event.played_at} ghost />
-          <div className="min-w-0">
-            <div className="text-[14px] font-bold leading-[1.2] lg:text-[15px]">
-              {tappaTitle(event.name)}
-            </div>
-            <div className="mt-px text-[12px] text-ink/45">
-              {event.format || "Risultati non ancora disponibili"}
-            </div>
+        // A scheduled tappa has nothing to report yet, so the row is just a
+        // date and a name, tighter than a played one.
+        <Link
+          href={`/events/${event.id}`}
+          className="row-link grid grid-cols-[40px_1fr] items-center gap-2.5 py-1.5 pr-4 pl-3 text-ink/60 lg:grid-cols-[44px_1fr] lg:gap-3 lg:py-2 lg:pr-5"
+        >
+          <DateTile iso={event.played_at} ghost compact />
+          <div className="truncate text-[13px] font-bold leading-[1.2] lg:text-[14px]">
+            {tappaTitle(event.name)}
           </div>
-          <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-ink/45 lg:text-[10px]">
-            Prossima
-          </span>
         </Link>
       ) : (
         <Link href={`/events/${event.id}`} className={`row-link ${grid}`}>
