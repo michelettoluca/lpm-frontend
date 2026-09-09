@@ -48,7 +48,15 @@ export const BRAND_TEXT =
   "text-[12px] font-extrabold tracking-[0.04em] lg:text-[14px]";
 
 export function Brand({ year }: { year: number }) {
-  return <span className={BRAND_TEXT}>LPM ✦ {year}</span>;
+  return (
+    <Link
+      href="/"
+      aria-label={`LPM ${year} — Home`}
+      className={`${BRAND_TEXT} rounded-sm transition-colors hover:text-accent focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent`}
+    >
+      LPM ✦ {year}
+    </Link>
+  );
 }
 
 /** Accent-edged card: 1.5px accent frame with soft glow around a white body. */
