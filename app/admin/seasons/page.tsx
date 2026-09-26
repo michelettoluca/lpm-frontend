@@ -1,337 +1,126 @@
 "use client";
 
-import { useId, useState } from "react";
-import type { AdminError, Season } from "@/app/lib/adminTypes";
+import Link from "next/link";
+import { useState } from "react";
 import { useAdmin } from "../AdminShell";
-import { ConfirmResetDialog } from "../ConfirmResetDialog";
 import { DangerZone } from "../DangerZone";
-import { ErrorPanel, FieldError } from "../ErrorPanel";
-import { CONTROL, CONTROL_INVALID, Field } from "../fields";
-import {
-  ACTION,
-  ACTION_ACCENT,
-  Badge,
-  CELL,
-  ConfirmAction,
-  DashboardHeading,
-  displayDate,
-  EmptyState,
-  HEAD_CELL,
-  localDate,
-  Notice,
-  PRIMARY,
-} from "../dashboardUi";
+import { SeasonDialog } from "../SeasonDialog";
+import { BUTTON_PRIMARY, Callout, EmptyState, Notice, PageHeader } from "../dashboardUi";
+import { countedLabel, seasonPeriod, seasonStatus } from "../seasonDisplay";
 
-type Draft = { name: string; startedAt: string; endedAt: string; countedEvents: string };
-const EMPTY: Draft = { name: "", startedAt: "", endedAt: "", countedEvents: "8" };
-
-function toDraft(season: Season): Draft {
-  return {
-    name: season.name,
-    startedAt: localDate(season.started_at),
-    endedAt: season.ended_at ? localDate(season.ended_at) : "",
-    countedEvents: season.counted_events == null ? "" : String(season.counted_events),
-  };
+/**
+ * Tappe with results out of the season's total. The tick marks the point where
+ * every player could have a full set of counted results; it only shows when
+ * some tappe will be dropped.
+ */
+function Progress({ done, total, counted }: { done: number; total: number; counted: number | null }) {
+  const tick = counted != null && counted < total ? (counted / total) * 100 : null;
+  return (
+    <div className="relative h-1.5 w-24" aria-hidden>
+      <div className="h-full overflow-hidden rounded-full bg-ink/8">
+        <div className="h-full rounded-full bg-accent" style={{ width: total ? `${(done / total) * 100}%` : 0 }} />
+      </div>
+      {tick !== null && (
+        <div
+          className="absolute -top-[3px] h-3 w-0.5 -translate-x-1/2 rounded-full bg-ink"
+          style={{ left: `${tick}%` }}
+          title={`Tappe valide: ${counted}`}
+        />
+      )}
+    </div>
+  );
 }
 
-function countedLabel(season: Season): string {
-  return season.counted_events == null ? "tutte" : `migliori ${season.counted_events}`;
-}
+const ROW = "grid items-center gap-x-6 gap-y-2 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_180px_110px_16px]";
 
 export default function SeasonsPage() {
-  const { seasons, events, setSeasons, setEvents, call } = useAdmin();
-  const [editing, setEditing] = useState<Season | "new" | null>(null);
-  const [draft, setDraft] = useState<Draft>(EMPTY);
-  const [activating, setActivating] = useState<Season | null>(null);
-  const [deleting, setDeleting] = useState<Season | null>(null);
-  const [pending, setPending] = useState(false);
-  const [error, setError] = useState<AdminError | null>(null);
-  const [notice, setNotice] = useState("");
-  const ids = { name: useId(), start: useId(), end: useId(), counted: useId() };
-
-  const eventCount = (seasonId: number) => events.filter((event) => event.season_id === seasonId).length;
-  const fieldError = (field: string) =>
-    error?.kind === "bad_request" && error.field === field ? error.message : null;
-  const intervalInvalid = draft.startedAt !== "" && draft.endedAt !== "" && draft.endedAt < draft.startedAt;
-  const countedInvalid =
-    draft.countedEvents !== "" && !(Number.isInteger(Number(draft.countedEvents)) && Number(draft.countedEvents) >= 1);
-
-  function open(target: Season | "new") {
-    setEditing(target);
-    setDraft(target === "new" ? EMPTY : toDraft(target));
-    setActivating(null);
-    setError(null);
-    setNotice("");
-  }
-
-  function close() {
-    setEditing(null);
-    setDraft(EMPTY);
-  }
-
-  async function save(event: React.FormEvent) {
-    event.preventDefault();
-    if (!editing || pending || intervalInvalid || countedInvalid) return;
-    setPending(true);
-    setError(null);
-    const isNew = editing === "new";
-    // The API replaces the whole season on PUT: an omitted start keeps the
-    // stored one, a null end reopens the season. On POST an omitted start is now.
-    const res = await call<Season>(`/api/admin/seasons${isNew ? "" : `?id=${editing.id}`}`, {
-      method: isNew ? "POST" : "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: draft.name.trim(),
-        started_at: draft.startedAt || undefined,
-        ended_at: draft.endedAt || null,
-        counted_events: draft.countedEvents === "" ? null : Number(draft.countedEvents),
-      }),
-    });
-    setPending(false);
-    if (!res.ok) {
-      setError(res.error);
-      return;
-    }
-    setSeasons((prev) =>
-      isNew ? [res.data, ...prev] : prev.map((season) => (season.id === res.data.id ? res.data : season)),
-    );
-    setNotice(isNew ? `Stagione “${res.data.name}” creata.` : `Stagione “${res.data.name}” aggiornata.`);
-    close();
-  }
-
-  async function activate() {
-    if (!activating || pending) return;
-    setPending(true);
-    setError(null);
-    const target = activating;
-    const res = await call<Season>(`/api/admin/seasons?id=${target.id}&active=true`, { method: "PUT" });
-    setPending(false);
-    if (!res.ok) {
-      setError(res.error);
-      return;
-    }
-    setSeasons((prev) => prev.map((item) => ({ ...item, is_active: item.id === target.id })));
-    setActivating(null);
-    setNotice(`“${target.name}” è ora la stagione attiva: il sito pubblico mostra la sua classifica e i suoi eventi.`);
-  }
-
-  async function remove() {
-    if (!deleting || pending) return;
-    setPending(true);
-    setError(null);
-    const target = deleting;
-    const res = await call<{ deleted_season_id: number }>(`/api/admin/seasons?id=${target.id}`, {
-      method: "DELETE",
-    });
-    setPending(false);
-    setDeleting(null);
-    if (!res.ok) {
-      setError(res.error);
-      return;
-    }
-    setSeasons((prev) => prev.filter((season) => season.id !== target.id));
-    setEvents((prev) => prev.filter((event) => event.season_id !== target.id));
-    if (editing !== "new" && editing?.id === target.id) close();
-    setNotice(`Stagione “${target.name}” eliminata.`);
-  }
+  const { seasons, events, setSeasons } = useAdmin();
+  const [creating, setCreating] = useState(false);
+  const [notice, setNotice] = useState<React.ReactNode>(null);
 
   const hasActive = seasons.some((season) => season.is_active);
 
   return (
     <>
-      <DashboardHeading
+      <PageHeader
         title="Stagioni"
-        description="Le stagioni raggruppano le tappe. La stagione attiva è quella che il sito pubblico mostra in home, in classifica e nelle pagine dei giocatori."
-        action={
-          <button type="button" className={PRIMARY} disabled={pending || editing === "new"} onClick={() => open("new")}>
+        meta="Apri una stagione per gestirne le tappe e importare i risultati."
+        actions={
+          <button type="button" className={BUTTON_PRIMARY} onClick={() => setCreating(true)}>
             Nuova stagione
           </button>
         }
       />
 
-      {notice && <Notice>{notice}</Notice>}
-      {error && !editing && <div className="mb-5"><ErrorPanel error={error} /></div>}
+      {notice && <Notice onDismiss={() => setNotice(null)}>{notice}</Notice>}
 
       {seasons.length > 0 && !hasActive && (
-        <section role="alert" className="mb-5 rounded-2xl border border-accent bg-tint p-5">
-          <h2 className="font-bold">Nessuna stagione attiva</h2>
-          <p className="mt-2 text-sm text-ink/65">
-            Il sito pubblico non ha una classifica da mostrare finché non ne scegli una con «Rendi attiva».
-          </p>
-        </section>
+        <Callout title="Nessuna stagione attiva">
+          Il sito pubblico non ha una classifica da mostrare finché non ne apri una e scegli «Rendi attiva».
+        </Callout>
       )}
 
-      {activating && (
-        <ConfirmAction
-          title={`Rendere attiva “${activating.name}”?`}
-          description={
-            hasActive
-              ? "Il sito pubblico passa subito a questa stagione: home, classifica e pagine dei giocatori mostreranno i suoi dati."
-              : "Il sito pubblico tornerà a mostrare una classifica, quella di questa stagione."
-          }
-          confirmLabel="Rendi attiva"
-          busy={pending}
-          onCancel={() => setActivating(null)}
-          onConfirm={() => void activate()}
-        />
-      )}
-
-      {editing && (
-        <form onSubmit={save} className="card panel-in mb-6 p-5">
-          <h2 className="text-[16px] font-extrabold uppercase tracking-[0.08em]">
-            {editing === "new" ? "Nuova stagione" : `Modifica “${editing.name}”`}
-          </h2>
-          <div className="mt-4 grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
-            <Field label="Nome" htmlFor={ids.name}>
-              <input
-                id={ids.name}
-                className={`${CONTROL} ${fieldError("name") ? CONTROL_INVALID : ""}`}
-                value={draft.name}
-                onChange={(event) => setDraft({ ...draft, name: event.target.value })}
-                placeholder="Season 2027"
-                required
-                disabled={pending}
-              />
-              {fieldError("name") && <FieldError message={fieldError("name")!} />}
-            </Field>
-            <Field label="Inizio" htmlFor={ids.start} hint={editing === "new" ? "Vuoto = oggi." : undefined}>
-              <input
-                id={ids.start}
-                type="date"
-                className={`${CONTROL} ${fieldError("started_at") ? CONTROL_INVALID : ""}`}
-                value={draft.startedAt}
-                onChange={(event) => setDraft({ ...draft, startedAt: event.target.value })}
-                disabled={pending}
-              />
-              {fieldError("started_at") && <FieldError message={fieldError("started_at")!} />}
-            </Field>
-            <Field label="Fine" htmlFor={ids.end} hint="Lascia vuoto finché la stagione è in corso.">
-              <input
-                id={ids.end}
-                type="date"
-                className={`${CONTROL} ${fieldError("ended_at") || intervalInvalid ? CONTROL_INVALID : ""}`}
-                value={draft.endedAt}
-                min={draft.startedAt || undefined}
-                onChange={(event) => setDraft({ ...draft, endedAt: event.target.value })}
-                disabled={pending}
-              />
-              {intervalInvalid && <FieldError message="La fine deve essere uguale o successiva all'inizio." />}
-              {fieldError("ended_at") && <FieldError message={fieldError("ended_at")!} />}
-            </Field>
-            <Field label="Tappe valide" htmlFor={ids.counted} hint="Migliori risultati che contano in classifica. Vuoto = tutte.">
-              <input
-                id={ids.counted}
-                type="number"
-                min={1}
-                step={1}
-                inputMode="numeric"
-                className={`${CONTROL} ${fieldError("counted_events") || countedInvalid ? CONTROL_INVALID : ""}`}
-                value={draft.countedEvents}
-                onChange={(event) => setDraft({ ...draft, countedEvents: event.target.value })}
-                disabled={pending}
-              />
-              {countedInvalid && <FieldError message="Inserisci un numero intero da 1 in su." />}
-              {fieldError("counted_events") && <FieldError message={fieldError("counted_events")!} />}
-            </Field>
-          </div>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <button type="submit" className={PRIMARY} disabled={pending || !draft.name.trim() || intervalInvalid || countedInvalid}>
-              {pending ? "Salvataggio…" : editing === "new" ? "Crea stagione" : "Salva modifiche"}
-            </button>
-            <button type="button" className={ACTION} onClick={close} disabled={pending}>
-              Annulla
-            </button>
-          </div>
-          {error && <ErrorPanel error={error} />}
-        </form>
-      )}
-
-      <div className="card overflow-x-auto">
-        <table className="w-full min-w-[720px] text-sm">
-          <thead className="border-b border-ink/10">
-            <tr>
-              <th className={HEAD_CELL}>Stagione</th>
-              <th className={HEAD_CELL}>Periodo</th>
-              <th className={HEAD_CELL}>Eventi</th>
-              <th className={HEAD_CELL}>In classifica</th>
-              <th className={HEAD_CELL}>Stato</th>
-              <th className={`${HEAD_CELL} text-right`}>Azioni</th>
-            </tr>
-          </thead>
-          <tbody>
-            {seasons.map((season) => (
-              <tr key={season.id} className="border-b border-ink/8 last:border-b-0">
-                <td className={CELL}>
-                  <p className="font-bold">{season.name}</p>
-                  <p className="tn mt-0.5 text-xs text-ink/45">id {season.id}</p>
-                </td>
-                <td className={`${CELL} tn whitespace-nowrap text-ink/70`}>
-                  {displayDate(season.started_at)}
-                  {" → "}
-                  {season.ended_at ? displayDate(season.ended_at) : "in corso"}
-                </td>
-                <td className={`${CELL} tn`}>{eventCount(season.id)}</td>
-                <td className={`${CELL} tn whitespace-nowrap text-ink/70`}>{countedLabel(season)}</td>
-                <td className={CELL}>
-                  {season.is_active ? (
-                    <Badge tone="accent">Attiva</Badge>
-                  ) : season.ended_at ? (
-                    <Badge>Conclusa</Badge>
-                  ) : (
-                    <Badge tone="ink">In corso</Badge>
-                  )}
-                </td>
-                <td className={`${CELL} text-right`}>
-                  <div className="flex flex-wrap justify-end gap-2">
-                    {!season.is_active && (
-                      <button
-                        type="button"
-                        className={ACTION_ACCENT}
-                        disabled={pending}
-                        onClick={() => { setActivating(season); setNotice(""); }}
-                      >
-                        Rendi attiva
-                      </button>
-                    )}
-                    <button type="button" className={ACTION} disabled={pending} onClick={() => open(season)}>
-                      Modifica
-                    </button>
-                    <button type="button" className={ACTION} disabled={pending} onClick={() => { setDeleting(season); setNotice(""); }}>
-                      Elimina
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {seasons.length === 0 && <EmptyState>Nessuna stagione. Creane una per poter programmare gli eventi.</EmptyState>}
+      <div className="card">
+        <div className={`${ROW} hidden border-b border-ink/10 py-3 sm:grid`}>
+          <span className="lbl">Stagione</span>
+          <span className="lbl">Tappe importate</span>
+          <span className="lbl">Stato</span>
+          <span />
+        </div>
+        {seasons.length === 0 ? (
+          <EmptyState>Nessuna stagione. Creane una per poter programmare le tappe.</EmptyState>
+        ) : (
+          <ul>
+            {seasons.map((season) => {
+              const own = events.filter((event) => event.season_id === season.id);
+              const done = own.filter((event) => event.has_results).length;
+              return (
+                <li key={season.id} className="border-b border-ink/8 last:border-b-0">
+                  <Link href={`/admin/seasons/${season.id}`} className={`row-link ${ROW}`}>
+                    <div className="min-w-0">
+                      <p className="truncate font-bold">{season.name}</p>
+                      <p className="tn mt-0.5 text-[13px] text-ink/50">
+                        {seasonPeriod(season)} · {countedLabel(season).toLowerCase()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Progress done={done} total={own.length} counted={season.counted_events} />
+                      <span className="tn text-[13px] text-ink/60">
+                        {done}/{own.length}
+                      </span>
+                    </div>
+                    <div>{seasonStatus(season)}</div>
+                    <span className="hidden text-lg text-ink/30 sm:block" aria-hidden>
+                      ›
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
 
-      <ConfirmResetDialog
-        open={deleting !== null}
-        word="ELIMINA"
-        title={`Elimina “${deleting?.name ?? ""}”`}
-        confirmLabel="Elimina stagione"
-        pending={pending}
-        onCancel={() => setDeleting(null)}
-        onConfirm={() => void remove()}
-      >
-        {deleting && eventCount(deleting.id) > 0 ? (
-          <p>
-            Verranno eliminati anche i suoi <strong>{eventCount(deleting.id)} eventi</strong> con tutti i
-            match e le classifiche. I giocatori restano.
-          </p>
-        ) : (
-          <p>La stagione non ha eventi.</p>
-        )}
-        {deleting?.is_active && (
-          <p>È la stagione attiva: il sito pubblico resterà senza classifica finché non ne scegli un&apos;altra.</p>
-        )}
-        <p>L&apos;operazione non è reversibile.</p>
-      </ConfirmResetDialog>
-
       <DangerZone />
+
+      {creating && (
+        <SeasonDialog
+          season={null}
+          onClose={() => setCreating(false)}
+          onSaved={(season) => {
+            setSeasons((prev) => [season, ...prev]);
+            setCreating(false);
+            setNotice(
+              <>
+                Stagione “{season.name}” creata.{" "}
+                <Link href={`/admin/seasons/${season.id}`} className="text-accent underline-offset-2 hover:underline">
+                  Aprila per aggiungere le tappe →
+                </Link>
+              </>,
+            );
+          }}
+        />
+      )}
     </>
   );
 }

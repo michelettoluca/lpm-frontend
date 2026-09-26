@@ -1,4 +1,5 @@
-const BASE = "https://api.legapaupermilano.it";
+// LPM_API_BASE points a local dev server at a local backend.
+const BASE = process.env.LPM_API_BASE ?? "https://api.legapaupermilano.it";
 
 /** Tag on every public API fetch, so an admin write can expire them all. */
 export const PUBLIC_DATA_TAG = "api";

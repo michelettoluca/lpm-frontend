@@ -11,7 +11,8 @@
 
 import type { AdminError, ImportField } from "./adminTypes";
 
-const BASE = "https://api.legapaupermilano.it";
+// LPM_API_BASE points a local dev server at a local backend.
+const BASE = process.env.LPM_API_BASE ?? "https://api.legapaupermilano.it";
 
 export type AdminResult<T> =
   | { ok: true; status: number; data: T }

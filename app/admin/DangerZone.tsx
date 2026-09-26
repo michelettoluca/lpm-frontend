@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import type { AdminError, DeletedCounts, ResetResult } from "@/app/lib/adminTypes";
 import { useAdmin } from "./AdminShell";
 import { ConfirmResetDialog } from "./ConfirmResetDialog";
+import { BUTTON_PRIMARY } from "./dashboardUi";
 import { ErrorPanel } from "./ErrorPanel";
 
 const NOUNS: Array<[keyof DeletedCounts, string, string]> = [
@@ -58,18 +59,22 @@ export function DangerZone() {
   const summary = result ? describe(result.deleted) : "";
 
   return (
-    <section className="mt-12 border-t-[1.5px] border-dashed border-ink/20 pt-8">
-      <h2 className="text-[16px] font-extrabold uppercase tracking-[0.08em] text-accent">
-        Zona pericolosa
-      </h2>
-      <p className="mt-1.5 max-w-xl text-[13px] leading-[1.5] text-ink/55">
-        Svuota il database: tutti gli eventi, i match, le classifiche e i
-        giocatori. Serve solo per ripartire da zero. Per rifare un singolo
-        torneo basta eliminare il suo evento e importarlo di nuovo.
-      </p>
+    <details className="group mt-16 border-t border-ink/10 pt-6">
+      <summary className="flex cursor-pointer list-none items-center gap-2 text-[13px] font-extrabold uppercase tracking-[0.08em] text-ink/45 hover:text-ink [&::-webkit-details-marker]:hidden">
+        <span className="transition-transform group-open:rotate-90" aria-hidden>
+          ›
+        </span>
+        Strumenti avanzati
+      </summary>
 
-      <div className="mt-4 max-w-xl rounded-[22px] border-[1.5px] border-accent bg-white p-4">
-        <label htmlFor={seasonsId} className="flex items-start gap-2.5">
+      <div className="mt-5 max-w-xl rounded-2xl border border-accent/40 bg-white p-5">
+        <h2 className="font-bold text-accent">Svuota il database</h2>
+        <p className="mt-1.5 text-[13px] leading-[1.5] text-ink/55">
+          Cancella tutti gli eventi, i match, le classifiche e i giocatori. Serve solo per ripartire da zero: per
+          rifare un singolo torneo basta eliminare il suo evento e importarlo di nuovo.
+        </p>
+
+        <label htmlFor={seasonsId} className="mt-4 flex items-start gap-2.5">
           <input
             id={seasonsId}
             type="checkbox"
@@ -79,13 +84,9 @@ export function DangerZone() {
             className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-accent)]"
           />
           <span>
-            <span className="block text-[14px] font-bold">
-              Cancella anche le stagioni
-            </span>
+            <span className="block text-[14px] font-bold">Cancella anche le stagioni</span>
             <span className="mt-0.5 block text-[12px] leading-[1.4] text-ink/55">
-              Rimuove ogni stagione e la selezione di quella attiva: dopo dovrai
-              crearne una nuova e renderla attiva. Senza questa opzione le
-              stagioni restano e puoi programmare subito nuovi eventi.
+              Dopo dovrai crearne una nuova e renderla attiva. Senza questa opzione le stagioni restano.
             </span>
           </span>
         </label>
@@ -94,14 +95,14 @@ export function DangerZone() {
           type="button"
           onClick={() => setConfirmOpen(true)}
           disabled={pending}
-          className="mt-4 w-full rounded-xl bg-accent px-4 py-3 text-[15px] font-extrabold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+          className={`${BUTTON_PRIMARY} mt-4`}
         >
           {pending ? "Cancellazione in corso…" : "Svuota il database"}
         </button>
       </div>
 
       {result && (
-        <div className="panel-in mt-4 max-w-xl rounded-[18px] border-[1.5px] border-accent bg-tint p-4">
+        <div className="panel-in mt-4 max-w-xl rounded-2xl border border-accent bg-tint p-4">
           <div className="text-[13px] font-extrabold uppercase tracking-[0.06em] text-accent">
             Database svuotato
           </div>
@@ -139,6 +140,6 @@ export function DangerZone() {
             : "Le stagioni verranno mantenute."}
         </p>
       </ConfirmResetDialog>
-    </section>
+    </details>
   );
 }
