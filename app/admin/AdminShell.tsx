@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { createContext, useCallback, useContext, useEffect, useId, useState } from "react";
-import type { AdminError, ManagedEvent, Season } from "@/app/lib/adminTypes";
+import type { AdminAccount, AdminError, ManagedEvent, Season } from "@/app/lib/adminTypes";
 import { callAdmin, isAuthLoss, type CallResult } from "./client";
 import { ErrorPanel } from "./ErrorPanel";
 import { BUTTON, BUTTON_GHOST, BUTTON_PRIMARY } from "./dashboardUi";
 import { CONTROL } from "./fields";
 
 type DashboardContext = {
+  /** The signed-in admin. */
+  me: AdminAccount;
   seasons: Season[];
   events: ManagedEvent[];
   setSeasons: React.Dispatch<React.SetStateAction<Season[]>>;
@@ -35,13 +37,14 @@ type Status = "checking" | "gate" | "connected";
  * Dashboard frame: gate, top bar, and a shared store of seasons and
  * events so pages don't refetch on every visit.
  *
- * The key never reaches this component. The gate posts it to our own auth
- * route, which validates it against the API and keeps it in an HTTP-only
- * cookie scoped to the proxy routes. On load we ask that route whether a
- * session is still there, so a reload does not mean typing the key again.
+ * Admins sign in with a code sent to their email. The session token never
+ * reaches this component: our own auth route keeps it in an HTTP-only cookie
+ * scoped to the proxy routes. On load we ask that route who is signed in, so
+ * a reload doesn't mean signing in again.
  */
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<Status>("checking");
+  const [me, setMe] = useState<AdminAccount | null>(null);
   const [seasons, setSeasons] = useState<Season[]>([]);
   const [events, setEvents] = useState<ManagedEvent[]>([]);
   const [busy, setBusy] = useState(false);
@@ -49,6 +52,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   const toGate = useCallback((reason: AdminError | null) => {
     setStatus("gate");
+    setMe(null);
     setSeasons([]);
     setEvents([]);
     setError(reason);
@@ -82,13 +86,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const session = await callAdmin<{ ok: true }>("/api/admin/auth");
+      const session = await callAdmin<AdminAccount>("/api/admin/auth");
       if (cancelled) return;
       if (!session.ok) {
         // A missing cookie is the normal first visit, not an error worth showing.
         toGate(session.error.kind === "missing_key" ? null : session.error);
         return;
       }
+      setMe(session.data);
       if (await load()) setStatus("connected");
       else setStatus("gate");
     })();
@@ -97,20 +102,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     };
   }, [load, toGate]);
 
-  async function connect(key: string) {
-    setBusy(true);
+  function signedIn(admin: AdminAccount) {
+    setMe(admin);
     setError(null);
-    const session = await callAdmin<{ ok: true }>("/api/admin/auth", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ key }),
-    });
-    if (!session.ok) {
-      setError(session.error);
-    } else if (await load()) {
-      setStatus("connected");
-    }
-    setBusy(false);
+    void load().then((ok) => setStatus(ok ? "connected" : "gate"));
   }
 
   async function disconnect() {
@@ -127,10 +122,10 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     setBusy(false);
   }
 
-  const connected = status === "connected";
+  const connected = status === "connected" && me !== null;
 
   return (
-    <Context.Provider value={{ seasons, events, setSeasons, setEvents, call, refresh: load }}>
+    <Context.Provider value={me ? { me, seasons, events, setSeasons, setEvents, call, refresh: load } : null}>
       <div className="min-h-screen">
         <header className="sticky top-0 z-30 border-b border-ink/8 bg-white/70 backdrop-blur-xl">
           <div className={`${WIDTH} flex h-16 items-center justify-between gap-4`}>
@@ -145,10 +140,21 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               </span>
               {connected && (
                 <>
+                  {me.is_super && (
+                    <Link href="/admin/admins" className={BUTTON_GHOST}>
+                      Amministratori
+                    </Link>
+                  )}
                   <button type="button" onClick={() => void refreshLists()} disabled={busy} className={BUTTON_GHOST}>
                     {busy ? "Attendi…" : "Ricarica"}
                   </button>
-                  <button type="button" onClick={() => void disconnect()} disabled={busy} className={BUTTON}>
+                  <button
+                    type="button"
+                    onClick={() => void disconnect()}
+                    disabled={busy}
+                    className={BUTTON}
+                    title={`Connesso come ${me.email}`}
+                  >
                     Esci
                   </button>
                 </>
@@ -164,7 +170,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               {children}
             </>
           ) : (
-            <Gate status={status} busy={busy} error={error} onSubmit={connect} />
+            <Gate status={status} error={error} onSignedIn={signedIn} />
           )}
         </main>
       </div>
@@ -172,74 +178,165 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Two steps: the admin's email, then the six-digit code sent to it. The API
+ * gives the same answer for any address, so the code step always follows.
+ */
 function Gate({
   status,
-  busy,
-  error,
-  onSubmit,
+  error: sessionError,
+  onSignedIn,
 }: {
   status: Status;
-  busy: boolean;
   error: AdminError | null;
-  onSubmit: (key: string) => void;
+  onSignedIn: (admin: AdminAccount) => void;
 }) {
-  const [draft, setDraft] = useState("");
-  const [reveal, setReveal] = useState(false);
-  const id = useId();
+  const [step, setStep] = useState<"email" | "code">("email");
+  const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<AdminError | null>(null);
+  const [resent, setResent] = useState(false);
+  const ids = { email: useId(), code: useId() };
   const checking = status === "checking";
+  const shown = error ?? sessionError;
+
+  async function sendCode(again = false) {
+    setBusy(true);
+    setError(null);
+    const res = await callAdmin<{ sent: boolean }>("/api/admin/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.trim() }),
+    });
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    setStep("code");
+    setCode("");
+    setResent(again);
+  }
+
+  async function verify() {
+    setBusy(true);
+    setError(null);
+    const res = await callAdmin<AdminAccount>("/api/admin/auth", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.trim(), code }),
+    });
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    onSignedIn(res.data);
+  }
 
   return (
     <section className="card mx-auto mt-4 max-w-md p-7 sm:mt-12">
       <p className="text-xs font-bold uppercase tracking-wider text-accent">Dashboard amministrativa</p>
-      <h1 className="mt-2 text-[26px] font-extrabold leading-tight tracking-[-0.02em]">Accedi alla gestione della lega</h1>
-      <p className="mt-3 text-sm leading-relaxed text-ink/55">
-        Inserisci la chiave API per gestire stagioni, eventi e risultati dei tornei. La chiave viene
-        verificata dal server e non resta mai nel browser.
-      </p>
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (!busy && draft.trim()) onSubmit(draft.trim());
-        }}
-        className="mt-6"
-      >
-        <label htmlFor={id} className="lbl block">
-          Chiave API
-        </label>
-        <div className="mt-1.5 flex gap-2">
+      <h1 className="mt-2 text-[26px] font-extrabold leading-tight tracking-[-0.02em]">
+        {step === "email" ? "Accedi alla gestione della lega" : "Controlla la tua email"}
+      </h1>
+
+      {step === "email" ? (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!busy && email.trim()) void sendCode();
+          }}
+          className="mt-6"
+        >
+          <p className="mb-5 text-sm leading-relaxed text-ink/55">
+            Inserisci la tua email di amministratore: ti mandiamo un codice di accesso.
+          </p>
+          <label htmlFor={ids.email} className="lbl block">
+            Email
+          </label>
           <input
-            id={id}
-            type={reveal ? "text" : "password"}
-            className={CONTROL}
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            autoComplete="off"
-            spellCheck={false}
+            id={ids.email}
+            type="email"
+            className={`${CONTROL} mt-1.5`}
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            autoComplete="email"
             autoFocus
+            required
             disabled={busy || checking}
-            placeholder={checking ? "Controllo la sessione…" : "Inserisci la chiave admin"}
+            placeholder={checking ? "Controllo la sessione…" : "nome@esempio.it"}
           />
           <button
-            type="button"
-            onClick={() => setReveal((value) => !value)}
-            aria-pressed={reveal}
-            className={`${BUTTON} h-auto`}
+            type="submit"
+            disabled={busy || checking || !email.trim()}
+            className={`${BUTTON_PRIMARY} mt-4 h-11 w-full text-[15px]`}
           >
-            {reveal ? "Nascondi" : "Mostra"}
+            {busy ? "Invio…" : "Inviami il codice"}
           </button>
-        </div>
-        <button
-          type="submit"
-          disabled={busy || checking || !draft.trim()}
-          className={`${BUTTON_PRIMARY} mt-4 h-11 w-full text-[15px]`}
+        </form>
+      ) : (
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!busy && code.length === 6) void verify();
+          }}
+          className="mt-6"
         >
-          {busy ? "Verifica…" : "Accedi"}
-        </button>
-      </form>
-      <p className="mt-3 text-[12px] leading-relaxed text-ink/45">
-        Dopo alcune chiavi sbagliate il server blocca i tentativi da questo indirizzo per un quarto d&apos;ora.
-      </p>
-      {error && <ErrorPanel error={error} />}
+          <p className="mb-5 text-sm leading-relaxed text-ink/55">
+            Se <strong className="text-ink">{email.trim()}</strong> è un amministratore, gli abbiamo mandato un codice
+            di 6 cifre. Scade tra 10 minuti.
+          </p>
+          <label htmlFor={ids.code} className="lbl block">
+            Codice
+          </label>
+          <input
+            id={ids.code}
+            className={`${CONTROL} tn mt-1.5 text-center text-[22px] font-extrabold tracking-[0.4em]`}
+            value={code}
+            onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            autoFocus
+            required
+            disabled={busy}
+            placeholder="••••••"
+          />
+          <button
+            type="submit"
+            disabled={busy || code.length !== 6}
+            className={`${BUTTON_PRIMARY} mt-4 h-11 w-full text-[15px]`}
+          >
+            {busy ? "Verifica…" : "Accedi"}
+          </button>
+          <div className="mt-3 flex justify-between gap-3 text-[13px]">
+            <button
+              type="button"
+              className="font-bold text-ink/55 hover:text-ink"
+              onClick={() => {
+                setStep("email");
+                setError(null);
+              }}
+              disabled={busy}
+            >
+              ← Cambia email
+            </button>
+            <button type="button" className="font-bold text-ink/55 hover:text-ink" onClick={() => void sendCode(true)} disabled={busy}>
+              {resent ? "Codice rimandato" : "Rimanda il codice"}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {shown &&
+        (shown.kind === "unauthorized" && step === "code" ? (
+          <p role="alert" className="mt-4 text-[13px] font-semibold text-accent">
+            Codice non valido o scaduto. Controlla di averlo scritto giusto o fatti mandare un nuovo codice.
+          </p>
+        ) : (
+          <ErrorPanel error={shown} />
+        ))}
     </section>
   );
 }

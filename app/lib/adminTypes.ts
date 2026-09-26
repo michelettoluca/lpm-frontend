@@ -9,6 +9,7 @@
 export type AdminErrorKind =
   | "missing_key"
   | "unauthorized"
+  | "forbidden"
   | "throttled"
   | "disabled"
   | "conflict"
@@ -37,6 +38,13 @@ export type AdminError = {
   /** Form field the message concerns, when it can be attributed to one. */
   field?: ImportField;
 };
+
+/** A dashboard account. Only the super admin manages other admins. */
+export type AdminAccount = { id: number; email: string; is_super: boolean };
+
+export type AdminListEntry = AdminAccount & { created_at: string };
+
+export type AdminSession = { token: string; expires_at: string; admin: AdminAccount };
 
 export type Season = {
   is_active: boolean;

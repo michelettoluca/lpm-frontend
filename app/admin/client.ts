@@ -15,7 +15,7 @@ function isAdminError(value: unknown): value is AdminError {
 
 /** Errors that mean the session is gone and the gate has to be shown again. */
 export function isAuthLoss(error: AdminError): boolean {
-  return error.kind === "missing_key" || error.kind === "unauthorized" || error.kind === "throttled";
+  return error.kind === "missing_key" || error.kind === "unauthorized";
 }
 
 /**

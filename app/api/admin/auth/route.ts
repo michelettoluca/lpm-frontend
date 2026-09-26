@@ -1,47 +1,57 @@
-import { checkKey } from "@/app/lib/adminApi";
+import { currentAdmin, logout, requestLoginCode, verifyLoginCode } from "@/app/lib/adminApi";
 import {
   badRequest,
   clearedCookie,
   forwardedFor,
-  missingKey,
-  readKey,
+  missingSession,
+  readSession,
   sessionCookie,
   toResponse,
 } from "@/app/lib/adminRoute";
 
 /**
- * The gate.
+ * Login and session.
  *
- *   POST   { key }  → validate against the API; on success set the session cookie
- *   GET             → is the current session cookie still accepted?
- *   DELETE          → forget the session
+ *   POST   { email }        → email a login code
+ *   POST   { email, code }  → check the code; on success set the session cookie
+ *   GET                     → the signed-in admin, or 401
+ *   DELETE                  → end the session
  *
- * The API counts wrong keys per forwarded address and answers 429 once the
- * budget is spent, so nothing here needs its own throttle.
+ * The API throttles code requests and wrong codes per forwarded address, so
+ * nothing here needs its own limit.
  */
 export async function POST(request: Request) {
-  let body: { key?: unknown };
+  let body: { email?: unknown; code?: unknown };
   try {
     body = await request.json();
   } catch {
     return badRequest({ kind: "bad_request", message: "malformed request body" });
   }
-  const key = typeof body.key === "string" ? body.key.trim() : "";
-  if (!key) return badRequest({ kind: "bad_request", message: "enter the admin key" });
+  const email = typeof body.email === "string" ? body.email.trim() : "";
+  if (!email) return badRequest({ kind: "bad_request", message: "enter your email" });
+  const from = forwardedFor(request);
 
-  const result = await checkKey(key, forwardedFor(request));
-  return toResponse(result, result.ok ? { "Set-Cookie": sessionCookie(key) } : undefined);
+  if (body.code === undefined) {
+    return toResponse(await requestLoginCode(email, from));
+  }
+  const code = typeof body.code === "string" ? body.code.replace(/\s/g, "") : "";
+  const result = await verifyLoginCode(email, code, from);
+  if (!result.ok) return toResponse(result);
+  // The token stays in the cookie; the browser only learns who signed in.
+  return Response.json(result.data.admin, {
+    headers: { "Set-Cookie": sessionCookie(result.data.token, result.data.expires_at) },
+  });
 }
 
 export async function GET(request: Request) {
-  const key = readKey(request);
-  if (!key) return missingKey();
-  const result = await checkKey(key, forwardedFor(request));
-  // A refreshed cookie on success pushes the expiry forward for active sessions.
-  const cookie = result.ok ? sessionCookie(key) : clearedCookie();
-  return toResponse(result, { "Set-Cookie": cookie });
+  const token = readSession(request);
+  if (!token) return missingSession();
+  const result = await currentAdmin(token, forwardedFor(request));
+  return toResponse(result, result.ok ? undefined : { "Set-Cookie": clearedCookie() });
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
+  const token = readSession(request);
+  if (token) await logout(token);
   return Response.json({ ok: true }, { headers: { "Set-Cookie": clearedCookie() } });
 }

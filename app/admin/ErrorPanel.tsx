@@ -38,37 +38,26 @@ export function ErrorPanel({
 }) {
   switch (error.kind) {
     case "missing_key":
+    case "unauthorized":
       return (
         <Panel title="Sessione scaduta">
-          <p>
-            Non c&apos;è più una sessione admin valida. Inserisci di nuovo la
-            chiave per continuare.
-          </p>
+          <p>La sessione non è più valida. Accedi di nuovo con la tua email per continuare.</p>
+          <Raw message={error.message} />
+        </Panel>
+      );
+
+    case "forbidden":
+      return (
+        <Panel title="Non hai i permessi">
+          <p>Questa operazione è riservata al super amministratore.</p>
           <Raw message={error.message} />
         </Panel>
       );
 
     case "disabled":
       return (
-        <Panel title="API admin disattivata sul server">
-          <p>
-            Il backend non ha una chiave admin configurata, quindi tutti gli
-            endpoint admin sono spenti. Non è un problema di login e riprovare
-            non serve: va sistemata la configurazione del server.
-          </p>
-          <Raw message={error.message} />
-        </Panel>
-      );
-
-    case "unauthorized":
-      return (
-        <Panel title="Chiave admin rifiutata">
-          <p>
-            Il backend ha risposto che la chiave non è valida. Controlla di
-            averla scritta per intero, senza spazi in fondo. Se è stata ruotata
-            di recente, chiedi quella nuova. Se eri già dentro, la sessione è
-            stata chiusa.
-          </p>
+        <Panel title="API admin non disponibile">
+          <p>Il backend ha rifiutato la richiesta perché non è configurato. Riprovare non serve.</p>
           <Raw message={error.message} />
         </Panel>
       );
@@ -77,9 +66,8 @@ export function ErrorPanel({
       return (
         <Panel title="Troppi tentativi">
           <p>
-            Da questo indirizzo sono arrivate troppe chiavi sbagliate, quindi il
-            server rifiuta ogni tentativo per un quarto d&apos;ora, anche con la
-            chiave giusta. Recuperala e riprova più tardi.
+            Da questo indirizzo sono arrivati troppi codici sbagliati o troppe richieste, quindi il server blocca i
+            tentativi per un quarto d&apos;ora. Riprova più tardi.
           </p>
           <Raw message={error.message} />
         </Panel>

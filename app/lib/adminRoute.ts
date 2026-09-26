@@ -21,15 +21,14 @@ export function badRequest(error: AdminError): Response {
 }
 
 /**
- * The admin key lives in an HTTP-only cookie scoped to the proxy routes. The
- * browser never sees it: the gate posts it once to `/api/admin/auth`, the API
- * validates it, and from then on the cookie rides along automatically.
+ * The admin's session token lives in an HTTP-only cookie scoped to the proxy
+ * routes. The browser never sees it: `/api/admin/auth` sets it when a login
+ * code checks out, and from then on the cookie rides along automatically.
  */
-const COOKIE = "lpm_admin_key";
+const COOKIE = "lpm_admin_session";
 const COOKIE_PATH = "/api/admin";
-const SESSION_SECONDS = 8 * 60 * 60;
 
-export function readKey(request: Request): string | null {
+export function readSession(request: Request): string | null {
   const header = request.headers.get("cookie");
   if (!header) return null;
   for (const part of header.split(";")) {
@@ -42,21 +41,23 @@ export function readKey(request: Request): string | null {
   return null;
 }
 
-export function sessionCookie(key: string): string {
+/** Cookie for a session token, expiring when the API's session does. */
+export function sessionCookie(token: string, expiresAt: string): string {
   const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
-  return `${COOKIE}=${encodeURIComponent(key)}; Path=${COOKIE_PATH}; HttpOnly; SameSite=Strict; Max-Age=${SESSION_SECONDS}${secure}`;
+  const maxAge = Math.max(0, Math.floor((new Date(expiresAt).getTime() - Date.now()) / 1000));
+  return `${COOKIE}=${encodeURIComponent(token)}; Path=${COOKIE_PATH}; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secure}`;
 }
 
 export function clearedCookie(): string {
   return `${COOKIE}=; Path=${COOKIE_PATH}; HttpOnly; SameSite=Strict; Max-Age=0`;
 }
 
-export function missingKey(): Response {
+export function missingSession(): Response {
   return Response.json(
     {
       error: {
         kind: "missing_key",
-        message: "no admin session; enter the key again",
+        message: "no admin session; sign in again",
       } satisfies AdminError,
     },
     { status: 401, headers: { "Set-Cookie": clearedCookie() } },
@@ -64,7 +65,7 @@ export function missingKey(): Response {
 }
 
 /**
- * The API rate-limits wrong keys per client address, but it only ever sees
+ * The API rate-limits login attempts per client address, but it only ever sees
  * this server. Caddy puts the browser's address in X-Forwarded-For; pass it
  * through so the limit lands on the right client.
  */
@@ -73,9 +74,9 @@ export function forwardedFor(request: Request): string | undefined {
 }
 
 /**
- * Forward a request to an admin endpoint using the session cookie. A 401 or
- * 429 from the API means the session is no longer usable, so the cookie is
- * cleared in the same response and the UI falls back to the gate. A successful
+ * Forward a request to an admin endpoint using the session cookie. A 401 from
+ * the API means the session is gone, so the cookie is cleared in the same
+ * response and the UI falls back to the login screen. A successful
  * write expires the public pages' cached API data, so the next visit renders
  * fresh results instead of one stale-while-revalidate round behind.
  */
@@ -84,10 +85,10 @@ export async function proxy<T>(
   path: string,
   init: { method: string; body?: BodyInit; contentType?: string },
 ): Promise<Response> {
-  const key = readKey(request);
-  if (!key) return missingKey();
-  const result = await adminFetch<T>(path, key, { ...init, forwardedFor: forwardedFor(request) });
+  const token = readSession(request);
+  if (!token) return missingSession();
+  const result = await adminFetch<T>(path, token, { ...init, forwardedFor: forwardedFor(request) });
   if (result.ok && init.method !== "GET") revalidateTag(PUBLIC_DATA_TAG, { expire: 0 });
-  const lost = !result.ok && (result.status === 401 || result.status === 429);
+  const lost = !result.ok && result.status === 401;
   return toResponse(result, lost ? { "Set-Cookie": clearedCookie() } : undefined);
 }

@@ -9,7 +9,7 @@
  * blocked at preflight regardless of where the key came from.
  */
 
-import type { AdminError, ImportField } from "./adminTypes";
+import type { AdminAccount, AdminError, AdminSession, ImportField } from "./adminTypes";
 
 // LPM_API_BASE points a local dev server at a local backend.
 const BASE = process.env.LPM_API_BASE ?? "https://api.legapaupermilano.it";
@@ -62,6 +62,7 @@ async function readError(res: Response): Promise<string> {
 
 function classify(status: number, message: string): AdminError {
   if (status === 401) return { kind: "unauthorized", message };
+  if (status === 403) return { kind: "forbidden", message };
   if (status === 429) return { kind: "throttled", message };
   if (status === 503) return { kind: "disabled", message };
   if (status === 409) return { kind: "conflict", message };
@@ -73,17 +74,18 @@ function classify(status: number, message: string): AdminError {
 }
 
 /**
- * Send a request to an admin endpoint with the shared secret attached.
- * `body` is forwarded untouched, which keeps multipart uploads streaming
+ * Send a request to the API, with the admin's session token when there is
+ * one. `body` is forwarded untouched, which keeps multipart uploads streaming
  * through without being re-encoded. `forwardedFor` carries the browser's
- * address so the API's per-client attempt limit applies to the right client.
+ * address so the API's per-client limits apply to the right client.
  */
 export async function adminFetch<T>(
   path: string,
-  apiKey: string,
+  token: string | null,
   init: { method: string; body?: BodyInit; contentType?: string; forwardedFor?: string },
 ): Promise<AdminResult<T>> {
-  const headers: Record<string, string> = { "X-API-Key": apiKey };
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
   if (init.contentType) headers["Content-Type"] = init.contentType;
   if (init.forwardedFor) headers["X-Forwarded-For"] = init.forwardedFor;
 
@@ -117,12 +119,37 @@ export async function adminFetch<T>(
   return { ok: true, status: res.status, data: (await res.json()) as T };
 }
 
-/** Validate a key without doing anything else. */
-export function checkKey(
-  apiKey: string,
+/** Email a login code. The API answers the same for unknown addresses. */
+export function requestLoginCode(email: string, forwardedFor?: string): Promise<AdminResult<{ sent: boolean }>> {
+  return adminFetch("/auth/login-code", null, {
+    method: "POST",
+    body: JSON.stringify({ email }),
+    contentType: "application/json",
+    forwardedFor,
+  });
+}
+
+/** Trade a login code for a session. */
+export function verifyLoginCode(
+  email: string,
+  code: string,
   forwardedFor?: string,
-): Promise<AdminResult<{ ok: true }>> {
-  return adminFetch<{ ok: true }>("/admin/auth", apiKey, { method: "GET", forwardedFor });
+): Promise<AdminResult<AdminSession>> {
+  return adminFetch("/auth/verify", null, {
+    method: "POST",
+    body: JSON.stringify({ email, code }),
+    contentType: "application/json",
+    forwardedFor,
+  });
+}
+
+/** Who a session token belongs to, or 401 once it's gone. */
+export function currentAdmin(token: string, forwardedFor?: string): Promise<AdminResult<AdminAccount>> {
+  return adminFetch("/auth/me", token, { method: "GET", forwardedFor });
+}
+
+export function logout(token: string): Promise<AdminResult<{ ok: true }>> {
+  return adminFetch("/auth/logout", token, { method: "POST" });
 }
 
 /**
