@@ -13,6 +13,7 @@ import {
 import {
   getEvents,
   getActiveSeason,
+  getHeadToHead,
   getLeaderboard,
   getPlayer,
   getPlayerEvents,
@@ -24,6 +25,8 @@ import {
   tappaTitle,
   winPct,
 } from "../../lib/format";
+import HeadToHeadSearch from "./HeadToHeadSearch";
+import PlayerStats, { computeStats } from "./PlayerStats";
 
 const PRIZE_POINTS = 9;
 
@@ -75,16 +78,48 @@ function Bar({ w, l, d, className }: { w: number; l: number; d: number; classNam
   );
 }
 
+const TABS = [
+  { key: "tappe", label: "Tappe" },
+  { key: "statistiche", label: "Statistiche" },
+] as const;
+
+type Tab = (typeof TABS)[number]["key"];
+
+/** Tabs are links, so each one has its own URL and survives a reload. */
+function Tabs({ id, active }: { id: number; active: Tab }) {
+  return (
+    <nav aria-label="Sezioni giocatore" className="surface mb-5 inline-flex gap-0.5 rounded-full p-1 lg:mb-7">
+      {TABS.map((t) => (
+        <Link
+          key={t.key}
+          href={t.key === "tappe" ? `/players/${id}` : `/players/${id}?tab=${t.key}`}
+          aria-current={t.key === active ? "page" : undefined}
+          scroll={false}
+          className={`rounded-full px-5 py-2 text-[13px] transition-colors lg:px-6 ${
+            t.key === active
+              ? "bg-accent-grad shadow-glow font-extrabold text-white"
+              : "font-bold text-ink/70 hover:bg-ink/4"
+          }`}
+        >
+          {t.label}
+        </Link>
+      ))}
+    </nav>
+  );
+}
+
 export default async function PlayerDetailPage(
   props: PageProps<"/players/[id]">,
 ) {
   const { id } = await props.params;
-  const [player, entries, leaderboard, events, season] = await Promise.all([
+  const tab: Tab = (await props.searchParams).tab === "statistiche" ? "statistiche" : "tappe";
+  const [player, entries, leaderboard, events, season, opponents] = await Promise.all([
     getPlayer(id),
     getPlayerEvents(id),
     getLeaderboard(),
     getEvents(),
     getActiveSeason(),
+    getHeadToHead(id),
   ]);
   if (!player) notFound();
 
@@ -105,6 +140,7 @@ export default async function PlayerDetailPage(
   const matches = w + l + d;
   const playedSoFar = events.filter(isCompleted).length;
   const { first, last } = splitName(player.display_name);
+  const stats = computeStats(entries, opponents);
 
   return (
     <main className={PAGE}>
@@ -138,7 +174,7 @@ export default async function PlayerDetailPage(
           </div>
         </div>
 
-        <div className="mb-[22px] grid grid-cols-3 gap-2 lg:mb-0 lg:grid-cols-[repeat(4,132px)] lg:gap-2.5">
+        <div className="mb-[22px] grid grid-cols-3 gap-2 lg:mb-0 lg:grid-cols-[repeat(3,132px)] lg:gap-2.5">
           <Tile label="Punti">
             <span className="text-accent-grad">{seasonPoints}</span>
           </Tile>
@@ -149,122 +185,147 @@ export default async function PlayerDetailPage(
               /{playedSoFar}
             </span>
           </Tile>
-          <Tile label="Win" className="hidden lg:block">
-            {winPct(w, l, d)}
-          </Tile>
         </div>
       </div>
 
-      <div className="lg:grid lg:grid-cols-[1.5fr_1fr] lg:items-start lg:gap-8">
-        <div>
-          <div className="lbl grid grid-cols-[48px_1fr_auto] gap-2.5 pr-4 pb-2 pl-3 lg:grid-cols-[52px_1fr_auto] lg:gap-3 lg:pr-5 lg:pb-2.5">
-            <span />
-            <span>Tappe giocate</span>
-            <span className="min-w-[34px] text-center lg:min-w-[38px]">Pt</span>
-          </div>
-          <div className="card">
-            {tappe.length === 0 ? (
-              <EmptyRow>Nessuna tappa giocata.</EmptyRow>
-            ) : (
-              <ul>
-                {tappe.map((t) => {
-                  const prize = t.points >= PRIZE_POINTS;
-                  // Older API responses have no `counted`; treat them as counted.
-                  const dropped = t.counted === false;
-                  return (
-                    <li key={t.event.id} className="border-b border-ink/8 last:border-b-0">
-                      <Link
-                        href={`/events/${t.event.id}`}
-                        className={`row-link grid grid-cols-[48px_1fr_auto] items-center gap-2.5 py-2.5 pr-4 pl-3 lg:grid-cols-[52px_1fr_auto] lg:gap-3 lg:py-3 lg:pr-5 ${
-                          dropped ? "opacity-45" : ""
-                        }`}
-                        title={dropped ? "Scartata: non conta per la classifica" : undefined}
-                      >
-                        <PositionTile rank={t.rank} prize={prize} />
-                        <div className="min-w-0">
-                          <div className="truncate text-[14px] font-bold leading-[1.2] lg:text-[15px]">
-                            {tappaTitle(t.event.name)}
-                          </div>
-                          <div className="tn mt-px text-[12px] text-ink/50">
-                            {record(t.wins + t.byes, t.losses, t.draws)}
-                            {dropped && " · scartata"}
-                          </div>
-                        </div>
-                        <PointsChip points={t.points} prize={prize} />
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
+      <Tabs id={player.id} active={tab} />
 
-          {/* Stagione — mobile */}
-          <div className="lg:hidden">
-            <SectionHead
-              className="mt-7 mb-2.5"
-              title="Stagione"
-              aside={`${matches} ${matches === 1 ? "partita" : "partite"}`}
-            />
-            <div className="mb-2 grid grid-cols-3 gap-2">
-              {[
-                ["V", w],
-                ["S", l],
-                ["P", d],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  className="rounded-[18px] surface p-3"
-                >
-                  <div className="lbl">{label}</div>
-                  <div className="tn text-[26px] font-extrabold tracking-[-0.03em]">
-                    {value}
-                  </div>
-                </div>
-              ))}
+      {tab === "statistiche" ? (
+        <div className="flex flex-col gap-8 lg:gap-10">
+          {stats ? (
+            <PlayerStats stats={stats} />
+          ) : (
+            <div className="card">
+              <EmptyRow>Nessuna tappa giocata in questa stagione.</EmptyRow>
             </div>
-            <div className="mb-2.5 rounded-[18px] surface p-3">
-              <div className="lbl">Win</div>
-              <div className="tn text-[26px] font-extrabold tracking-[-0.03em] text-accent-grad">
-                {winPct(w, l, d)}
+          )}
+          <section>
+            <SectionHead
+              className="mb-2.5 lg:mb-3"
+              title="Confronto diretto"
+              aside="Scegli un avversario"
+            />
+            <HeadToHeadSearch
+              players={leaderboard
+                .filter((e) => e.player_id !== player.id)
+                .map((e) => ({ id: e.player_id, name: e.display_name }))}
+              opponents={opponents}
+              playedAt={Object.fromEntries(entries.map((e) => [e.event.id, e.event.played_at]))}
+            />
+          </section>
+        </div>
+      ) : (
+        <div className="lg:grid lg:grid-cols-[1.5fr_1fr] lg:items-start lg:gap-8">
+          <div>
+            <div className="lbl grid grid-cols-[48px_1fr_auto] gap-2.5 pr-4 pb-2 pl-3 lg:grid-cols-[52px_1fr_auto] lg:gap-3 lg:pr-5 lg:pb-2.5">
+              <span />
+              <span>Tappe giocate</span>
+              <span className="min-w-[34px] text-center lg:min-w-[38px]">Pt</span>
+            </div>
+            <div className="card">
+              {tappe.length === 0 ? (
+                <EmptyRow>Nessuna tappa giocata.</EmptyRow>
+              ) : (
+                <ul>
+                  {tappe.map((t) => {
+                    const prize = t.points >= PRIZE_POINTS;
+                    // Older API responses have no `counted`; treat them as counted.
+                    const dropped = t.counted === false;
+                    return (
+                      <li key={t.event.id} className="border-b border-ink/8 last:border-b-0">
+                        <Link
+                          href={`/events/${t.event.id}`}
+                          className={`row-link grid grid-cols-[48px_1fr_auto] items-center gap-2.5 py-2.5 pr-4 pl-3 lg:grid-cols-[52px_1fr_auto] lg:gap-3 lg:py-3 lg:pr-5 ${
+                            dropped ? "opacity-45" : ""
+                          }`}
+                          title={dropped ? "Scartata: non conta per la classifica" : undefined}
+                        >
+                          <PositionTile rank={t.rank} prize={prize} />
+                          <div className="min-w-0">
+                            <div className="truncate text-[14px] font-bold leading-[1.2] lg:text-[15px]">
+                              {tappaTitle(t.event.name)}
+                            </div>
+                            <div className="tn mt-px text-[12px] text-ink/50">
+                              {record(t.wins + t.byes, t.losses, t.draws)}
+                              {dropped && " · scartata"}
+                            </div>
+                          </div>
+                          <PointsChip points={t.points} prize={prize} />
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+
+            {/* Stagione — mobile */}
+            <div className="lg:hidden">
+              <SectionHead
+                className="mt-7 mb-2.5"
+                title="Stagione"
+                aside={`${matches} ${matches === 1 ? "partita" : "partite"}`}
+              />
+              <div className="mb-2 grid grid-cols-3 gap-2">
+                {[
+                  ["V", w],
+                  ["S", l],
+                  ["P", d],
+                ].map(([label, value]) => (
+                  <div
+                    key={label}
+                    className="rounded-[18px] surface p-3"
+                  >
+                    <div className="lbl">{label}</div>
+                    <div className="tn text-[26px] font-extrabold tracking-[-0.03em]">
+                      {value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mb-2.5 rounded-[18px] surface p-3">
+                <div className="lbl">Win</div>
+                <div className="tn text-[26px] font-extrabold tracking-[-0.03em] text-accent-grad">
+                  {winPct(w, l, d)}
+                </div>
+              </div>
+              <div className="flex flex-col gap-2 rounded-[18px] surface px-4 py-3">
+                <Bar w={w} l={l} d={d} className="h-2" />
+                <Legend />
               </div>
             </div>
-            <div className="flex flex-col gap-2 rounded-[18px] surface px-4 py-3">
-              <Bar w={w} l={l} d={d} className="h-2" />
-              <Legend />
+
+          </div>
+
+          {/* Stagione — desktop */}
+          <div className="hidden lg:block">
+            <div className="lbl flex items-baseline justify-between px-5 pb-2.5">
+              <span>Stagione</span>
+              <span>V-S-P</span>
             </div>
-          </div>
-
-        </div>
-
-        {/* Stagione — desktop */}
-        <div className="hidden lg:block">
-          <div className="lbl flex items-baseline justify-between px-5 pb-2.5">
-            <span>Stagione</span>
-            <span>V-S-P</span>
-          </div>
-          <div className="flex flex-col gap-4 rounded-[18px] surface px-5 py-4">
-            <div className="flex gap-6">
-              {[
-                ["V", w],
-                ["S", l],
-                ["P", d],
-              ].map(([label, value]) => (
-                <div key={label}>
-                  <div className="lbl">{label}</div>
-                  <div className="tn text-[28px] font-extrabold tracking-[-0.03em]">
-                    {value}
+            <div className="flex flex-col gap-4 rounded-[18px] surface px-5 py-4">
+              <div className="flex gap-6">
+                {[
+                  ["V", w],
+                  ["S", l],
+                  ["P", d],
+                ].map(([label, value]) => (
+                  <div key={label}>
+                    <div className="lbl">{label}</div>
+                    <div className="tn text-[28px] font-extrabold tracking-[-0.03em]">
+                      {value}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex flex-col gap-2">
-              <Bar w={w} l={l} d={d} className="h-2.5" />
-              <Legend />
+                ))}
+              </div>
+              <div className="flex flex-col gap-2">
+                <Bar w={w} l={l} d={d} className="h-2.5" />
+                <Legend />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </main>
   );
 }
