@@ -1,5 +1,8 @@
 const BASE = "https://api.legapaupermilano.it";
 
+/** Tag on every public API fetch, so an admin write can expire them all. */
+export const PUBLIC_DATA_TAG = "api";
+
 export type Season = {
   is_active: boolean;
   id: number;
@@ -104,7 +107,7 @@ export type Pairing = {
 };
 
 async function get<T>(path: string): Promise<T | null> {
-  const res = await fetch(`${BASE}${path}`, { next: { revalidate: 60 } });
+  const res = await fetch(`${BASE}${path}`, { next: { revalidate: 60, tags: [PUBLIC_DATA_TAG] } });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
   return res.json();

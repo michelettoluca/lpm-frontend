@@ -1,4 +1,6 @@
+import { revalidateTag } from "next/cache";
 import { adminFetch, type AdminResult } from "./adminApi";
+import { PUBLIC_DATA_TAG } from "./api";
 import type { AdminError } from "./adminTypes";
 
 /**
@@ -73,7 +75,9 @@ export function forwardedFor(request: Request): string | undefined {
 /**
  * Forward a request to an admin endpoint using the session cookie. A 401 or
  * 429 from the API means the session is no longer usable, so the cookie is
- * cleared in the same response and the UI falls back to the gate.
+ * cleared in the same response and the UI falls back to the gate. A successful
+ * write expires the public pages' cached API data, so the next visit renders
+ * fresh results instead of one stale-while-revalidate round behind.
  */
 export async function proxy<T>(
   request: Request,
@@ -83,6 +87,7 @@ export async function proxy<T>(
   const key = readKey(request);
   if (!key) return missingKey();
   const result = await adminFetch<T>(path, key, { ...init, forwardedFor: forwardedFor(request) });
+  if (result.ok && init.method !== "GET") revalidateTag(PUBLIC_DATA_TAG, { expire: 0 });
   const lost = !result.ok && (result.status === 401 || result.status === 429);
   return toResponse(result, lost ? { "Set-Cookie": clearedCookie() } : undefined);
 }
