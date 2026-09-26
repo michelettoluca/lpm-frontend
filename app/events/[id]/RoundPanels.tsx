@@ -117,7 +117,7 @@ function FinalePanel({ standings }: { standings: Standing[] }) {
                       {s.player_name}
                     </span>
                     <span className="tn text-[12px] text-ink/45 lg:mr-4 lg:text-[13px] lg:text-ink/55">
-                      {record(s.wins, s.losses, s.draws)}
+                      {record(s.wins + s.byes, s.losses, s.draws)}
                     </span>
                     <PointsChip points={s.points} prize={prize} />
                   </Link>

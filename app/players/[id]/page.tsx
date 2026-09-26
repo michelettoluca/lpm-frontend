@@ -99,7 +99,7 @@ export default async function PlayerDetailPage(
     rankIndex >= 0
       ? leaderboard[rankIndex].total_points
       : entries.reduce((s, e) => s + e.points, 0);
-  const w = entries.reduce((s, e) => s + e.wins, 0);
+  const w = entries.reduce((s, e) => s + e.wins + e.byes, 0);
   const l = entries.reduce((s, e) => s + e.losses, 0);
   const d = entries.reduce((s, e) => s + e.draws, 0);
   const matches = w + l + d;
@@ -181,7 +181,7 @@ export default async function PlayerDetailPage(
                             {tappaTitle(t.event.name)}
                           </div>
                           <div className="tn mt-px text-[12px] text-ink/50">
-                            {record(t.wins, t.losses, t.draws)}
+                            {record(t.wins + t.byes, t.losses, t.draws)}
                           </div>
                         </div>
                         <PointsChip points={t.points} prize={prize} />
