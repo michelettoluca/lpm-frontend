@@ -6,6 +6,8 @@ export type Season = {
   name: string;
   started_at: string;
   ended_at: string | null;
+  /** Best results that count toward the season total; null counts all. */
+  counted_events: number | null;
 };
 
 export type LeaderboardEntry = {
@@ -63,6 +65,8 @@ export type PlayerEventEntry = {
   gwp: number;
   omw: number;
   ogw: number;
+  /** False when the result falls outside the season's best counted_events. */
+  counted: boolean;
 };
 
 export type H2HMatch = {

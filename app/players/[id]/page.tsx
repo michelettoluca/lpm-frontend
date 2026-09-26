@@ -98,7 +98,7 @@ export default async function PlayerDetailPage(
   const seasonPoints =
     rankIndex >= 0
       ? leaderboard[rankIndex].total_points
-      : entries.reduce((s, e) => s + e.points, 0);
+      : entries.reduce((s, e) => s + (e.counted === false ? 0 : e.points), 0);
   const w = entries.reduce((s, e) => s + e.wins + e.byes, 0);
   const l = entries.reduce((s, e) => s + e.losses, 0);
   const d = entries.reduce((s, e) => s + e.draws, 0);
@@ -169,11 +169,16 @@ export default async function PlayerDetailPage(
               <ul>
                 {tappe.map((t) => {
                   const prize = t.points >= PRIZE_POINTS;
+                  // Older API responses have no `counted`; treat them as counted.
+                  const dropped = t.counted === false;
                   return (
                     <li key={t.event.id} className="border-b border-ink/8 last:border-b-0">
                       <Link
                         href={`/events/${t.event.id}`}
-                        className="row-link grid grid-cols-[48px_1fr_auto] items-center gap-2.5 py-2.5 pr-4 pl-3 lg:grid-cols-[52px_1fr_auto] lg:gap-3 lg:py-3 lg:pr-5"
+                        className={`row-link grid grid-cols-[48px_1fr_auto] items-center gap-2.5 py-2.5 pr-4 pl-3 lg:grid-cols-[52px_1fr_auto] lg:gap-3 lg:py-3 lg:pr-5 ${
+                          dropped ? "opacity-45" : ""
+                        }`}
+                        title={dropped ? "Scartata: non conta per la classifica" : undefined}
                       >
                         <PositionTile rank={t.rank} prize={prize} />
                         <div className="min-w-0">
@@ -182,6 +187,7 @@ export default async function PlayerDetailPage(
                           </div>
                           <div className="tn mt-px text-[12px] text-ink/50">
                             {record(t.wins + t.byes, t.losses, t.draws)}
+                            {dropped && " · scartata"}
                           </div>
                         </div>
                         <PointsChip points={t.points} prize={prize} />

@@ -22,15 +22,20 @@ import {
   PRIMARY,
 } from "../dashboardUi";
 
-type Draft = { name: string; startedAt: string; endedAt: string };
-const EMPTY: Draft = { name: "", startedAt: "", endedAt: "" };
+type Draft = { name: string; startedAt: string; endedAt: string; countedEvents: string };
+const EMPTY: Draft = { name: "", startedAt: "", endedAt: "", countedEvents: "8" };
 
 function toDraft(season: Season): Draft {
   return {
     name: season.name,
     startedAt: localDate(season.started_at),
     endedAt: season.ended_at ? localDate(season.ended_at) : "",
+    countedEvents: season.counted_events == null ? "" : String(season.counted_events),
   };
+}
+
+function countedLabel(season: Season): string {
+  return season.counted_events == null ? "tutte" : `migliori ${season.counted_events}`;
 }
 
 export default function SeasonsPage() {
@@ -42,12 +47,14 @@ export default function SeasonsPage() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AdminError | null>(null);
   const [notice, setNotice] = useState("");
-  const ids = { name: useId(), start: useId(), end: useId() };
+  const ids = { name: useId(), start: useId(), end: useId(), counted: useId() };
 
   const eventCount = (seasonId: number) => events.filter((event) => event.season_id === seasonId).length;
   const fieldError = (field: string) =>
     error?.kind === "bad_request" && error.field === field ? error.message : null;
   const intervalInvalid = draft.startedAt !== "" && draft.endedAt !== "" && draft.endedAt < draft.startedAt;
+  const countedInvalid =
+    draft.countedEvents !== "" && !(Number.isInteger(Number(draft.countedEvents)) && Number(draft.countedEvents) >= 1);
 
   function open(target: Season | "new") {
     setEditing(target);
@@ -64,7 +71,7 @@ export default function SeasonsPage() {
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
-    if (!editing || pending || intervalInvalid) return;
+    if (!editing || pending || intervalInvalid || countedInvalid) return;
     setPending(true);
     setError(null);
     const isNew = editing === "new";
@@ -77,6 +84,7 @@ export default function SeasonsPage() {
         name: draft.name.trim(),
         started_at: draft.startedAt || undefined,
         ended_at: draft.endedAt || null,
+        counted_events: draft.countedEvents === "" ? null : Number(draft.countedEvents),
       }),
     });
     setPending(false);
@@ -173,7 +181,7 @@ export default function SeasonsPage() {
           <h2 className="text-[16px] font-extrabold uppercase tracking-[0.08em]">
             {editing === "new" ? "Nuova stagione" : `Modifica “${editing.name}”`}
           </h2>
-          <div className="mt-4 grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)]">
+          <div className="mt-4 grid gap-4 md:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
             <Field label="Nome" htmlFor={ids.name}>
               <input
                 id={ids.name}
@@ -210,9 +218,24 @@ export default function SeasonsPage() {
               {intervalInvalid && <FieldError message="La fine deve essere uguale o successiva all'inizio." />}
               {fieldError("ended_at") && <FieldError message={fieldError("ended_at")!} />}
             </Field>
+            <Field label="Tappe valide" htmlFor={ids.counted} hint="Migliori risultati che contano in classifica. Vuoto = tutte.">
+              <input
+                id={ids.counted}
+                type="number"
+                min={1}
+                step={1}
+                inputMode="numeric"
+                className={`${CONTROL} ${fieldError("counted_events") || countedInvalid ? CONTROL_INVALID : ""}`}
+                value={draft.countedEvents}
+                onChange={(event) => setDraft({ ...draft, countedEvents: event.target.value })}
+                disabled={pending}
+              />
+              {countedInvalid && <FieldError message="Inserisci un numero intero da 1 in su." />}
+              {fieldError("counted_events") && <FieldError message={fieldError("counted_events")!} />}
+            </Field>
           </div>
           <div className="mt-5 flex flex-wrap gap-2">
-            <button type="submit" className={PRIMARY} disabled={pending || !draft.name.trim() || intervalInvalid}>
+            <button type="submit" className={PRIMARY} disabled={pending || !draft.name.trim() || intervalInvalid || countedInvalid}>
               {pending ? "Salvataggio…" : editing === "new" ? "Crea stagione" : "Salva modifiche"}
             </button>
             <button type="button" className={ACTION} onClick={close} disabled={pending}>
@@ -230,6 +253,7 @@ export default function SeasonsPage() {
               <th className={HEAD_CELL}>Stagione</th>
               <th className={HEAD_CELL}>Periodo</th>
               <th className={HEAD_CELL}>Eventi</th>
+              <th className={HEAD_CELL}>In classifica</th>
               <th className={HEAD_CELL}>Stato</th>
               <th className={`${HEAD_CELL} text-right`}>Azioni</th>
             </tr>
@@ -247,6 +271,7 @@ export default function SeasonsPage() {
                   {season.ended_at ? displayDate(season.ended_at) : "in corso"}
                 </td>
                 <td className={`${CELL} tn`}>{eventCount(season.id)}</td>
+                <td className={`${CELL} tn whitespace-nowrap text-ink/70`}>{countedLabel(season)}</td>
                 <td className={CELL}>
                   {season.is_active ? (
                     <Badge tone="accent">Attiva</Badge>

@@ -25,6 +25,7 @@ export type ImportField =
   | "played_at"
   | "started_at"
   | "ended_at"
+  | "counted_events"
   | "standings"
   | "matches"
   | "confirm";
@@ -43,6 +44,8 @@ export type Season = {
   name: string;
   started_at: string;
   ended_at: string | null;
+  /** Best results that count toward the season total; null counts all. */
+  counted_events: number | null;
 };
 
 export type ImportResult = {

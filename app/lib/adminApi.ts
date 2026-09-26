@@ -29,6 +29,7 @@ function isVerificationFailure(message: string): boolean {
  */
 function fieldForMessage(message: string): ImportField | undefined {
   const m = message.toLowerCase();
+  if (m.includes("counted_events")) return "counted_events";
   if (m.includes("event_id")) return "event_id";
   if (m.includes("season_id") || m.includes("season id")) return "season_id";
   if (m.includes("confirm")) return "confirm";
