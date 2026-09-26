@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import type { AdminError } from "@/app/lib/adminTypes";
+import type { AdminError, ManagedEvent } from "@/app/lib/adminTypes";
 import { tappaTitle } from "@/app/lib/format";
 import { useAdmin } from "../../AdminShell";
+import { ConfirmResetDialog } from "../../ConfirmResetDialog";
 import { ErrorPanel } from "../../ErrorPanel";
 import { EventDialog } from "../../EventDialog";
 import { ImportPanel } from "../../ImportPanel";
@@ -21,7 +22,7 @@ import {
 } from "../../dashboardUi";
 import { EventStatus, isPast } from "../../eventDisplay";
 
-type Modal = "edit" | "delete";
+type Modal = "edit" | "delete" | "reset";
 
 function Detail({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -82,6 +83,19 @@ export default function EventDetailPage() {
     router.replace(`/admin/seasons/${season_id}`);
   }
 
+  async function resetResults() {
+    setPending(true);
+    const res = await call<ManagedEvent>(`/api/admin/events?id=${event!.id}&results=true`, { method: "DELETE" });
+    setPending(false);
+    setModal(null);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    setEvents((prev) => prev.map((e) => (e.id === res.data.id ? res.data : e)));
+    setNotice("Risultati rimossi. Carica di nuovo i file per reimportare la tappa.");
+  }
+
   return (
     <>
       <PageHeader
@@ -122,12 +136,15 @@ export default function EventDetailPage() {
             <h2 className="text-lg font-extrabold tracking-[-0.01em]">Risultati importati</h2>
             <p className="mt-1 max-w-xl text-sm leading-relaxed text-ink/55">
               Classifica, turni e match della tappa sono pubblicati sul sito e contano per la classifica di stagione.
-              Per rifare l&apos;import elimina la tappa, ricreala e importa di nuovo i file.
+              Se l&apos;import è sbagliato, reimposta i risultati e carica di nuovo i file: la tappa resta.
             </p>
-            <div className="mt-5">
+            <div className="mt-5 flex flex-wrap gap-2">
               <Link href={`/events/${event.id}`} target="_blank" rel="noopener" className={BUTTON_PRIMARY}>
                 Vedi la tappa sul sito ↗
               </Link>
+              <button type="button" className={BUTTON_DANGER} onClick={() => open("reset")}>
+                Reimposta risultati
+              </button>
             </div>
           </section>
         ) : (
@@ -183,6 +200,22 @@ export default function EventDetailPage() {
           }}
         />
       )}
+
+      <ConfirmResetDialog
+        open={modal === "reset"}
+        word="REIMPOSTA"
+        title={`Reimposta i risultati di “${tappaTitle(event.name)}”`}
+        confirmLabel="Reimposta risultati"
+        pending={pending}
+        onCancel={close}
+        onConfirm={() => void resetResults()}
+      >
+        <p>
+          Verranno eliminati classifica, turni e match della tappa, e la classifica di stagione verrà ricalcolata
+          senza di essa. La tappa resta con nome, data e stagione: potrai importare di nuovo i file subito dopo.
+        </p>
+        <p>I giocatori restano. L&apos;operazione non è reversibile.</p>
+      </ConfirmResetDialog>
 
       {modal === "delete" && (
         <ConfirmDialog
