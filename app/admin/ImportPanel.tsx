@@ -1,22 +1,93 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useId, useState } from "react";
 import type { AdminError, ImportResult, ManagedEvent } from "@/app/lib/adminTypes";
 import { useAdmin } from "./AdminShell";
-import { BUTTON_PRIMARY } from "./dashboardUi";
+import { BUTTON_GHOST, BUTTON_PRIMARY } from "./dashboardUi";
 import { ErrorPanel, FieldError } from "./ErrorPanel";
-import { Field, FileInput, Warning } from "./fields";
+import { Warning } from "./fields";
 
-const STANDINGS_PREFIX = "standings-tournament";
-const MATCHES_PREFIX = "matches-tournament";
+type Kind = "standings" | "matches";
+
+const LABELS: Record<Kind, string> = { standings: "Standings", matches: "Matches" };
+
+/** Minimal CSV reader: quoted fields, doubled quotes, CRLF. Enough for melee.gg exports. */
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"' && text[i + 1] === '"') {
+        field += '"';
+        i++;
+      } else if (c === '"') quoted = false;
+      else field += c;
+    } else if (c === '"') quoted = true;
+    else if (c === ",") {
+      row.push(field);
+      field = "";
+    } else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(field);
+      if (row.some((f) => f !== "")) rows.push(row);
+      row = [];
+      field = "";
+    } else field += c;
+  }
+  row.push(field);
+  if (row.some((f) => f !== "")) rows.push(row);
+  return rows;
+}
+
+/** What the pre-upload checks need from one export. */
+type Summary = { kind: Kind; phases: Set<string>; teams: Set<string>; rounds: number };
 
 /**
- * Both CSVs come off the same melee.gg page and are trivial to mix up. Swapping
- * them fails as a confusing verification mismatch rather than a clear error, so
- * flag it from the filename before the upload goes anywhere.
+ * Tell the two melee.gg exports apart by their columns, not their filename, so
+ * a renamed file still lands in the right slot and the two can't be swapped.
+ * Columns match the ones the backend requires from each export.
  */
-function looksSwapped(file: File | null, otherPrefix: string): boolean {
-  return file !== null && file.name.toLowerCase().startsWith(otherPrefix);
+async function summarize(file: File): Promise<Summary | null> {
+  const [header, ...records] = parseCsv((await file.text()).replace(/^\uFEFF/, ""));
+  if (!header) return null;
+  const col = (name: string) => header.findIndex((h) => h.trim() === name);
+  const values = (name: string) => records.map((r) => (r[col(name)] ?? "").trim()).filter(Boolean);
+  const rounds = (name: string) => Math.max(0, ...values(name).map(Number).filter(Number.isFinite));
+
+  if (col("TeamPlayers1ID") >= 0 && col("MatchRecord") >= 0) {
+    return { kind: "standings", phases: new Set(values("PhaseId")), teams: new Set(values("TeamId")), rounds: rounds("RoundNumber") };
+  }
+  if (col("Team1WinsAndByes") >= 0 && col("Team2WinsAndByes") >= 0) {
+    return {
+      kind: "matches",
+      phases: new Set(values("PhaseId")),
+      teams: new Set([...values("Team1Id"), ...values("Team2Id")]),
+      rounds: rounds("RoundNumber"),
+    };
+  }
+  return null;
+}
+
+/**
+ * Catch the mismatches the backend would reject, before uploading: files from
+ * different tournaments, or the same tournament downloaded at different rounds.
+ */
+function mismatch(standings: Summary, matches: Summary): string | null {
+  const samePhase = [...matches.phases].every((p) => standings.phases.has(p));
+  const missing = [...matches.teams].filter((t) => !standings.teams.has(t)).length;
+  if (!samePhase || missing > matches.teams.size / 2) {
+    return "I due file sono di tornei diversi. Scarica standings e matches dalla pagina dello stesso torneo.";
+  }
+  if (missing > 0) {
+    return `${missing} ${missing === 1 ? "giocatore dei match non compare" : "giocatori dei match non compaiono"} nelle standings. Riscarica entrambi i file.`;
+  }
+  if (standings.rounds !== matches.rounds) {
+    return `Le standings arrivano al turno ${standings.rounds}, i match al turno ${matches.rounds}: sono stati scaricati in momenti diversi. Riscaricali entrambi a torneo concluso.`;
+  }
+  return null;
 }
 
 /** Attach Melee results to an event that has none yet. */
@@ -28,16 +99,38 @@ export function ImportPanel({
   onImported: (result: ImportResult) => void;
 }) {
   const { setEvents, call } = useAdmin();
-  const [standings, setStandings] = useState<File | null>(null);
-  const [matches, setMatches] = useState<File | null>(null);
+  const [files, setFiles] = useState<Record<Kind, { file: File; summary: Summary } | null>>({
+    standings: null,
+    matches: null,
+  });
+  const [unknown, setUnknown] = useState<string[]>([]);
+  const [dragging, setDragging] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AdminError | null>(null);
-  const formRef = useRef<HTMLFormElement>(null);
-  const ids = { standings: useId(), matches: useId() };
+  const inputId = useId();
 
-  const ready = standings !== null && matches !== null;
-  const fieldError = (field: string) =>
-    error?.kind === "bad_request" && error.field === field ? error.message : null;
+  const problem = files.standings && files.matches ? mismatch(files.standings.summary, files.matches.summary) : null;
+  const ready = files.standings !== null && files.matches !== null && problem === null;
+  const fieldError = (field: Kind) => (error?.kind === "bad_request" && error.field === field ? error.message : null);
+
+  async function add(picked: FileList | null) {
+    if (!picked || picked.length === 0) return;
+    const next = { ...files };
+    const rejected: string[] = [];
+    for (const file of Array.from(picked)) {
+      const summary = await summarize(file);
+      if (summary) next[summary.kind] = { file, summary };
+      else rejected.push(file.name);
+    }
+    setFiles(next);
+    setUnknown(rejected);
+    setError(null);
+  }
+
+  function remove(kind: Kind) {
+    setFiles({ ...files, [kind]: null });
+    setError(null);
+  }
 
   async function runImport(formEvent: React.FormEvent) {
     formEvent.preventDefault();
@@ -47,8 +140,8 @@ export function ImportPanel({
 
     const body = new FormData();
     body.set("event_id", String(event.id));
-    body.set("standings", standings);
-    body.set("matches", matches);
+    body.set("standings", files.standings!.file);
+    body.set("matches", files.matches!.file);
     const res = await call<ImportResult>("/api/admin/import", { method: "POST", body });
 
     setPending(false);
@@ -56,53 +149,103 @@ export function ImportPanel({
       setError(res.error);
       return;
     }
-    setStandings(null);
-    setMatches(null);
-    formRef.current?.reset();
+    setFiles({ standings: null, matches: null });
     setEvents((prev) => prev.map((e) => (e.id === res.data.event_id ? { ...e, has_results: true } : e)));
     onImported(res.data);
   }
 
   return (
-    <form ref={formRef} onSubmit={runImport} className="card p-5 sm:p-6">
+    <form onSubmit={runImport} className="card p-5 sm:p-6">
       <h2 className="text-lg font-extrabold tracking-[-0.01em]">Importa risultati</h2>
       <p className="mt-1 max-w-xl text-sm leading-relaxed text-ink/55">
-        Carica entrambi i CSV scaricati dalla pagina del torneo su melee.gg. Il backend li confronta fra loro e rifiuta
-        l&apos;import se non tornano.
+        Carica i due CSV scaricati dalla pagina del torneo su melee.gg, standings e matches. Il backend li confronta
+        fra loro e rifiuta l&apos;import se non tornano.
       </p>
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
-        <Field label="Standings-tournament-….csv" htmlFor={ids.standings}>
-          <FileInput
-            id={ids.standings}
-            name="standings"
-            onPick={setStandings}
-            disabled={pending}
-            invalid={Boolean(fieldError("standings"))}
-          />
-          {looksSwapped(standings, MATCHES_PREFIX) && (
-            <Warning>Questo sembra il file dei match. Controlla di non aver invertito i due file.</Warning>
-          )}
-          {fieldError("standings") && <FieldError message={fieldError("standings")!} />}
-        </Field>
-        <Field label="Matches-tournament-….csv" htmlFor={ids.matches}>
-          <FileInput
-            id={ids.matches}
-            name="matches"
-            onPick={setMatches}
-            disabled={pending}
-            invalid={Boolean(fieldError("matches"))}
-          />
-          {looksSwapped(matches, STANDINGS_PREFIX) && (
-            <Warning>Questo sembra il file delle standings. Controlla di non aver invertito i due file.</Warning>
-          )}
-          {fieldError("matches") && <FieldError message={fieldError("matches")!} />}
-        </Field>
-      </div>
+
+      <label
+        htmlFor={inputId}
+        onDragOver={(e) => {
+          e.preventDefault();
+          if (!pending) setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragging(false);
+          if (!pending) void add(e.dataTransfer.files);
+        }}
+        className={`mt-5 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border-[1.5px] border-dashed px-4 py-7 text-center transition-colors ${
+          dragging ? "border-accent bg-tint" : "border-ink/20 hover:border-ink/40 hover:bg-ink/[0.02]"
+        } ${pending ? "pointer-events-none opacity-60" : ""}`}
+      >
+        <span className="text-sm font-bold">
+          Trascina qui i file <span className="text-accent">oppure sceglili</span>
+        </span>
+        <span className="text-[12px] text-ink/50">Puoi selezionarli insieme: li riconosciamo dal contenuto.</span>
+        <input
+          id={inputId}
+          type="file"
+          accept=".csv,text/csv"
+          multiple
+          className="sr-only"
+          disabled={pending}
+          onChange={(e) => {
+            void add(e.target.files);
+            e.target.value = "";
+          }}
+        />
+      </label>
+
+      <ul className="mt-3 divide-y divide-ink/8 rounded-2xl border border-ink/10">
+        {(["standings", "matches"] as const).map((kind) => {
+          const file = files[kind]?.file;
+          return (
+            <li key={kind} className="flex min-h-12 items-center gap-3 py-1.5 pr-1.5 pl-4">
+              <span
+                className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] font-bold ${
+                  file ? "bg-accent text-white" : "border border-ink/20"
+                }`}
+                aria-hidden
+              >
+                {file ? "✓" : ""}
+              </span>
+              <span className="lbl w-20 shrink-0">{LABELS[kind]}</span>
+              <span className={`min-w-0 flex-1 truncate text-[13px] ${file ? "" : "text-ink/40"}`}>
+                {file ? file.name : "Manca"}
+              </span>
+              {file && (
+                <button
+                  type="button"
+                  className={BUTTON_GHOST}
+                  onClick={() => remove(kind)}
+                  disabled={pending}
+                  aria-label={`Rimuovi ${LABELS[kind]}`}
+                >
+                  ✕
+                </button>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {fieldError("standings") && <FieldError message={fieldError("standings")!} />}
+      {fieldError("matches") && <FieldError message={fieldError("matches")!} />}
+      {unknown.length > 0 && (
+        <Warning>
+          Non riconosciuto: {unknown.join(", ")}. Servono gli export «Standings» e «Matches» del torneo su melee.gg.
+        </Warning>
+      )}
+      {problem && <Warning>{problem}</Warning>}
+
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <button type="submit" className={BUTTON_PRIMARY} disabled={pending || !ready}>
           {pending ? "Import in corso…" : "Importa risultati"}
         </button>
-        {!ready && !pending && <span className="text-[13px] text-ink/45">Seleziona entrambi i file.</span>}
+        {!ready && !pending && (
+          <span className="text-[13px] text-ink/45">
+            {files.standings || files.matches ? "Manca ancora un file." : "Aggiungi entrambi i file."}
+          </span>
+        )}
       </div>
       {error && !(error.kind === "bad_request" && (error.field === "standings" || error.field === "matches")) && (
         <ErrorPanel error={error} />
