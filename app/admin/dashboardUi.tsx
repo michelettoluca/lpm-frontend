@@ -5,9 +5,9 @@ import { useEffect, useId, type ReactNode } from "react";
 const BUTTON_BASE =
   "inline-flex h-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 text-[13px] font-bold transition disabled:cursor-not-allowed disabled:opacity-40";
 /** Neutral action. */
-export const BUTTON = `${BUTTON_BASE} border border-ink/15 bg-white hover:bg-ink/5`;
+export const BUTTON = `${BUTTON_BASE} border border-ink/12 bg-white shadow-[0_1px_2px_rgba(28,27,26,0.06)] hover:bg-ink/[0.03]`;
 /** The one thing the view is for. At most one per row or dialog. */
-export const BUTTON_PRIMARY = `${BUTTON_BASE} bg-accent text-white hover:opacity-90`;
+export const BUTTON_PRIMARY = `${BUTTON_BASE} bg-accent-grad shadow-glow text-white hover:brightness-105`;
 /** Low-emphasis action that sits next to others. */
 export const BUTTON_GHOST = `${BUTTON_BASE} text-ink/60 hover:bg-ink/5 hover:text-ink`;
 /** Destructive action that opens a confirmation. */
@@ -57,7 +57,7 @@ export function SectionHeader({ title, aside, action }: { title: string; aside?:
 
 export function Badge({ tone = "muted", children }: { tone?: "accent" | "ink" | "muted" | "outline"; children: ReactNode }) {
   const skin = {
-    accent: "bg-accent text-white",
+    accent: "bg-accent-grad text-white shadow-[0_4px_12px_-4px_rgba(255,45,26,0.6)]",
     ink: "bg-ink text-white",
     muted: "bg-ink/5 text-ink/55",
     outline: "border border-accent text-accent",

@@ -131,8 +131,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <Context.Provider value={{ seasons, events, setSeasons, setEvents, call, refresh: load }}>
-      <div className="min-h-screen bg-ground">
-        <header className="sticky top-0 z-30 border-b border-ink/10 bg-white/95 backdrop-blur">
+      <div className="min-h-screen">
+        <header className="sticky top-0 z-30 border-b border-ink/8 bg-white/70 backdrop-blur-xl">
           <div className={`${WIDTH} flex h-16 items-center justify-between gap-4`}>
             <Link href="/admin/seasons" className="text-lg font-extrabold tracking-tight">
               LPM<span className="ml-2 text-accent">Admin</span>

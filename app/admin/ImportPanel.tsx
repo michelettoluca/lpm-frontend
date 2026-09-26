@@ -175,7 +175,7 @@ export function ImportPanel({
           if (!pending) void add(e.dataTransfer.files);
         }}
         className={`mt-5 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border-[1.5px] border-dashed px-4 py-7 text-center transition-colors ${
-          dragging ? "border-accent bg-tint" : "border-ink/20 hover:border-ink/40 hover:bg-ink/[0.02]"
+          dragging ? "bg-tint-grad border-accent" : "border-ink/20 bg-white/50 hover:border-ink/40 hover:bg-white"
         } ${pending ? "pointer-events-none opacity-60" : ""}`}
       >
         <span className="text-sm font-bold">
@@ -203,7 +203,7 @@ export function ImportPanel({
             <li key={kind} className="flex min-h-12 items-center gap-3 py-1.5 pr-1.5 pl-4">
               <span
                 className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] font-bold ${
-                  file ? "bg-accent text-white" : "border border-ink/20"
+                  file ? "bg-accent-grad text-white" : "border border-ink/20"
                 }`}
                 aria-hidden
               >

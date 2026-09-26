@@ -18,7 +18,7 @@ function Progress({ done, total, counted }: { done: number; total: number; count
   return (
     <div className="relative h-1.5 w-24" aria-hidden>
       <div className="h-full overflow-hidden rounded-full bg-ink/8">
-        <div className="h-full rounded-full bg-accent" style={{ width: total ? `${(done / total) * 100}%` : 0 }} />
+        <div className="bg-accent-grad h-full rounded-full" style={{ width: total ? `${(done / total) * 100}%` : 0 }} />
       </div>
       {tick !== null && (
         <div

@@ -18,7 +18,7 @@ export function Chip({
 }) {
   return (
     <span
-      className="inline-block rounded-full bg-accent px-3 py-1.5 text-[11px] font-bold leading-none text-white shadow-[0_6px_14px_rgba(255,45,26,0.14)]"
+      className="bg-accent-grad shadow-glow inline-block rounded-full px-3 py-1.5 text-[11px] font-bold leading-none text-white"
       style={{ transform: `rotate(${rotate}deg)` }}
     >
       {children}
@@ -59,7 +59,7 @@ export function Brand({ year }: { year: number }) {
   );
 }
 
-/** Accent-edged card: 1.5px accent frame with soft glow around a white body. */
+/** Accent-edged card: 1.5px gradient frame with a soft glow around a warm white body. */
 export function AccentCard({
   children,
   outer,
@@ -71,9 +71,9 @@ export function AccentCard({
 }) {
   return (
     <div
-      className={`bg-accent p-[1.5px] shadow-[0_10px_26px_rgba(255,45,26,0.14)] ${outer}`}
+      className={`bg-accent-grad p-[1.5px] shadow-[0_16px_40px_-12px_rgba(255,45,26,0.45)] ${outer}`}
     >
-      <div className={`bg-white ${inner}`}>{children}</div>
+      <div className={`bg-[linear-gradient(180deg,#fff3ef_0%,#ffffff_60%)] ${inner}`}>{children}</div>
     </div>
   );
 }
@@ -96,8 +96,8 @@ export function DateTile({
     <span
       className={`grid place-items-center rounded-xl text-center leading-none ${size} ${
         ghost
-          ? "border-[1.5px] border-dashed border-ink/25 text-ink/55"
-          : "bg-tint text-accent"
+          ? "border-[1.5px] border-dashed border-ink/20 bg-white/60 text-ink/55"
+          : "bg-tint-grad text-accent shadow-[inset_0_0_0_1px_rgba(255,45,26,0.08)]"
       }`}
     >
       <span>
@@ -124,7 +124,9 @@ export function PositionTile({ rank, prize }: { rank: number; prize: boolean }) 
   return (
     <span
       className={`tn grid h-11 w-12 place-items-center rounded-xl text-center text-[18px] font-extrabold leading-none lg:h-[46px] lg:w-[52px] lg:text-[20px] ${
-        prize ? "bg-tint text-accent" : "bg-ink/5 text-ink"
+        prize
+          ? "bg-tint-grad text-accent shadow-[inset_0_0_0_1px_rgba(255,45,26,0.08)]"
+          : "bg-neutral-grad text-ink"
       }`}
     >
       <span>
@@ -145,7 +147,7 @@ export function PointsChip({
   return (
     <span
       className={`tn inline-block min-w-[34px] rounded-[10px] px-1.5 py-1 text-center text-[15px] font-extrabold leading-none lg:min-w-[38px] ${
-        prize ? "bg-tint" : "bg-transparent"
+        prize ? "bg-tint-grad text-accent" : "bg-transparent"
       }`}
     >
       {points}
@@ -164,7 +166,8 @@ export function SectionHead({
 }) {
   return (
     <div className={`flex items-baseline justify-between ${className}`}>
-      <span className="text-[16px] font-extrabold uppercase tracking-[0.08em]">
+      <span className="flex items-center gap-2 text-[16px] font-extrabold uppercase tracking-[0.08em]">
+        <span aria-hidden className="bg-accent-grad h-3.5 w-1 rounded-full" />
         {title}
       </span>
       {aside !== undefined && (
@@ -184,7 +187,7 @@ export function DashedLink({
   return (
     <Link
       href={href}
-      className="mt-2.5 block rounded-[18px] border-[1.5px] border-dashed border-ink/25 bg-white p-3 text-center text-[14px] font-bold text-ink/70 transition-colors hover:border-ink/45"
+      className="surface lift mt-2.5 block rounded-[18px] p-3 text-center text-[14px] font-bold text-ink/70 transition-colors hover:text-ink"
     >
       {children}
     </Link>
@@ -215,7 +218,7 @@ export function RankRow({
         href={href}
         className={`row-link grid grid-cols-[40px_1fr_auto] items-center gap-2 px-4 py-[11px] lg:grid-cols-[48px_1fr_auto] lg:gap-3 lg:px-5 ${desktopPadding}`}
       >
-        <span className="tn text-[22px] font-extrabold leading-none tracking-[-0.03em] text-accent lg:text-[24px]">
+        <span className="tn text-accent-grad text-[22px] font-extrabold leading-none tracking-[-0.03em] lg:text-[24px]">
           {rank}
         </span>
         <div className="min-w-0">

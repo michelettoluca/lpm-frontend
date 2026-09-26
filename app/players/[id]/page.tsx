@@ -38,7 +38,7 @@ function Tile({
 }) {
   return (
     <div
-      className={`rounded-[20px] border border-ink/10 bg-white px-3 pt-3 pb-2.5 lg:px-3.5 lg:pt-3.5 lg:pb-3 ${className}`}
+      className={`rounded-[20px] surface px-3 pt-3 pb-2.5 lg:px-3.5 lg:pt-3.5 lg:pb-3 ${className}`}
     >
       <div className="lbl">{label}</div>
       <div className="tn mt-1.5 text-[30px] font-extrabold leading-none tracking-[-0.04em] lg:mt-2 lg:text-[36px]">
@@ -68,7 +68,7 @@ function Bar({ w, l, d, className }: { w: number; l: number; d: number; classNam
   if (w + l + d === 0) return <div className={`${className} rounded-full bg-draw`} />;
   return (
     <div className={`flex gap-0.5 overflow-hidden rounded-full ${className}`}>
-      {w > 0 && <div style={{ flex: w }} className="bg-accent" />}
+      {w > 0 && <div style={{ flex: w }} className="bg-accent-grad" />}
       {l > 0 && <div style={{ flex: l }} className="bg-ink" />}
       {d > 0 && <div style={{ flex: d }} className="bg-draw" />}
     </div>
@@ -140,7 +140,7 @@ export default async function PlayerDetailPage(
 
         <div className="mb-[22px] grid grid-cols-3 gap-2 lg:mb-0 lg:grid-cols-[repeat(4,132px)] lg:gap-2.5">
           <Tile label="Punti">
-            <span className="text-accent">{seasonPoints}</span>
+            <span className="text-accent-grad">{seasonPoints}</span>
           </Tile>
           <Tile label="Posizione">{seasonRank === null ? "–" : seasonRank}</Tile>
           <Tile label="Tappe">
@@ -214,7 +214,7 @@ export default async function PlayerDetailPage(
               ].map(([label, value]) => (
                 <div
                   key={label}
-                  className="rounded-[18px] border border-ink/10 bg-white p-3"
+                  className="rounded-[18px] surface p-3"
                 >
                   <div className="lbl">{label}</div>
                   <div className="tn text-[26px] font-extrabold tracking-[-0.03em]">
@@ -223,13 +223,13 @@ export default async function PlayerDetailPage(
                 </div>
               ))}
             </div>
-            <div className="mb-2.5 rounded-[18px] border border-ink/10 bg-white p-3">
+            <div className="mb-2.5 rounded-[18px] surface p-3">
               <div className="lbl">Win</div>
-              <div className="tn text-[26px] font-extrabold tracking-[-0.03em] text-accent">
+              <div className="tn text-[26px] font-extrabold tracking-[-0.03em] text-accent-grad">
                 {winPct(w, l, d)}
               </div>
             </div>
-            <div className="flex flex-col gap-2 rounded-[18px] border border-ink/10 bg-white px-4 py-3">
+            <div className="flex flex-col gap-2 rounded-[18px] surface px-4 py-3">
               <Bar w={w} l={l} d={d} className="h-2" />
               <Legend />
             </div>
@@ -243,7 +243,7 @@ export default async function PlayerDetailPage(
             <span>Stagione</span>
             <span>V-S-P</span>
           </div>
-          <div className="flex flex-col gap-4 rounded-[18px] border border-ink/10 bg-white px-5 py-4">
+          <div className="flex flex-col gap-4 rounded-[18px] surface px-5 py-4">
             <div className="flex gap-6">
               {[
                 ["V", w],

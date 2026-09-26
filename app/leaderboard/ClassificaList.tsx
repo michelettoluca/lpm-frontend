@@ -51,13 +51,13 @@ export default function ClassificaList({
           <h1 className="mt-[26px] mb-2 text-[40px] font-extrabold leading-[0.95] tracking-[-0.04em] lg:mt-0 lg:mb-2.5 lg:text-[64px] lg:leading-[0.92] lg:tracking-[-0.045em]">
             Classifica
             <br />
-            <span className="text-accent">completa</span>
+            <span className="text-accent-grad">completa</span>
           </h1>
           <div className="mb-4 text-[13px] text-ink/60 lg:mb-0 lg:text-[14px]">
             {meta}
           </div>
         </div>
-        <label className="mb-3 flex h-11 items-center gap-2.5 rounded-[14px] border border-ink/10 bg-white px-4 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent lg:mb-0 lg:w-[320px]">
+        <label className="mb-3 flex h-11 items-center gap-2.5 surface rounded-[14px] px-4 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent lg:mb-0 lg:w-[320px]">
           <SearchIcon />
           <input
             type="search"

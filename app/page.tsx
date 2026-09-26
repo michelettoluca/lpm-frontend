@@ -54,12 +54,12 @@ function PodiumSide({ entry }: { entry: LeaderboardEntry }) {
   return (
     <Link
       href={`/players/${entry.player_id}`}
-      className="mb-2.5 block rounded-[20px] border border-ink/10 bg-white px-1.5 pt-3.5 pb-3 transition-colors hover:bg-ink/4 lg:mb-0 lg:px-2.5 lg:pt-[18px] lg:pb-4"
+      className="surface lift mb-2.5 block rounded-[20px] px-1.5 pt-3.5 pb-3 lg:mb-0 lg:px-2.5 lg:pt-[18px] lg:pb-4"
     >
       <div className="break-words text-[12px] font-bold capitalize leading-[1.2] lg:text-[14px]">
         {entry.display_name}
       </div>
-      <div className="tn mt-1.5 text-[40px] font-extrabold leading-none tracking-[-0.04em] text-accent lg:mt-2 lg:text-[52px]">
+      <div className="tn text-accent-grad mt-1.5 text-[40px] font-extrabold leading-none tracking-[-0.04em] lg:mt-2 lg:text-[52px]">
         {entry.total_points}
       </div>
       <div className="mt-2.5 text-[11px] text-ink/50 lg:mt-3 lg:text-[12px]">
@@ -72,17 +72,17 @@ function PodiumSide({ entry }: { entry: LeaderboardEntry }) {
 function PodiumCenter({ entry }: { entry: LeaderboardEntry }) {
   return (
     <AccentCard
-      outer="rounded-[24px] shadow-[0_12px_30px_rgba(255,45,26,0.14)] lg:rounded-[26px] lg:shadow-[0_14px_34px_rgba(255,45,26,0.14)]"
+      outer="lift rounded-[24px] lg:rounded-[26px]"
       inner="rounded-[23px] lg:rounded-[25px]"
     >
       <Link
         href={`/players/${entry.player_id}`}
-        className="block rounded-[23px] px-2 pt-5 pb-3.5 transition-colors hover:bg-ink/4 lg:rounded-[25px] lg:px-2.5 lg:pt-[26px] lg:pb-[18px]"
+        className="block rounded-[23px] px-2 pt-5 pb-3.5 lg:rounded-[25px] lg:px-2.5 lg:pt-[26px] lg:pb-[18px]"
       >
         <div className="break-words text-[13px] font-extrabold capitalize leading-[1.2] lg:text-[15px]">
           {entry.display_name}
         </div>
-        <div className="tn mt-1.5 text-[56px] font-extrabold leading-none tracking-[-0.05em] text-accent lg:mt-2 lg:text-[76px]">
+        <div className="tn text-accent-grad mt-1.5 text-[56px] font-extrabold leading-none tracking-[-0.05em] lg:mt-2 lg:text-[76px]">
           {entry.total_points}
         </div>
         <div className="mt-3 text-[11px] text-ink/50 lg:mt-3.5 lg:text-[12px]">
@@ -244,7 +244,7 @@ export default async function Home() {
             <h1 className="mt-[26px] mb-3.5 text-[44px] font-extrabold leading-[0.95] tracking-[-0.04em] lg:mt-0 lg:mb-[22px] lg:text-[84px] lg:leading-[0.92] lg:tracking-[-0.045em]">
               Lega Pauper
               <br />
-              <span className="text-accent">Milano</span>
+              <span className="text-accent-grad">Milano</span>
             </h1>
             <div className="mb-7 flex items-center gap-6 lg:mb-0 lg:gap-8">
               <Stat value={entries.length} label="Giocatori" />
@@ -263,7 +263,12 @@ export default async function Home() {
 
         <section className="mt-8 lg:mt-0 lg:flex lg:flex-col lg:gap-6">
           {first && (
-            <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)] items-end gap-2 text-center lg:gap-3">
+            <div className="relative grid grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)] items-end gap-2 text-center lg:gap-3">
+              {/* Soft halo behind the leader. */}
+              <div
+                aria-hidden
+                className="pointer-events-none absolute top-1/2 left-1/2 -z-10 h-[140%] w-[70%] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(closest-side,rgba(255,45,26,0.22),transparent)] blur-2xl"
+              />
               {second ? <PodiumSide entry={second} /> : <div />}
               <PodiumCenter entry={first} />
               {third ? <PodiumSide entry={third} /> : <div />}

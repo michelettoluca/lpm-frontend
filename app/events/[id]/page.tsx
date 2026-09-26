@@ -41,7 +41,7 @@ export default async function EventDetailPage(
   const hero = (
     <div>
       <div className="mt-[22px] mb-1.5 flex items-end gap-3 lg:mt-0 lg:mb-0 lg:gap-[18px]">
-        <span className="tn text-[96px] font-extrabold leading-[0.82] tracking-[-0.06em] text-accent lg:text-[150px] lg:leading-[0.8]">
+        <span className="tn text-[96px] font-extrabold leading-[0.82] tracking-[-0.06em] text-accent-grad lg:text-[150px] lg:leading-[0.8]">
           {n === null ? "—" : pad2(n)}
         </span>
         <div className="min-w-0 pb-1.5 lg:pb-2">

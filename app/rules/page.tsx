@@ -61,7 +61,7 @@ export default async function RulesPage() {
         <h1 className="mt-[26px] mb-2 text-[40px] font-extrabold leading-[0.95] tracking-[-0.04em] lg:mt-0 lg:mb-2.5 lg:text-[64px] lg:leading-[0.92] lg:tracking-[-0.045em]">
           Regolamento
           <br />
-          <span className="text-accent">e informazioni</span>
+          <span className="text-accent-grad">e informazioni</span>
         </h1>
         <p className="mb-7 text-[13px] text-ink/60 lg:mb-9 lg:text-[14px]">
           Tutto quello che serve sapere per giocare la lega.
@@ -114,7 +114,7 @@ export default async function RulesPage() {
             href={DISCORD}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-4 inline-block rounded-xl bg-accent px-4 py-3 text-[14px] font-bold text-white transition-opacity hover:opacity-90 lg:text-[15px]"
+            className="mt-4 inline-block bg-accent-grad shadow-glow rounded-xl px-4 py-3 text-[14px] font-bold text-white transition-opacity hover:opacity-90 lg:text-[15px]"
           >
             Leggi il regolamento su Discord →
           </a>

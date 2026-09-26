@@ -53,7 +53,7 @@ function RoundSelector({
       aria-label="Turno"
       onKeyDown={onKeyDown}
       style={{ "--rounds": rounds } as React.CSSProperties}
-      className="mb-3.5 grid grid-cols-[1.6fr_repeat(var(--rounds),1fr)] gap-0.5 rounded-full border border-ink/10 bg-white p-1 lg:mb-0 lg:grid-cols-[auto_repeat(var(--rounds),72px)]"
+      className="mb-3.5 grid grid-cols-[1.6fr_repeat(var(--rounds),1fr)] surface gap-0.5 rounded-full p-1 lg:mb-0 lg:grid-cols-[auto_repeat(var(--rounds),72px)]"
     >
       {options.map((opt, i) => {
         const active = opt === selected;
@@ -72,7 +72,7 @@ function RoundSelector({
               opt === null ? "lg:px-[22px]" : ""
             } ${
               active
-                ? "bg-accent font-extrabold text-white"
+                ? "bg-accent-grad shadow-glow font-extrabold text-white"
                 : "font-bold text-ink/70 hover:bg-ink/4"
             }`}
           >
@@ -108,7 +108,7 @@ function FinalePanel({ standings }: { standings: Standing[] }) {
                   >
                     <span
                       className={`tn text-[20px] font-extrabold leading-none tracking-[-0.03em] lg:text-[22px] ${
-                        prize ? "text-accent" : ""
+                        prize ? "text-accent-grad" : ""
                       }`}
                     >
                       {s.rank}
@@ -181,7 +181,7 @@ function RoundPanel({ round, pairings }: { round: number; pairings: Pairing[] })
               return (
                 <li key={p.table} className="border-b border-ink/8 last:border-b-0">
                   <div className="grid grid-cols-[32px_1fr_auto] items-center gap-2.5 px-4 py-2.5 lg:grid-cols-[48px_1fr_auto] lg:gap-3 lg:px-5 lg:py-3">
-                    <span className="tn text-[18px] font-extrabold tracking-[-0.03em] text-accent">
+                    <span className="tn text-accent-grad text-[18px] font-extrabold tracking-[-0.03em]">
                       {p.table}
                     </span>
                     <div className="flex min-w-0 flex-col gap-[3px]">
@@ -193,7 +193,7 @@ function RoundPanel({ round, pairings }: { round: number; pairings: Pairing[] })
                         won={bWon}
                       />
                     </div>
-                    <span className="tn min-w-[44px] rounded-xl bg-tint px-2.5 py-1.5 text-center text-[15px] font-extrabold leading-none text-accent">
+                    <span className="tn min-w-[44px] rounded-xl bg-tint-grad px-2.5 py-1.5 text-center text-[15px] font-extrabold leading-none text-accent">
                       {p.wins_a}-{p.wins_b}
                     </span>
                   </div>
