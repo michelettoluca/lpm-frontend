@@ -33,8 +33,11 @@ function Raw({ message }: { message: string }) {
 
 export function ErrorPanel({
   error,
+  source = "csv",
 }: {
   error: AdminError;
+  /** Where an import's data came from, which changes the advice on a mismatch. */
+  source?: "csv" | "api";
 }) {
   switch (error.kind) {
     case "missing_key":
@@ -85,6 +88,23 @@ export function ErrorPanel({
       );
 
     case "verification":
+      if (source === "api") {
+        return (
+          <Panel title="I dati di melee.gg non coincidono">
+            <p>
+              Il backend ha ricalcolato la classifica dai match scaricati da melee.gg e non torna con la classifica di
+              melee.gg, quindi ha annullato l&apos;import. <strong>Non è stato scritto nulla</strong>.
+            </p>
+            <p>
+              Controlla che tutti i risultati siano stati inseriti su melee.gg e riprova. Se il problema resta, importa i
+              due CSV del torneo.
+            </p>
+            <pre className="tn max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-xl border border-ink/15 bg-white p-3 font-mono text-[12px] leading-[1.5] text-ink/80">
+              {error.message}
+            </pre>
+          </Panel>
+        );
+      }
       return (
         <Panel title="I due file non coincidono">
           <p>

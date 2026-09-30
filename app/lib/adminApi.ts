@@ -32,6 +32,7 @@ function fieldForMessage(message: string): ImportField | undefined {
   const m = message.toLowerCase();
   if (m.includes("counted_events")) return "counted_events";
   if (m.includes("event_id")) return "event_id";
+  if (m.includes("tournament_id")) return "tournament_id";
   if (m.includes("season_id") || m.includes("season id")) return "season_id";
   if (m.includes("confirm")) return "confirm";
   if (m.includes("played_at") || m.includes("played at")) return "played_at";
@@ -159,6 +160,19 @@ export function logout(token: string): Promise<AdminResult<{ ok: true }>> {
 export function importPath(eventId: number): string {
   return `/admin/import/melee?event_id=${eventId}`;
 }
+
+/** Pull the results of Melee tournament `tournamentId` from the Melee API. */
+export function meleeApiImportPath(eventId: number, tournamentId: number): string {
+  return `/admin/import/melee/api?event_id=${eventId}&tournament_id=${tournamentId}`;
+}
+
+/** Melee tournaments that started within a few days of event `eventId`. */
+export function meleeTournamentsPath(eventId: number): string {
+  return `/admin/melee/tournaments?event_id=${eventId}`;
+}
+
+/** Import every past event from the Melee tournament held on its day. */
+export const MELEE_SYNC_PATH = "/admin/import/melee/sync";
 
 export function resetPath(includeSeasons: boolean): string {
   return includeSeasons

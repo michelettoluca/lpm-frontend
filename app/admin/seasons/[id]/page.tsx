@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import type { AdminError } from "@/app/lib/adminTypes";
+import type { AdminError, MeleeSyncResult } from "@/app/lib/adminTypes";
 import { tappaSubtitle, tappaTitle } from "@/app/lib/format";
 import { useAdmin } from "../../AdminShell";
 import { ConfirmResetDialog } from "../../ConfirmResetDialog";
@@ -24,6 +24,41 @@ import {
 import { DateTile, EventStatus, isPast } from "../../eventDisplay";
 import { countedLabel, seasonPeriod, seasonStatus } from "../../seasonDisplay";
 
+const SKIP_REASONS: Record<MeleeSyncResult["skipped"][number]["reason"], string> = {
+  no_tournament: "nessun torneo su melee.gg quel giorno",
+  ambiguous: "più tornei o più tappe nello stesso giorno: scegli il torneo dalla pagina della tappa",
+  not_ended: "il torneo su melee.gg non è ancora concluso",
+  too_old: "più vecchia di 90 giorni: importala dalla pagina della tappa",
+  failed: "import non riuscito",
+};
+
+/** What a sync did, for the notice. */
+function SyncSummary({ result }: { result: MeleeSyncResult }) {
+  const { imported, skipped } = result;
+  return (
+    <div className="py-1">
+      <p>
+        {imported.length === 0
+          ? "Nessuna tappa importata da melee.gg."
+          : `Importate da melee.gg: ${imported.map((i) => tappaTitle(i.event_name)).join(", ")}.`}
+      </p>
+      {skipped.length > 0 && (
+        <ul className="mt-1.5 space-y-1 text-[13px] font-normal text-ink/65">
+          {skipped.map((s) => (
+            <li key={s.event_id}>
+              <Link href={`/admin/events/${s.event_id}`} className="font-bold text-ink underline-offset-2 hover:underline">
+                {tappaTitle(s.event_name)}
+              </Link>
+              : {SKIP_REASONS[s.reason]}
+              {s.error && <span className="block whitespace-pre-wrap text-[12px] text-ink/50">{s.error}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 type Modal = "edit-season" | "activate" | "delete-season" | "new-event";
 
 // Date · event · status · chevron, with fixed side columns so rows align.
@@ -33,7 +68,8 @@ const ROW =
 export default function SeasonDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { seasons, events, setSeasons, setEvents, call } = useAdmin();
+  const { seasons, events, setSeasons, setEvents, call, refresh } = useAdmin();
+  const [syncing, setSyncing] = useState(false);
   const [modal, setModal] = useState<Modal | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AdminError | null>(null);
@@ -64,6 +100,22 @@ export default function SeasonDetailPage() {
 
   function close() {
     if (!pending) setModal(null);
+  }
+
+  // Import every past event from the Melee tournament held on its day.
+  async function sync() {
+    setSyncing(true);
+    setError(null);
+    setNotice(null);
+    const res = await call<MeleeSyncResult>("/api/admin/import/melee-sync", { method: "POST" });
+    if (!res.ok) {
+      setSyncing(false);
+      setError(res.error);
+      return;
+    }
+    if (res.data.imported.length > 0) await refresh();
+    setSyncing(false);
+    setNotice(<SyncSummary result={res.data} />);
   }
 
   async function activate() {
@@ -136,9 +188,16 @@ export default function SeasonDetailPage() {
           `${seasonEvents.length} · ${withResults} importate${toImport > 0 ? ` · ${toImport} da importare` : ""}`
         }
         action={
-          <button type="button" className={BUTTON_PRIMARY} onClick={() => open("new-event")}>
-            Nuova tappa
-          </button>
+          <div className="flex flex-wrap justify-end gap-2">
+            {toImport > 0 && (
+              <button type="button" className={BUTTON} onClick={() => void sync()} disabled={syncing}>
+                {syncing ? "Importo da melee.gg…" : "Importa da melee.gg"}
+              </button>
+            )}
+            <button type="button" className={BUTTON_PRIMARY} onClick={() => open("new-event")}>
+              Nuova tappa
+            </button>
+          </div>
         }
       />
 

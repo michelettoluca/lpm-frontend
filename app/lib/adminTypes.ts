@@ -29,6 +29,7 @@ export type ImportField =
   | "counted_events"
   | "standings"
   | "matches"
+  | "tournament_id"
   | "confirm";
 
 export type AdminError = {
@@ -75,3 +76,33 @@ export type ResetResult = {
 };
 
 export type ManagedEvent = { id: number; season_id: number; name: string; format: string | null; played_at: string; has_results: boolean };
+
+/** A Melee tournament offered for import, as the backend reads it from the Melee API. */
+export type MeleeTournament = {
+  id: number;
+  name: string;
+  /** When the last round was paired; null before the first pairing. Melee sends no start date. */
+  last_pair_date: string | null;
+  /** Melee's own status text, such as "Ended"; empty when Melee sent none. */
+  status: string;
+  ended: boolean;
+  url: string;
+  /** The event already holding this tournament's results. */
+  imported_event_id: number | null;
+  /** Started on the event's day, in Rome. */
+  same_day: boolean;
+};
+
+export type MeleeSyncSkipReason = "no_tournament" | "ambiguous" | "not_ended" | "too_old" | "failed";
+
+export type MeleeSyncResult = {
+  imported: { event_id: number; event_name: string; tournament_id: number; tournament_name: string }[];
+  skipped: {
+    event_id: number;
+    event_name: string;
+    played_at: string;
+    reason: MeleeSyncSkipReason;
+    error?: string;
+    candidates?: MeleeTournament[];
+  }[];
+};
