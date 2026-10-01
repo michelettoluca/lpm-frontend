@@ -9,6 +9,7 @@ import {
   normalize,
   ROGUE,
   searchArchetypes,
+  searchNames,
   UNAVAILABLE,
   type Archetype,
   type ManaColor,
@@ -119,10 +120,11 @@ export function useArchetypeSearch<T extends Archetype>(archetypes: T[], query: 
     // Until Jev answers, the name search fills the list on its own.
     if (suggested?.query !== trimmed || suggested.ids.length === 0) return local.slice(0, maxRows);
     const picks = suggested.ids.map((id) => byId.get(id)).filter((a): a is T => a !== undefined);
-    // After that, only names that contain what was typed join Jev's picks:
-    // looser matches such as "every blue-black deck" for "UB" are noise.
+    // After that, only decks whose name, alias or key card contains what was
+    // typed join Jev's picks: looser matches such as "every blue-black deck"
+    // for "UB" are noise.
     const typed = normalize(trimmed);
-    const named = local.filter((a) => !picks.includes(a) && normalize(a.name).includes(typed));
+    const named = local.filter((a) => !picks.includes(a) && searchNames(a).some((n) => normalize(n).includes(typed)));
     return [...picks, ...named].slice(0, maxRows);
   }, [index, trimmed, archetypes, suggested, maxRows]);
 

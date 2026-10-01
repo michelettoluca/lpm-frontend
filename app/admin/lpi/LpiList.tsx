@@ -24,15 +24,22 @@ import {
   TH,
   usePage,
 } from "../dashboardUi";
-import { CONTROL } from "../fields";
+import { CONTROL, Field, TEXTAREA } from "../fields";
 
-type ListedArchetype = Archetype & { hidden: boolean };
+type ListedArchetype = Required<Archetype> & { hidden: boolean };
+
+/** What the admin writes about an archetype, as the backend takes it. */
+type Details = Pick<ListedArchetype, "description" | "aliases" | "key_cards" | "hidden">;
+
+/** The backend's limits, so the form can say so before saving. */
+const MAX_DESCRIPTION = 500;
 
 /**
- * Lega Pauper Italia's archetype list with a blacklist on top, under
- * Impostazioni: their list keeps banned and retired decks for its history, and a
- * hidden one disappears from what players can search and pick. Hiding is by
- * their id, so it holds whatever they change on their side.
+ * Lega Pauper Italia's archetype list with our details on top, under
+ * Impostazioni: a description, other names and key cards help players and
+ * Jev find a deck, and a hidden one disappears from what players can search
+ * and pick (their list keeps banned and retired decks for its history). It is
+ * all kept by their id, so it holds whatever they change on their side.
  */
 export function LpiList() {
   const { call } = useAdmin();
@@ -60,12 +67,12 @@ export function LpiList() {
   const shown = query.trim() ? rows : all;
   const { rows: page, pager } = usePage(shown);
 
-  async function toggle(a: ListedArchetype) {
+  async function save(a: ListedArchetype, details: Details) {
     setPending(a.id);
     const res = await call<ListedArchetype>(`/api/admin/archetypes/${a.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ hidden: !a.hidden }),
+      body: JSON.stringify(details),
     });
     setPending(null);
     if (!res.ok) {
@@ -74,22 +81,31 @@ export function LpiList() {
     }
     setError(null);
     setSelected(null);
-    setList((current) => current?.map((x) => (x.id === a.id ? { ...x, hidden: res.data.hidden } : x)) ?? null);
-    notify(res.data.hidden ? `${a.name} nascosto ai giocatori.` : `${a.name} di nuovo visibile ai giocatori.`);
+    setList((current) => current?.map((x) => (x.id === a.id ? res.data : x)) ?? null);
+    notify(
+      res.data.hidden === a.hidden
+        ? `${a.name} salvato.`
+        : res.data.hidden
+          ? `${a.name} nascosto ai giocatori.`
+          : `${a.name} di nuovo visibile ai giocatori.`,
+    );
   }
 
   const hidden = list?.filter((a) => a.hidden).length ?? 0;
+  const undescribed = list?.filter((a) => !a.hidden && !a.description && a.aliases.length === 0 && a.key_cards.length === 0).length ?? 0;
 
   return (
     <div>
       <p className="mb-4 max-w-[640px] text-[13px] leading-relaxed text-ink/55">
         {list && (
           <span className="font-medium text-ink/75">
-            {list.length} mazzi da Lega Pauper Italia, {hidden} {hidden === 1 ? "nascosto" : "nascosti"} ai giocatori.{" "}
+            {list.length} mazzi da Lega Pauper Italia, {hidden} {hidden === 1 ? "nascosto" : "nascosti"} ai giocatori
+            {undescribed > 0 && `, ${undescribed} visibili ancora senza dettagli`}.{" "}
           </span>
         )}
-        La lista tiene anche mazzi bannati o non più giocati: quelli che nascondi spariscono dalla ricerca dei
-        giocatori e dai suggerimenti, ma da Archetipi puoi comunque assegnarli.
+        Descrizione, altri nomi e carte chiave aiutano i giocatori e i suggerimenti a trovare il mazzo. La lista
+        tiene anche mazzi bannati o non più giocati: quelli che nascondi spariscono dalla ricerca dei giocatori e dai
+        suggerimenti, ma da Archetipi puoi comunque assegnarli.
       </p>
 
       {error && (
@@ -125,8 +141,11 @@ export function LpiList() {
                   const row = rowOpens(() => setSelected(a));
                   return (
                     <tr key={a.id} {...row} className={`${row.className} ${a.hidden ? "text-ink/40" : ""}`}>
-                      <td className={`${TD} max-w-0 font-medium`}>
-                        <span className={`block truncate ${a.hidden ? "line-through" : ""}`}>{a.name}</span>
+                      <td className={`${TD} max-w-0`}>
+                        <span className={`block truncate font-medium ${a.hidden ? "line-through" : ""}`}>{a.name}</span>
+                        {a.aliases.length > 0 && (
+                          <span className="block truncate text-[12px] text-ink/45">{a.aliases.join(" · ")}</span>
+                        )}
                       </td>
                       <td className={`${TD} w-px whitespace-nowrap`}>
                         <span className={`flex justify-end ${a.hidden ? "opacity-40" : ""}`}>
@@ -152,16 +171,25 @@ export function LpiList() {
           archetype={selected}
           busy={pending === selected.id}
           onClose={() => setSelected(null)}
-          onSave={() => void toggle(selected)}
+          onSave={(details) => void save(selected, details)}
         />
       )}
     </div>
   );
 }
 
+/** One item per line, as the aliases and key cards are edited. */
+function lines(text: string): string[] {
+  return text
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+}
+
 /**
- * An archetype's side panel, as a form: what can change is its visibility to
- * players, saved with the one button at the bottom.
+ * An archetype's side panel, as a form: its description, other names, key
+ * cards and visibility to players, saved together with the one button at the
+ * bottom.
  */
 function ArchetypeForm({
   archetype,
@@ -172,17 +200,31 @@ function ArchetypeForm({
   archetype: ListedArchetype;
   busy: boolean;
   onClose: () => void;
-  onSave: () => void;
+  onSave: (details: Details) => void;
 }) {
+  const [description, setDescription] = useState(archetype.description);
+  const [aliases, setAliases] = useState(archetype.aliases.join("\n"));
+  const [keyCards, setKeyCards] = useState(archetype.key_cards.join("\n"));
   const [visible, setVisible] = useState(!archetype.hidden);
-  const changed = visible === archetype.hidden;
+  const details: Details = {
+    description: description.trim(),
+    aliases: lines(aliases),
+    key_cards: lines(keyCards),
+    hidden: !visible,
+  };
+  const changed =
+    details.description !== archetype.description ||
+    details.aliases.join("\n") !== archetype.aliases.join("\n") ||
+    details.key_cards.join("\n") !== archetype.key_cards.join("\n") ||
+    details.hidden !== archetype.hidden;
+  const tooLong = details.description.length > MAX_DESCRIPTION;
   return (
     <Dialog title={archetype.name} description="Archetipo della lista di Lega Pauper Italia" busy={busy} onClose={onClose}>
       <form
         className={DIALOG_FORM}
         onSubmit={(event) => {
           event.preventDefault();
-          if (changed && !busy) onSave();
+          if (changed && !tooLong && !busy) onSave(details);
         }}
       >
         <DialogBody>
@@ -192,6 +234,54 @@ function ArchetypeForm({
               ["ID Lega Pauper Italia", <span key="i" className="tn">{archetype.id}</span>],
             ]}
           />
+          <Field
+            label="Descrizione"
+            htmlFor="archetype-description"
+            hint="Cosa fa il mazzo, con le parole dei giocatori. La legge solo il motore dei suggerimenti."
+          >
+            <textarea
+              id="archetype-description"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              rows={4}
+              disabled={busy}
+              placeholder="Es. distrugge le terre dell'avversario e vince con creature grosse."
+              className={TEXTAREA}
+            />
+            <p className={`mt-1 text-right text-[12px] tn ${tooLong ? "font-semibold text-accent" : "text-ink/45"}`}>
+              {details.description.length}/{MAX_DESCRIPTION}
+            </p>
+          </Field>
+          <Field
+            label="Altri nomi"
+            htmlFor="archetype-aliases"
+            hint="Uno per riga: soprannomi, nomi in italiano, nomi vecchi. Chi li scrive trova il mazzo."
+          >
+            <textarea
+              id="archetype-aliases"
+              value={aliases}
+              onChange={(event) => setAliases(event.target.value)}
+              rows={3}
+              disabled={busy}
+              placeholder={"Ponza\nLand Destruction"}
+              className={TEXTAREA}
+            />
+          </Field>
+          <Field
+            label="Carte chiave"
+            htmlFor="archetype-key-cards"
+            hint="Una per riga, col nome inglese della carta. Chi cerca una di queste trova il mazzo."
+          >
+            <textarea
+              id="archetype-key-cards"
+              value={keyCards}
+              onChange={(event) => setKeyCards(event.target.value)}
+              rows={3}
+              disabled={busy}
+              placeholder={"Stone Rain\nMwonvuli Acid-Moss"}
+              className={TEXTAREA}
+            />
+          </Field>
           <div className="flex items-start justify-between gap-4 rounded-lg border border-ink/10 px-3 py-3">
             <div>
               <p className="text-[13px] font-medium text-ink">Visibile ai giocatori</p>
@@ -204,7 +294,7 @@ function ArchetypeForm({
           </div>
         </DialogBody>
         <DialogFooter>
-          <button type="submit" className={BUTTON_PRIMARY} disabled={!changed || busy}>
+          <button type="submit" className={BUTTON_PRIMARY} disabled={!changed || tooLong || busy}>
             {busy ? "Salvo…" : "Salva modifiche"}
           </button>
         </DialogFooter>

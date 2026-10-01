@@ -31,6 +31,10 @@ export const CONTROL =
 
 export const CONTROL_INVALID = "border-accent";
 
+/** CONTROL for a `<textarea>`: grows with its rows instead of one line high. */
+export const TEXTAREA =
+  "w-full rounded-md border border-ink/15 bg-surface px-2.5 py-2 text-[16px] leading-[1.45] outline-none placeholder:text-[13px] sm:text-[13px] transition-colors focus:border-accent focus:ring-2 focus:ring-accent/15 disabled:opacity-60";
+
 /** Non-blocking heads-up, e.g. the two CSVs look swapped. */
 export function Warning({ children }: { children: ReactNode }) {
   return (
