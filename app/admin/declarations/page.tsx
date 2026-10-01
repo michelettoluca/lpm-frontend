@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AdminError } from "@/app/lib/adminTypes";
 import { ArchetypePicker, ManaCost } from "@/app/components/ArchetypePicker";
@@ -110,15 +111,13 @@ export default function DeclarationsPage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial load
     void load();
-    void fetch("/api/dichiara/archetypes")
-      .then((r) => (r.ok ? r.json() : []))
-      .then((list: Archetype[]) => setArchetypes(list))
-      .catch(() => setArchetypes([]));
+    // The admin list includes blacklisted archetypes: admins can still set one.
+    void call<Archetype[]>("/api/admin/archetypes").then((res) => setArchetypes(res.ok ? res.data : []));
     const timer = setInterval(() => {
       if (document.visibilityState === "visible") void load();
     }, REFRESH_MS);
     return () => clearInterval(timer);
-  }, [load]);
+  }, [load, call]);
 
   const walk = useMemo<Table[]>(() => {
     if (!view?.round?.published) return [];
@@ -230,7 +229,11 @@ export default function DeclarationsPage() {
           )
         }
         actions={
-          t && (
+          <>
+            <Link href="/admin/declarations/archetypes" className={BUTTON_GHOST}>
+              Lista mazzi
+            </Link>
+            {t && (
             <>
               <button type="button" className={BUTTON} onClick={() => setModal({ kind: "grid" })} disabled={walk.length === 0}>
                 Tavoli
@@ -254,7 +257,8 @@ export default function DeclarationsPage() {
                 Altro torneo
               </button>
             </>
-          )
+            )}
+          </>
         }
       />
 
