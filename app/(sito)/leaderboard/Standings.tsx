@@ -138,7 +138,7 @@ export function Standings({ rows }: { rows: Row[] }) {
           {others.length > 0 && (
             <li>
               <div className="flex items-center gap-3 py-3" role="separator" aria-label="Fine della zona top 8">
-                <span aria-hidden="true" className="h-[2px] flex-1 rounded-full bg-[var(--rg-o)]" />
+                <span aria-hidden="true" className="rg-rule-o flex-1" />
                 <span aria-hidden="true" className="rg-badge rg-badge-o shrink-0">
                   ↑ top 8, per ora
                 </span>

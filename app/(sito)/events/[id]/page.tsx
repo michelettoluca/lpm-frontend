@@ -157,7 +157,7 @@ export default async function EventPage(props: PageProps<"/events/[id]">) {
                     </li>
                     {s.player_id === lastPrizeId && (
                       <li className="flex items-center gap-3 py-3" role="separator" aria-label="Fine di chi ha 9 punti o più">
-                        <span aria-hidden="true" className="h-[2px] flex-1 rounded-full bg-[var(--rg-o)]" />
+                        <span aria-hidden="true" className="rg-rule-o flex-1" />
                         <span aria-hidden="true" className="rg-badge rg-badge-o shrink-0">
                           ↑ 9 punti o più
                         </span>

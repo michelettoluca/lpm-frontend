@@ -305,7 +305,7 @@ export function DeclareFlow() {
         <div>
           <h1 className={H1}>per ora è tutto chiuso.</h1>
           <p className="rg-muted mt-4 text-[16px] leading-relaxed">
-            Il mazzo si indica durante la tappa, appena escono gli abbinamenti del primo turno. Quando li vedi, ricarica la
+            Scegli il mazzo durante la tappa, appena escono gli abbinamenti del primo turno. Quando li vedi, ricarica la
             pagina.
           </p>
         </div>
@@ -439,7 +439,7 @@ export function DeclareFlow() {
             </h1>
             <p className="rg-muted mt-4 text-[16px] leading-relaxed">
               {round.number === 0
-                ? "Il mazzo si indica appena escono gli abbinamenti del primo turno."
+                ? "Scegli il mazzo appena escono gli abbinamenti del primo turno."
                 : `Gli abbinamenti del turno ${round.number} non sono ancora pubblicati.`}
             </p>
             <button type="button" className="rg-btn rg-btn-line mt-6 w-full" onClick={() => void loadCurrent()}>
@@ -583,8 +583,8 @@ export function DeclareFlow() {
               { k: "giocatore", v: step.seat.name },
               { k: "tavolo", v: step.table === 0 ? "bye" : String(step.table) },
               ...(round.number > 0 ? [{ k: "turno", v: String(round.number) }] : []),
-            ].map((x) => (
-              <div key={x.k} className="grid grid-cols-[6.5rem_1fr] items-baseline py-3 [&+&]:border-t [&+&]:border-[var(--rg-line)]">
+            ].map((x, i) => (
+              <div key={x.k} className={`grid grid-cols-[6.5rem_1fr] items-baseline py-3 ${i ? "rg-hr" : ""}`}>
                 <dt className="rg-muted text-[14px] font-semibold">{x.k}</dt>
                 <dd className="rg-display tnum text-[20px]">{x.v}</dd>
               </div>

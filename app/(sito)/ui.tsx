@@ -41,6 +41,22 @@ export function MarkerCircle({ className = "" }: { className?: string }) {
   );
 }
 
+const UNDERLINE = "M4 6.5 C34 4.2 70 8.4 112 5.6 C146 3.6 176 5.2 196 7.2";
+
+/** A felt-tip stroke under a nav link; CSS shows it on hover and on the current page. */
+export function MarkerUnderline({ className = "" }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 200 12"
+      preserveAspectRatio="none"
+      className={`rg-doodle rg-mark pointer-events-none absolute ${className}`}
+    >
+      <path d={UNDERLINE} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
 /** A plain, drawn-with-a-ruler arrow pointing right. */
 export function Arrow({ className = "" }: { className?: string }) {
   return (
