@@ -11,7 +11,8 @@ const LINKS = [
 export function Nav() {
   const path = usePathname();
   return (
-    <nav aria-label="Sezioni" className="flex items-center gap-1 lg:gap-3">
+    // On a phone the menu takes its own row, with the deck button at the far right.
+    <nav aria-label="Sezioni" className="flex w-full items-center gap-1 lg:w-auto lg:gap-3">
       {LINKS.map((l) => {
         const active = path === l.href;
         return (
@@ -26,9 +27,9 @@ export function Nav() {
         );
       })}
       <Link
-        href={"/mazzo"}
+        href="/mazzo"
         aria-current={path === "/mazzo" ? "page" : undefined}
-        className="rg-pill rg-display rg-strong ml-1 inline-flex min-h-11 items-center px-4 text-[18px] lg:px-5 lg:text-[19px]"
+        className="rg-pill rg-display rg-strong ml-auto inline-flex min-h-11 items-center px-4 text-[18px] lg:ml-1 lg:px-5 lg:text-[19px]"
       >
         il mio mazzo
       </Link>

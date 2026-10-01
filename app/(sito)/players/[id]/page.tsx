@@ -56,7 +56,7 @@ export default async function PlayerPage(props: PageProps<"/players/[id]">) {
     <div className="rg-stack">
       {/* ---------------- hero ---------------- */}
       <section className="rg-panel">
-        <Link href={"/leaderboard"} className="rg-textlink -ml-1 inline-flex min-h-11 items-center px-1 text-[15px]">
+        <Link href="/leaderboard" className="rg-textlink -ml-1 inline-flex min-h-11 items-center px-1 text-[15px]">
           ← la classifica
         </Link>
         <p className="rg-eyebrow mt-4">giocatore{p.season ? ` · stagione ${p.season.name.toLowerCase()}` : ""}</p>

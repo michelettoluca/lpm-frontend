@@ -17,7 +17,7 @@ export default function NotFound() {
           <ArrowLink href="/" className="text-[20px]">
             torna alla home
           </ArrowLink>
-          <ArrowLink href={"/leaderboard"} className="text-[20px]">
+          <ArrowLink href="/leaderboard" className="text-[20px]">
             cerca in classifica
           </ArrowLink>
         </div>

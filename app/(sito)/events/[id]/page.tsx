@@ -69,10 +69,10 @@ export default async function EventPage(props: PageProps<"/events/[id]">) {
               qui quando i risultati sono caricati.
             </p>
             <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-6">
-              <Link href={"/mazzo"} className="rg-btn rg-btn-fill">
+              <Link href="/mazzo" className="rg-btn rg-btn-fill">
                 cosa giochi stasera?
               </Link>
-              <ArrowLink href={"/rules"} className="text-[20px]">
+              <ArrowLink href="/rules" className="text-[20px]">
                 come funziona la serata
               </ArrowLink>
             </div>

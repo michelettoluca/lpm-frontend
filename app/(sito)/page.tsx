@@ -109,7 +109,7 @@ export default async function Home() {
               </li>
             ))}
           </ol>
-          <ArrowLink href={"/leaderboard"} className="rg-hr-strong mt-1 w-full pt-2 text-[20px]">
+          <ArrowLink href="/leaderboard" className="rg-hr-strong mt-1 w-full pt-2 text-[20px]">
             tutti e {leaderboard.length}
           </ArrowLink>
         </Section>
@@ -205,10 +205,10 @@ export default async function Home() {
             Primo turno alle 20.30 in punto. Si pesca alle 20.31.
           </p>
           <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-6">
-            <Link href={"/mazzo"} className="rg-btn rg-btn-ink">
+            <Link href="/mazzo" className="rg-btn rg-btn-ink">
               cosa giochi stasera?
             </Link>
-            <ArrowLink href={"/rules"} className="text-[20px]">
+            <ArrowLink href="/rules" className="text-[20px]">
               il regolamento, in breve
             </ArrowLink>
           </div>
