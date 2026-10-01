@@ -49,8 +49,25 @@ export function ManaCost({ archetype, small = false }: { archetype: Archetype; s
 const SUGGEST_DELAY_MS = 350;
 /** Rows shown for a typed search: Jev's picks first, then name matches. */
 const MAX_ROWS = 8;
+/**
+ * Jev always names some archetypes, even for gibberish ("asdfgh" gets five,
+ * the likeliest at 0.14), while a real name scores far higher ("elfi" 0.94,
+ * "affinity" 0.62). Below MIN_TOP Jev is guessing and none of its picks is
+ * shown; otherwise picks under MIN_PICK are dropped as noise.
+ */
+const MIN_TOP = 0.2;
+const MIN_PICK = 0.1;
 
 type Suggested = { query: string; ids: number[] };
+
+/** Jev's picks worth showing, likeliest first. */
+function confident(list: { id: number; probability?: number }[]): number[] {
+  // Older API responses carry no probability: keep them all, as before.
+  if (list.some((a) => a.probability === undefined)) return list.map((a) => a.id);
+  const top = Math.max(0, ...list.map((a) => a.probability ?? 0));
+  if (top < MIN_TOP) return [];
+  return list.filter((a) => (a.probability ?? 0) >= MIN_PICK).map((a) => a.id);
+}
 
 /**
  * The deck search shared by the player flow and the admin pages: name matches
@@ -81,8 +98,8 @@ export function useArchetypeSearch<T extends Archetype>(archetypes: T[], query: 
         // Not configured on this server: stop asking, the name search remains.
         if (res.status === 503) setJevOff(true);
         if (!res.ok) return;
-        const list = (await res.json()) as { id: number }[];
-        setSuggested({ query: trimmed, ids: list.map((a) => a.id) });
+        const list = (await res.json()) as { id: number; probability?: number }[];
+        setSuggested({ query: trimmed, ids: confident(list) });
       } catch {
         // Aborted by the next keystroke, or offline: the name search remains.
       } finally {
