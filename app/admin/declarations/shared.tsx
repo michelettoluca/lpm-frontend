@@ -5,7 +5,6 @@ import type { AdminError } from "@/app/lib/adminTypes";
 import { ArchetypePicker, ManaCost } from "@/app/components/ArchetypePicker";
 import { normalize, UNAVAILABLE, type Archetype } from "@/app/lib/decks";
 import { useAdmin } from "../AdminShell";
-import { ErrorPanel } from "../ErrorPanel";
 import {
   Badge,
   BUTTON,
@@ -19,7 +18,7 @@ import {
   Pagination,
   usePage,
 } from "../dashboardUi";
-import { CONTROL } from "../fields";
+import { CONTROL, CONTROL_INVALID } from "../fields";
 import { tappaSubtitle, tappaTitle } from "@/app/lib/format";
 
 // What the Archetipi pages share: the tournament's data and the actions on
@@ -52,9 +51,6 @@ export type View = {
   round: { number: number; published: boolean; tables: Table[]; byes: Seat[] } | null;
   players: Player[];
 };
-
-/** date is the day the tournament starts on in Rome, YYYY-MM-DD. */
-export type TournamentChoice = { id: number; name: string; status: string; date: string };
 
 /** How far a table is: every seat declared, some, or none. */
 export type Fill = "full" | "partial" | "empty";
@@ -517,150 +513,76 @@ export function PlayersTable({ players, onPick }: { players: Player[]; onPick: (
 }
 
 /**
- * The tournament declarations are collected for, as a dropdown of the Melee
- * tournaments from three days ago to next week. Picking another one opens
- * declarations there; the current one's are kept. With a tournament open and
- * no other to switch to, there is nothing to choose, so it shows nothing.
+ * The tournament declarations are collected for, set by its Melee id: nothing
+ * is picked by date, since Melee's dates can't be trusted to tell the tappe
+ * apart. The id or the tournament's melee.gg link both work. Setting another
+ * one opens declarations there; the current one's are kept.
  */
 export function TournamentSelect({
-  call,
   current,
   busy,
   onSelect,
 }: {
-  call: ReturnType<typeof useAdmin>["call"];
   current: View["tournament"];
   busy: boolean;
-  onSelect: (id: number) => void;
+  onSelect: (id: number) => Promise<boolean>;
 }) {
-  const [open, setOpen] = useState(false);
-  const [list, setList] = useState<TournamentChoice[] | null>(null);
-  const [error, setError] = useState<AdminError | null>(null);
-  const ref = useRef<HTMLDivElement>(null);
+  const [text, setText] = useState("");
+  const id = meleeTournamentId(text);
+  const invalid = text.trim() !== "" && id === null;
+  const same = id !== null && id === current?.id;
 
-  // Loaded up front too, so the current tournament can show its date.
-  useEffect(() => {
-    let cancelled = false;
-    void call<TournamentChoice[]>("/api/admin/declarations/tournaments").then((res) => {
-      if (cancelled) return;
-      if (res.ok) setList(res.data);
-      else setError(res.error);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [call]);
-
-  useEffect(() => {
-    if (!open) return;
-    const close = (event: MouseEvent) => {
-      if (!ref.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", close);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", close);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  const currentDate = current ? list?.find((c) => c.id === current.id)?.date : undefined;
-  const nothingElse = list !== null && !list.some((c) => c.id !== current?.id);
-  if (current && (list === null || nothingElse)) return null;
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    if (id === null || same) return;
+    if (await onSelect(id)) setText("");
+  }
 
   return (
     <div className="mb-4">
       <p className="lbl mb-1.5">Torneo</p>
-      <div ref={ref} className="relative max-w-xl">
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          disabled={busy}
-          aria-haspopup="listbox"
-          aria-expanded={open}
-          className="flex h-9 w-full items-center gap-2 rounded-md border border-ink/15 bg-surface px-2.5 text-left text-[13px] transition-colors hover:border-ink/25 disabled:opacity-60"
-        >
-          {current ? (
-            <span className="flex min-w-0 flex-1 items-baseline gap-2">
-              <span className="min-w-0 truncate font-medium">{tappaTitle(current.name)}</span>
-              {currentDate && <span className="tn shrink-0 text-ink/55">{shortDate(currentDate)}</span>}
-              {tappaTitle(current.name) !== current.name && (
-                <span className="min-w-0 truncate text-[12px] text-ink/45">{tappaSubtitle(current.name)}</span>
-              )}
-            </span>
-          ) : (
-            <span className="min-w-0 flex-1 truncate text-ink/45">Scegli il torneo Melee</span>
+      {current && (
+        <p className="mb-2 flex max-w-xl items-baseline gap-2 text-[13px]">
+          <span className="min-w-0 truncate font-medium">{tappaTitle(current.name)}</span>
+          {tappaTitle(current.name) !== current.name && (
+            <span className="min-w-0 truncate text-[12px] text-ink/45">{tappaSubtitle(current.name)}</span>
           )}
-          <span className="text-[11px] text-ink/40" aria-hidden>
-            ▾
-          </span>
-        </button>
-        {open && (
-          <div
-            role="listbox"
-            aria-label="Tornei Melee"
-            className="menu-in absolute right-0 left-0 z-20 mt-1 max-h-72 overflow-y-auto rounded-md border border-ink/10 bg-surface p-1 shadow-[0_8px_24px_rgba(28,27,26,0.12)]"
-          >
-            {error ? (
-              <div className="p-2">
-                <ErrorPanel error={error} />
-              </div>
-            ) : !list ? (
-              <p className="px-2 py-3 text-[13px] text-ink/50">Cerco i tornei su Melee…</p>
-            ) : list.length === 0 ? (
-              <p className="px-2 py-3 text-[13px] text-ink/50">Nessun torneo Melee tra tre giorni fa e la prossima settimana.</p>
-            ) : (
-              list.map((choice) => {
-                const selected = choice.id === current?.id;
-                return (
-                  <button
-                    key={choice.id}
-                    type="button"
-                    role="option"
-                    aria-selected={selected}
-                    onClick={() => {
-                      setOpen(false);
-                      if (!selected) onSelect(choice.id);
-                    }}
-                    className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-ink/[0.05] ${selected ? "bg-ink/[0.04]" : ""}`}
-                  >
-                    <span className="min-w-0 flex-1">
-                      <span className="flex items-baseline gap-2">
-                        <span className="shrink-0 text-[13px] font-medium">{tappaTitle(choice.name)}</span>
-                        <span className="tn shrink-0 text-[12px] text-ink/55">{shortDate(choice.date)}</span>
-                        <span className="ml-auto shrink-0 text-[12px] text-ink/45">{choice.status || "—"}</span>
-                      </span>
-                      {tappaTitle(choice.name) !== choice.name && (
-                        <span className="block truncate text-[12px] text-ink/45">{tappaSubtitle(choice.name)}</span>
-                      )}
-                    </span>
-                    {selected && (
-                      <span className="text-[12px] text-accent" aria-hidden>
-                        ✓
-                      </span>
-                    )}
-                  </button>
-                );
-              })
-            )}
-          </div>
-        )}
-      </div>
-      {!current && (
-        <p className="mt-2 text-[12px] text-ink/50">L'ultimo torneo Melee si apre da solo. Se non compare, sceglilo qui.</p>
+          <span className="tn ml-auto shrink-0 text-[12px] text-ink/45">ID {current.id}</span>
+        </p>
       )}
+      <form onSubmit={submit} className="flex max-w-xl gap-2">
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          disabled={busy}
+          inputMode="url"
+          aria-label="ID o link del torneo Melee"
+          aria-invalid={invalid}
+          placeholder={current ? "Cambia torneo: ID o link Melee" : "ID o link del torneo Melee, es. 475829"}
+          className={`${CONTROL} ${invalid ? CONTROL_INVALID : ""}`}
+        />
+        <button type="submit" className={BUTTON_PRIMARY} disabled={busy || id === null || same}>
+          Apri
+        </button>
+      </form>
+      <p className={`mt-2 text-[12px] ${invalid ? "text-accent" : "text-ink/50"}`}>
+        {invalid
+          ? "Serve il numero del torneo o il suo link melee.gg/Tournament/View/…"
+          : same
+            ? "È già il torneo scelto."
+            : "Lo trovi nel link del torneo su melee.gg, dopo /Tournament/View/."}
+      </p>
     </div>
   );
 }
 
-/** "2026-10-01" → "gio 1 ott". */
-function shortDate(date: string) {
-  return new Date(`${date}T12:00:00Z`)
-    .toLocaleDateString("it-IT", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" })
-    .replace(/\./g, "");
+/** "475829" or "https://melee.gg/Tournament/View/475829" → 475829; anything else → null. */
+export function meleeTournamentId(text: string): number | null {
+  const t = text.trim();
+  const m = /^(\d+)$/.exec(t) ?? /\/Tournament\/View\/(\d+)/i.exec(t);
+  if (!m) return null;
+  const id = Number(m[1]);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
 /** Every registered player with their archetype; missing ones are Non Disponibile. */

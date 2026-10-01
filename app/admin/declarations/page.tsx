@@ -18,13 +18,13 @@ type Modal = { kind: "pick"; seat: Seat } | { kind: "close" };
 
 /**
  * The decks of the tournament in progress, in the dashboard: the tournament
- * selector (the latest Melee tournament opens by itself), a status line with the
+ * set by its Melee id, a status line with the
  * round, how many players have a deck and whether they can still pick one
  * from /mazzo, then every player with their deck. Walking the room table by
  * table happens on its own page, opened from "Inserisci ai tavoli".
  */
 export default function DeclarationsPage() {
-  const { call, view, archetypes, error, busy, walk, setDeck, openTournament, closeDeclarations } = useDeclarations();
+  const { view, archetypes, error, busy, walk, setDeck, openTournament, closeDeclarations } = useDeclarations();
   const [modal, setModal] = useState<Modal | null>(null);
 
   if (!view) {
@@ -62,11 +62,11 @@ export default function DeclarationsPage() {
         </div>
       )}
 
-      <TournamentSelect call={call} current={t} busy={busy} onSelect={(id) => void openTournament(id)} />
+      <TournamentSelect current={t} busy={busy} onSelect={openTournament} />
 
       {!t ? (
         <section className="card">
-          <EmptyState>Scegli il torneo qui sopra per vedere i giocatori e i loro mazzi.</EmptyState>
+          <EmptyState>Inserisci qui sopra l&apos;ID del torneo Melee per vedere i giocatori e i loro mazzi.</EmptyState>
         </section>
       ) : (
         <>
