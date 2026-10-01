@@ -6,7 +6,6 @@ import {
   COLOR_NAMES,
   colorsOf,
   indexArchetypes,
-  MANA_COLORS,
   normalize,
   ROGUE,
   searchArchetypes,
@@ -16,14 +15,13 @@ import {
 } from "../lib/decks";
 
 /** The mana symbol as printed on cards, from Scryfall, served from /public/mana. */
-export function ManaPip({ color, size = "sm" }: { color: ManaColor; size?: "sm" | "lg" }) {
-  const px = size === "lg" ? 34 : 17;
+export function ManaPip({ color }: { color: ManaColor }) {
   return (
     <Image
       src={`/mana/${color}.svg`}
       alt=""
-      width={px}
-      height={px}
+      width={17}
+      height={17}
       unoptimized
       aria-hidden
       className="shrink-0 rounded-full shadow-[-1px_1px_0_rgba(0,0,0,0.85)]"
@@ -55,8 +53,7 @@ type Suggested = { query: string; ids: number[] };
  * irrelevant to any one player: typing shows the name matches at once, then
  * Jev's picks (up to five, likeliest first) as soon as the player pauses.
  * Jev reads colors as WUBRG letters or guild names, nicknames, typos and card
- * names; without it the name search still works on its own. The color buttons
- * list every archetype with those colors.
+ * names; without it the name search still works on its own.
  *
  * Players never see "Non Disponibile"; admins get it, and Rogue, as quick
  * picks. Once a player is searching, the way out is "my deck isn't on the
@@ -76,7 +73,6 @@ export function ArchetypePicker({
   autoFocus?: boolean;
 }) {
   const [query, setQuery] = useState("");
-  const [colors, setColors] = useState<ManaColor[]>([]);
   const [suggested, setSuggested] = useState<Suggested | null>(null);
   const [asking, setAsking] = useState<string | null>(null);
   const [jevOff, setJevOff] = useState(false);
@@ -87,7 +83,6 @@ export function ArchetypePicker({
   );
   const index = useMemo(() => indexArchetypes(visible), [visible]);
   const trimmed = query.trim();
-  const filtering = trimmed !== "" || colors.length > 0;
 
   useEffect(() => {
     if (jevOff || trimmed.length < 2) return;
@@ -119,33 +114,28 @@ export function ArchetypePicker({
   }, [trimmed, jevOff]);
 
   const rows = useMemo(() => {
-    if (!filtering) return [];
-    const local = searchArchetypes(index, query, colors);
-    if (!trimmed) return local;
+    if (!trimmed) return [];
+    const local = searchArchetypes(index, query);
     // Until Jev answers, the name search fills the list on its own.
     if (suggested?.query !== trimmed || suggested.ids.length === 0) return local.slice(0, MAX_ROWS);
     const byId = new Map(visible.map((a) => [a.id, a]));
     const picks = suggested.ids
       .map((id) => byId.get(id))
-      .filter((a): a is Archetype => a !== undefined && colors.every((c) => colorsOf(a).includes(c)));
+      .filter((a): a is Archetype => a !== undefined);
     // After that, only names that contain what was typed join Jev's picks:
     // looser matches such as "every blue-black deck" for "UB" are noise.
     const typed = normalize(trimmed);
     const named = local.filter((a) => !picks.includes(a) && normalize(a.name).includes(typed));
     return [...picks, ...named].slice(0, MAX_ROWS);
-  }, [filtering, index, query, colors, trimmed, visible, suggested]);
+  }, [index, query, trimmed, visible, suggested]);
 
   const searching = trimmed.length >= 2 && asking === trimmed && rows.length === 0;
   const rogue = archetypes.find((a) => a.name === ROGUE);
   const unavailable = archetypes.find((a) => a.name === UNAVAILABLE);
 
-  function toggle(c: ManaColor) {
-    setColors((current) => (current.includes(c) ? current.filter((x) => x !== c) : [...current, c]));
-  }
-
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="space-y-3">
+      <div>
         <input
           type="search"
           value={query}
@@ -159,42 +149,12 @@ export function ArchetypePicker({
           maxLength={200}
           className="w-full rounded-2xl border-[1.5px] border-ink/15 bg-white px-4 py-3 text-[16px] outline-none transition-colors focus:border-accent"
         />
-        <div className="flex items-center gap-2" role="group" aria-label="Filtra per colore">
-          {MANA_COLORS.map((c) => {
-            const on = colors.includes(c);
-            return (
-              <button
-                key={c}
-                type="button"
-                onClick={() => toggle(c)}
-                aria-pressed={on}
-                aria-label={COLOR_NAMES[c]}
-                className={`rounded-full p-0.5 transition ${on ? "ring-2 ring-accent ring-offset-2" : "opacity-45 hover:opacity-80"}`}
-              >
-                <ManaPip color={c} size="lg" />
-              </button>
-            );
-          })}
-          {filtering && (
-            <button
-              type="button"
-              onClick={() => {
-                setQuery("");
-                setColors([]);
-              }}
-              className="ml-auto text-[13px] font-bold text-ink/55 hover:text-ink"
-            >
-              Azzera
-            </button>
-          )}
-        </div>
       </div>
 
-      {!filtering ? (
+      {!trimmed ? (
         <p className="mt-4 px-1 text-[14px] leading-relaxed text-ink/55">
           Scrivi il nome del mazzo, i suoi colori (es. <strong className="text-ink/75">UB</strong>,{" "}
-          <strong className="text-ink/75">mono rosso</strong>) o una carta che giochi. Oppure tocca un colore per
-          vedere tutti i mazzi di quel colore.
+          <strong className="text-ink/75">mono rosso</strong>) o una carta che giochi.
         </p>
       ) : (
         <ul
@@ -220,7 +180,7 @@ export function ArchetypePicker({
             <li className="px-5 py-8 text-center">
               <p className="text-[15px] font-bold">Nessun mazzo trovato</p>
               <p className="mt-1 text-[13px] leading-relaxed text-ink/55">
-                Prova con un&apos;altra parola o una carta del mazzo, o togli i filtri di colore.
+                Prova con un&apos;altra parola o una carta del mazzo.
               </p>
             </li>
           )}
@@ -245,10 +205,10 @@ export function ArchetypePicker({
         </div>
       )}
 
-      {rogue && !admin && filtering && (
+      {rogue && !admin && trimmed && (
         <div
           className={`mt-3 rounded-2xl border border-dashed px-4 py-3.5 ${
-            filtering && rows.length === 0 && !searching ? "border-accent bg-tint" : "border-ink/20"
+            rows.length === 0 && !searching ? "border-accent bg-tint" : "border-ink/20"
           }`}
         >
           <p className="text-[14px] font-bold">Il tuo mazzo non è in questa lista?</p>
