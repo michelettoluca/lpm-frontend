@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useAdmin } from "../AdminShell";
 import { DangerZone } from "../DangerZone";
 import { SeasonDialog } from "../SeasonDialog";
-import { BUTTON_PRIMARY, Callout, EmptyState, Notice, PageHeader } from "../dashboardUi";
+import { BUTTON_PRIMARY, Callout, EmptyState, notify, PageHeader } from "../dashboardUi";
 import { countedLabel, seasonPeriod, seasonStatus } from "../seasonDisplay";
 
 /**
@@ -36,7 +36,6 @@ const ROW = "grid items-center gap-x-6 gap-y-2 px-5 py-4 sm:grid-cols-[minmax(0,
 export default function SeasonsPage() {
   const { seasons, events, setSeasons } = useAdmin();
   const [creating, setCreating] = useState(false);
-  const [notice, setNotice] = useState<React.ReactNode>(null);
 
   const hasActive = seasons.some((season) => season.is_active);
 
@@ -52,7 +51,6 @@ export default function SeasonsPage() {
         }
       />
 
-      {notice && <Notice onDismiss={() => setNotice(null)}>{notice}</Notice>}
 
       {seasons.length > 0 && !hasActive && (
         <Callout title="Nessuna stagione attiva">
@@ -110,7 +108,7 @@ export default function SeasonsPage() {
           onSaved={(season) => {
             setSeasons((prev) => [season, ...prev]);
             setCreating(false);
-            setNotice(
+            notify(
               <>
                 Stagione “{season.name}” creata.{" "}
                 <Link href={`/admin/seasons/${season.id}`} className="text-accent underline-offset-2 hover:underline">

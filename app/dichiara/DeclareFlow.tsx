@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 import { ArchetypePicker, deckLabel, ManaCost } from "../components/ArchetypePicker";
 import type { Archetype } from "../lib/decks";
 
@@ -66,6 +67,9 @@ const PRIMARY =
   "bg-accent-grad shadow-glow inline-flex h-12 w-full items-center justify-center rounded-2xl px-5 text-[16px] font-bold text-white transition hover:brightness-105 disabled:opacity-40";
 const SECONDARY =
   "inline-flex h-12 w-full items-center justify-center rounded-2xl border border-ink/12 bg-white px-5 text-[15px] font-bold shadow-[0_1px_2px_rgba(28,27,26,0.06)] transition hover:bg-ink/[0.03] disabled:opacity-40";
+/** Destructive but not the action the screen is for: outlined, not filled. */
+const DANGER =
+  "inline-flex h-12 w-full items-center justify-center rounded-2xl border-[1.5px] border-accent bg-white px-5 text-[15px] font-bold text-accent transition hover:bg-tint disabled:opacity-40";
 const LINK = "text-[14px] font-bold text-ink/55 hover:text-ink disabled:opacity-40";
 
 /**
@@ -84,9 +88,6 @@ export function DeclareFlow() {
   const [step, setStep] = useState<Step>({ kind: "table" });
   const [tableInput, setTableInput] = useState("");
   const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  /** A success line, as opposed to message, which reports a problem. */
-  const [notice, setNotice] = useState<string | null>(null);
 
   const archetypeOf = (m: Mine) => archetypes.find((a) => a.id === m.archetype_id);
 
@@ -119,8 +120,6 @@ export function DeclareFlow() {
 
   async function openTable(table: number) {
     setBusy(true);
-    setMessage(null);
-    setNotice(null);
     const res = await call<{ seats: Seat[] }>(`/api/dichiara/tables/${table}`);
     setBusy(false);
     if (res.data) {
@@ -129,19 +128,18 @@ export function DeclareFlow() {
     }
     if (res.status === 404) {
       await loadCurrent();
-      setMessage(
+      toast.error(
         table === 0
           ? "In questo turno non ci sono bye."
           : `Il tavolo ${table} non c'è nel turno in corso. Controlla il numero sugli abbinamenti.`,
       );
     } else {
-      setMessage("Non riusciamo a caricare il tavolo. Riprova tra qualche secondo.");
+      toast.error("Non riusciamo a caricare il tavolo. Riprova tra qualche secondo.");
     }
   }
 
   async function declare(table: number, seat: Seat, archetype: Archetype) {
     setBusy(true);
-    setMessage(null);
     const res = await call<Mine>("/api/dichiara", postJSON({ table, team_id: seat.team_id, archetype_id: archetype.id }));
     setBusy(false);
     if (res.data) {
@@ -151,32 +149,32 @@ export function DeclareFlow() {
       return;
     }
     if (res.status === 409) {
-      setMessage(
+      toast.error(
         `Per ${seat.name} è già stato dichiarato un mazzo. Se non sei stato tu, avvisa un organizzatore: lo sistema lui.`,
+        { duration: 12_000 },
       );
       setStep({ kind: "table" });
     } else if (res.status === 404) {
       await loadCurrent();
-      setMessage("Il turno è cambiato o le dichiarazioni sono chiuse. Reinserisci il numero del tuo tavolo attuale.");
+      toast.error("Il turno è cambiato o le dichiarazioni sono chiuse. Reinserisci il numero del tuo tavolo attuale.");
       setStep({ kind: "table" });
     } else {
-      setMessage("Qualcosa è andato storto. Riprova.");
+      toast.error("Qualcosa è andato storto. Riprova.");
     }
   }
 
   async function withdraw(m: Mine) {
     setBusy(true);
-    setMessage(null);
     const res = await call<{ ok: boolean }>("/api/dichiara/clear", postJSON({ receipt: m.receipt }));
     setBusy(false);
     if (!res.data && res.status !== 404) {
-      setMessage("Non siamo riusciti a cancellare la dichiarazione. Riprova.");
+      toast.error("Non siamo riusciti a cancellare la dichiarazione. Riprova.");
       return false;
     }
     writeReceipts(readReceipts().filter((r) => r !== m.receipt));
     setMine((list) => list.filter((x) => x.receipt !== m.receipt));
     if (res.status === 404) {
-      setMessage("Le dichiarazioni sono chiuse: per cambiare mazzo chiedi a un organizzatore.");
+      toast.error("Le dichiarazioni sono chiuse: per cambiare mazzo chiedi a un organizzatore.");
       return false;
     }
     return true;
@@ -208,16 +206,6 @@ export function DeclareFlow() {
   return (
     <div>
       <p className="lbl">{current.tournament.name}</p>
-      {message && (
-        <p role="alert" className="mt-4 rounded-2xl border border-accent bg-tint px-4 py-3 text-[14px] font-semibold leading-snug">
-          {message}
-        </p>
-      )}
-      {notice && step.kind === "table" && (
-        <p role="status" className="mt-4 rounded-2xl border border-ink/10 bg-white px-4 py-3 text-[14px] font-semibold leading-snug">
-          {notice}
-        </p>
-      )}
 
       {step.kind === "table" && (
         <>
@@ -233,10 +221,7 @@ export function DeclareFlow() {
                     type="button"
                     disabled={busy}
                     className={`${SECONDARY} mt-3`}
-                    onClick={() => {
-                      setMessage(null);
-                      setStep({ kind: "withdraw", mine: m });
-                    }}
+                    onClick={() => setStep({ kind: "withdraw", mine: m })}
                   >
                     Cancella la dichiarazione
                   </button>
@@ -295,6 +280,7 @@ export function DeclareFlow() {
 
       {step.kind === "player" && (
         <>
+          <Recap onTable={() => setStep({ kind: "table" })} table={step.table} />
           <h1 className="mt-2 text-[30px] font-extrabold leading-[1.05] tracking-[-0.02em]">
             {step.table === 0 ? "Chi sei?" : `Tavolo ${step.table}: chi sei?`}
           </h1>
@@ -325,16 +311,19 @@ export function DeclareFlow() {
               Hai già dichiarato da un altro telefono, o qualcuno l&apos;ha fatto al posto tuo? Avvisa un organizzatore.
             </p>
           )}
-          <button type="button" className={`${LINK} mt-6`} onClick={() => setStep({ kind: "table" })}>
-            ← Cambia tavolo
-          </button>
         </>
       )}
 
       {step.kind === "deck" && (
         <div className="flex flex-col">
+          <Recap
+            table={step.table}
+            onTable={() => setStep({ kind: "table" })}
+            player={step.seat.name}
+            onPlayer={() => void openTable(step.table)}
+          />
           <h1 className="mt-2 text-[26px] font-extrabold leading-[1.05] tracking-[-0.02em]">Che mazzo giochi?</h1>
-          <p className="mt-1 mb-4 text-[14px] text-ink/55">{step.seat.name}</p>
+          <div className="mb-4" />
           {archetypes.length === 0 ? (
             <p className="py-10 text-center text-[14px] text-ink/50">Carico la lista dei mazzi…</p>
           ) : (
@@ -344,18 +333,19 @@ export function DeclareFlow() {
               onPick={(archetype) => setStep({ kind: "confirm", table: step.table, seat: step.seat, archetype })}
             />
           )}
-          <button
-            type="button"
-            className={`${LINK} mt-6 self-start`}
-            onClick={() => void openTable(step.table)}
-          >
-            ← Indietro
-          </button>
         </div>
       )}
 
       {step.kind === "confirm" && (
         <>
+          <Recap
+            table={step.table}
+            onTable={() => setStep({ kind: "table" })}
+            player={step.seat.name}
+            onPlayer={() => void openTable(step.table)}
+            deck={step.archetype.name}
+            onDeck={() => setStep({ kind: "deck", table: step.table, seat: step.seat })}
+          />
           <h1 className="mt-2 text-[30px] font-extrabold leading-[1.05] tracking-[-0.02em]">Confermi?</h1>
           <Summary player={step.seat.name} deck={step.archetype.name} archetype={step.archetype} />
           <p className="mt-3 text-[13px] leading-relaxed text-ink/55">
@@ -413,14 +403,14 @@ export function DeclareFlow() {
           <button
             type="button"
             disabled={busy}
-            className={`${PRIMARY} mt-5`}
+            className={`${DANGER} mt-5`}
             onClick={async () => {
               if (!(await withdraw(step.mine))) {
                 setStep({ kind: "table" });
                 return;
               }
               setStep({ kind: "table" });
-              setNotice("Dichiarazione cancellata. Ora puoi dichiarare di nuovo.");
+              toast.success("Dichiarazione cancellata. Ora puoi dichiarare di nuovo.");
             }}
           >
             {busy ? "Attendi…" : "Sì, cancella"}
@@ -436,6 +426,57 @@ export function DeclareFlow() {
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * The choices made so far, above each step. Each one is a shortcut back to
+ * the step that made it, without walking back through the ones in between.
+ */
+function Recap({
+  table,
+  onTable,
+  player,
+  onPlayer,
+  deck,
+  onDeck,
+}: {
+  table: number;
+  onTable: () => void;
+  player?: string;
+  onPlayer?: () => void;
+  deck?: string;
+  onDeck?: () => void;
+}) {
+  const chips: { label: string; title: string; onClick: () => void }[] = [
+    { label: table === 0 ? "Bye" : `Tavolo ${table}`, title: "Cambia tavolo", onClick: onTable },
+  ];
+  if (player && onPlayer) chips.push({ label: player, title: "Cambia giocatore", onClick: onPlayer });
+  if (deck && onDeck) chips.push({ label: deckLabel(deck), title: "Cambia mazzo", onClick: onDeck });
+  return (
+    <nav aria-label="Le tue scelte" className="mt-3 flex flex-wrap items-center gap-1.5">
+      {chips.map((chip, i) => (
+        <span key={chip.title} className="contents">
+          {i > 0 && (
+            <span aria-hidden className="text-[13px] text-ink/30">
+              ›
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={chip.onClick}
+            title={chip.title}
+            aria-label={`${chip.label}, ${chip.title.toLowerCase()}`}
+            className="inline-flex h-8 max-w-full items-center gap-1 rounded-full border border-ink/12 bg-white px-3 text-[13px] font-bold shadow-[0_1px_2px_rgba(28,27,26,0.06)] transition hover:border-accent hover:text-accent"
+          >
+            <span className="truncate">{chip.label}</span>
+            <span aria-hidden className="text-[11px] text-ink/35">
+              ✎
+            </span>
+          </button>
+        </span>
+      ))}
+    </nav>
   );
 }
 

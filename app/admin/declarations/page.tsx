@@ -16,7 +16,7 @@ import {
   Dialog,
   DialogBody,
   EmptyState,
-  Notice,
+  notify,
   PageHeader,
 } from "../dashboardUi";
 
@@ -91,7 +91,6 @@ export default function DeclarationsPage() {
   const [view, setView] = useState<View | null>(null);
   const [archetypes, setArchetypes] = useState<Archetype[]>([]);
   const [error, setError] = useState<AdminError | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [at, setAt] = useState<number | "end" | null>(null);
   const [modal, setModal] = useState<Modal | null>(null);
   const [busy, setBusy] = useState(false);
@@ -134,7 +133,7 @@ export default function DeclarationsPage() {
     const round = view?.round?.number ?? null;
     if (walk.length === 0) return;
     if (roundRef.current === round && at !== null) return;
-    if (roundRef.current !== null && roundRef.current !== round) setNotice(`Nuovo turno: ${round}. Riparti dal primo tavolo incompleto.`);
+    if (roundRef.current !== null && roundRef.current !== round) notify(`Nuovo turno: ${round}. Riparti dal primo tavolo incompleto.`);
     roundRef.current = round;
     const first = walk.find((t) => fillOf(t) !== "full") ?? walk[0];
     setAt(first.number);
@@ -190,7 +189,7 @@ export default function DeclarationsPage() {
     setModal(null);
     roundRef.current = null;
     setAt(null);
-    setNotice("Dichiarazioni aperte: i giocatori possono usare legapaupermilano.it/dichiara");
+    notify("Dichiarazioni aperte: i giocatori possono usare legapaupermilano.it/dichiara");
     await load();
   }
 
@@ -201,7 +200,7 @@ export default function DeclarationsPage() {
     setModal(null);
     if (!res.ok) setError(res.error);
     else {
-      setNotice("Dichiarazioni chiuse: i giocatori non possono più dichiarare né cancellare. Tu puoi ancora modificare.");
+      notify("Dichiarazioni chiuse: i giocatori non possono più dichiarare né cancellare. Tu puoi ancora modificare.");
       await load();
     }
   }
@@ -259,7 +258,6 @@ export default function DeclarationsPage() {
         }
       />
 
-      {notice && <Notice onDismiss={() => setNotice(null)}>{notice}</Notice>}
       {error && (
         <div className="mb-6">
           <ErrorPanel error={error} />

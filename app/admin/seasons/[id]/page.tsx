@@ -17,7 +17,7 @@ import {
   ConfirmDialog,
   displayTime,
   EmptyState,
-  Notice,
+  notify,
   PageHeader,
   SectionHeader,
 } from "../../dashboardUi";
@@ -32,7 +32,7 @@ const SKIP_REASONS: Record<MeleeSyncResult["skipped"][number]["reason"], string>
   failed: "import non riuscito",
 };
 
-/** What a sync did, for the notice. */
+/** What a sync did, for the toast. */
 function SyncSummary({ result }: { result: MeleeSyncResult }) {
   const { imported, skipped } = result;
   return (
@@ -73,7 +73,6 @@ export default function SeasonDetailPage() {
   const [modal, setModal] = useState<Modal | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AdminError | null>(null);
-  const [notice, setNotice] = useState<React.ReactNode>(null);
 
   const season = seasons.find((s) => String(s.id) === params.id);
   const back = (
@@ -95,7 +94,6 @@ export default function SeasonDetailPage() {
   function open(next: Modal) {
     setModal(next);
     setError(null);
-    setNotice(null);
   }
 
   function close() {
@@ -106,7 +104,6 @@ export default function SeasonDetailPage() {
   async function sync() {
     setSyncing(true);
     setError(null);
-    setNotice(null);
     const res = await call<MeleeSyncResult>("/api/admin/import/melee-sync", { method: "POST" });
     if (!res.ok) {
       setSyncing(false);
@@ -115,7 +112,7 @@ export default function SeasonDetailPage() {
     }
     if (res.data.imported.length > 0) await refresh();
     setSyncing(false);
-    setNotice(<SyncSummary result={res.data} />);
+    notify(<SyncSummary result={res.data} />, { long: res.data.skipped.length > 0 });
   }
 
   async function activate() {
@@ -128,7 +125,7 @@ export default function SeasonDetailPage() {
       return;
     }
     setSeasons((prev) => prev.map((s) => ({ ...s, is_active: s.id === season!.id })));
-    setNotice(`“${season!.name}” è ora la stagione attiva: il sito pubblico mostra la sua classifica e le sue tappe.`);
+    notify(`“${season!.name}” è ora la stagione attiva: il sito pubblico mostra la sua classifica e le sue tappe.`);
   }
 
   async function deleteSeason() {
@@ -174,7 +171,6 @@ export default function SeasonDetailPage() {
         }
       />
 
-      {notice && <Notice onDismiss={() => setNotice(null)}>{notice}</Notice>}
       {error && (
         <div className="mb-6">
           <ErrorPanel error={error} />
@@ -237,7 +233,7 @@ export default function SeasonDetailPage() {
           onSaved={(saved) => {
             setSeasons((prev) => prev.map((s) => (s.id === saved.id ? saved : s)));
             setModal(null);
-            setNotice(`Stagione “${saved.name}” aggiornata.`);
+            notify(`Stagione “${saved.name}” aggiornata.`);
           }}
         />
       )}
@@ -287,7 +283,7 @@ export default function SeasonDetailPage() {
           onSaved={(saved) => {
             setEvents((prev) => [...prev, saved]);
             setModal(null);
-            setNotice(
+            notify(
               <>
                 Tappa “{tappaTitle(saved.name)}” creata.{" "}
                 <Link href={`/admin/events/${saved.id}`} className="text-accent underline-offset-2 hover:underline">

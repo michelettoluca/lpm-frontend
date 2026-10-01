@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Archivo } from "next/font/google";
+import { Toaster } from "sonner";
 import { getActiveSeason } from "./lib/api";
 import "./globals.css";
 
@@ -75,6 +76,12 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         {children}
+        <Toaster
+          position="top-center"
+          richColors
+          closeButton
+          toastOptions={{ style: { fontFamily: "var(--font-archivo), system-ui, sans-serif", borderRadius: 16 } }}
+        />
       </body>
     </html>
   );

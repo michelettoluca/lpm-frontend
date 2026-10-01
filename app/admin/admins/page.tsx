@@ -13,7 +13,7 @@ import {
   ConfirmDialog,
   displayDate,
   EmptyState,
-  Notice,
+  notify,
   PageHeader,
 } from "../dashboardUi";
 
@@ -24,7 +24,6 @@ export default function AdminsPage() {
   const [removing, setRemoving] = useState<AdminListEntry | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AdminError | null>(null);
-  const [notice, setNotice] = useState<React.ReactNode>(null);
   const emailId = useId();
 
   useEffect(() => {
@@ -58,7 +57,6 @@ export default function AdminsPage() {
     if (pending || !email.trim()) return;
     setPending(true);
     setError(null);
-    setNotice(null);
     const res = await call<AdminListEntry>("/api/admin/admins", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -71,7 +69,7 @@ export default function AdminsPage() {
     }
     setAdmins((prev) => [...(prev ?? []), res.data]);
     setEmail("");
-    setNotice(`${res.data.email} ora è un amministratore: può accedere con la sua email.`);
+    notify(`${res.data.email} ora è un amministratore: può accedere con la sua email.`);
   }
 
   async function remove(target: AdminListEntry) {
@@ -85,7 +83,7 @@ export default function AdminsPage() {
       return;
     }
     setAdmins((prev) => (prev ?? []).filter((a) => a.id !== target.id));
-    setNotice(`${target.email} non è più un amministratore.`);
+    notify(`${target.email} non è più un amministratore.`);
   }
 
   // A 400 about the email shows under the field; anything else as a panel.
@@ -99,7 +97,6 @@ export default function AdminsPage() {
         meta="Chi è in questa lista accede alla dashboard con un codice inviato alla sua email."
       />
 
-      {notice && <Notice onDismiss={() => setNotice(null)}>{notice}</Notice>}
       {error && !emailError && (
         <div className="mb-6">
           <ErrorPanel error={error} />

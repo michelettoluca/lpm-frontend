@@ -17,7 +17,7 @@ import {
   ConfirmDialog,
   displayDate,
   displayTime,
-  Notice,
+  notify,
   PageHeader,
 } from "../../dashboardUi";
 import { EventStatus, isPast } from "../../eventDisplay";
@@ -40,7 +40,6 @@ export default function EventDetailPage() {
   const [modal, setModal] = useState<Modal | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AdminError | null>(null);
-  const [notice, setNotice] = useState<React.ReactNode>(null);
 
   const event = events.find((e) => String(e.id) === params.id);
   const season = event && seasons.find((s) => s.id === event.season_id);
@@ -62,7 +61,6 @@ export default function EventDetailPage() {
   function open(next: Modal) {
     setModal(next);
     setError(null);
-    setNotice(null);
   }
 
   function close() {
@@ -93,7 +91,7 @@ export default function EventDetailPage() {
       return;
     }
     setEvents((prev) => prev.map((e) => (e.id === res.data.id ? res.data : e)));
-    setNotice("Risultati rimossi. Carica di nuovo i file per reimportare la tappa.");
+    notify("Risultati rimossi. Carica di nuovo i file per reimportare la tappa.");
   }
 
   return (
@@ -123,7 +121,6 @@ export default function EventDetailPage() {
         }
       />
 
-      {notice && <Notice onDismiss={() => setNotice(null)}>{notice}</Notice>}
       {error && (
         <div className="mb-6">
           <ErrorPanel error={error} />
@@ -157,7 +154,7 @@ export default function EventDetailPage() {
             <ImportPanel
               event={event}
               onImported={(result) => {
-                setNotice(
+                notify(
                   <>
                     Risultati importati (torneo melee <span className="tn">{result.melee_tournament_id}</span>).{" "}
                     <Link
@@ -196,7 +193,7 @@ export default function EventDetailPage() {
           onSaved={(saved) => {
             setEvents((prev) => prev.map((e) => (e.id === saved.id ? saved : e)));
             setModal(null);
-            setNotice(`Tappa “${tappaTitle(saved.name)}” aggiornata.`);
+            notify(`Tappa “${tappaTitle(saved.name)}” aggiornata.`);
           }}
         />
       )}

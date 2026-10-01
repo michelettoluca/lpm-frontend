@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, type ReactNode } from "react";
+import { toast } from "sonner";
 
 const BUTTON_BASE =
   "inline-flex h-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 text-[13px] font-bold transition disabled:cursor-not-allowed disabled:opacity-40";
@@ -71,19 +72,12 @@ export function Badge({ tone = "muted", children }: { tone?: "accent" | "ink" | 
   );
 }
 
-/** Confirmation line after a successful action. */
-export function Notice({ children, onDismiss }: { children: ReactNode; onDismiss: () => void }) {
-  return (
-    <div
-      role="status"
-      className="panel-in mb-6 flex items-center justify-between gap-4 rounded-2xl border border-ink/10 bg-white py-2 pr-2 pl-4 text-sm font-semibold"
-    >
-      <div className="min-w-0">{children}</div>
-      <button type="button" onClick={onDismiss} className={BUTTON_GHOST} aria-label="Chiudi messaggio">
-        ✕
-      </button>
-    </div>
-  );
+/**
+ * Confirmation after a successful action, as a toast. `long` keeps it up for
+ * content worth reading through, such as a sync summary.
+ */
+export function notify(content: ReactNode, options: { long?: boolean } = {}) {
+  toast.success(content, { duration: options.long ? 15_000 : 6_000 });
 }
 
 /** Blocking condition the page can't work around, with the way out. */
