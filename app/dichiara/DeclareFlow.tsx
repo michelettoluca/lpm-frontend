@@ -338,14 +338,8 @@ export function DeclareFlow() {
 
       {step.kind === "confirm" && (
         <>
-          <Recap
-            table={step.table}
-            onTable={() => setStep({ kind: "table" })}
-            player={step.seat.name}
-            onPlayer={() => void openTable(step.table)}
-            deck={step.archetype.name}
-            onDeck={() => setStep({ kind: "deck", table: step.table, seat: step.seat })}
-          />
+          {/* No recap here: the summary below already shows the choices, and
+              "Cambia mazzo" goes back. */}
           <h1 className="mt-2 text-[30px] font-extrabold leading-[1.05] tracking-[-0.02em]">Confermi?</h1>
           <Summary player={step.seat.name} deck={step.archetype.name} archetype={step.archetype} />
           <p className="mt-3 text-[13px] leading-relaxed text-ink/55">
@@ -438,21 +432,16 @@ function Recap({
   onTable,
   player,
   onPlayer,
-  deck,
-  onDeck,
 }: {
   table: number;
   onTable: () => void;
   player?: string;
   onPlayer?: () => void;
-  deck?: string;
-  onDeck?: () => void;
 }) {
   const chips: { label: string; title: string; onClick: () => void }[] = [
     { label: table === 0 ? "Bye" : `Tavolo ${table}`, title: "Cambia tavolo", onClick: onTable },
   ];
   if (player && onPlayer) chips.push({ label: player, title: "Cambia giocatore", onClick: onPlayer });
-  if (deck && onDeck) chips.push({ label: deckLabel(deck), title: "Cambia mazzo", onClick: onDeck });
   return (
     <nav aria-label="Le tue scelte" className="mt-3 flex flex-wrap items-center gap-1.5">
       {chips.map((chip, i) => (
