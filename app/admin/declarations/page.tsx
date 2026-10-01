@@ -18,7 +18,7 @@ type Modal = { kind: "pick"; seat: Seat } | { kind: "close" };
 
 /**
  * The decks of the tournament in progress, in the dashboard: the tournament
- * selector (today's Melee tournament opens by itself), a status line with the
+ * selector (the latest Melee tournament opens by itself), a status line with the
  * round, how many players have a deck and whether they can still pick one
  * from /mazzo, then every player with their deck. Walking the room table by
  * table happens on its own page, opened from "Inserisci ai tavoli".

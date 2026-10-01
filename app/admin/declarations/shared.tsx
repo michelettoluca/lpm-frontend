@@ -650,7 +650,7 @@ export function TournamentSelect({
         )}
       </div>
       {!current && (
-        <p className="mt-2 text-[12px] text-ink/50">Il torneo Melee di oggi si apre da solo. Se non compare, sceglilo qui.</p>
+        <p className="mt-2 text-[12px] text-ink/50">L'ultimo torneo Melee si apre da solo. Se non compare, sceglilo qui.</p>
       )}
     </div>
   );
