@@ -140,14 +140,20 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               </span>
               {connected && (
                 <>
-                  {me.is_super && (
-                    <Link href="/admin/admins" className={BUTTON_GHOST}>
-                      Amministratori
-                    </Link>
-                  )}
-                  <button type="button" onClick={() => void refreshLists()} disabled={busy} className={BUTTON_GHOST}>
-                    {busy ? "Attendi…" : "Ricarica"}
-                  </button>
+                  <Link href="/admin/declarations" className={BUTTON_GHOST}>
+                    Mazzi
+                  </Link>
+                  {/* On a phone only Mazzi and Esci fit next to the brand. */}
+                  <span className="hidden sm:contents">
+                    {me.is_super && (
+                      <Link href="/admin/admins" className={BUTTON_GHOST}>
+                        Amministratori
+                      </Link>
+                    )}
+                    <button type="button" onClick={() => void refreshLists()} disabled={busy} className={BUTTON_GHOST}>
+                      {busy ? "Attendi…" : "Ricarica"}
+                    </button>
+                  </span>
                   <button
                     type="button"
                     onClick={() => void disconnect()}
