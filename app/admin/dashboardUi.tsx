@@ -75,6 +75,71 @@ export const TABLE = "w-full border-collapse text-left text-[13px]";
 export const TH = "h-8 border-b border-ink/10 bg-ink/[0.015] px-4 text-[12px] font-normal text-ink/50";
 export const TD = "h-10 border-b border-ink/[0.07] px-4 align-middle";
 
+/**
+ * Props for a table row that opens its entity's side panel: clickable, and
+ * reachable with Tab and Enter like a button. Actions live in the panel, not
+ * in the row.
+ */
+export function rowOpens(onOpen: () => void) {
+  return {
+    role: "button" as const,
+    tabIndex: 0,
+    onClick: onOpen,
+    onKeyDown: (event: React.KeyboardEvent) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        onOpen();
+      }
+    },
+    className: "cursor-pointer transition-colors hover:bg-ink/[0.03] focus-visible:bg-ink/[0.04] focus-visible:outline-none",
+  };
+}
+
+/** On/off toggle, the brand red when on. */
+export function Switch({
+  checked,
+  disabled,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  disabled?: boolean;
+  label: string;
+  onChange: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onChange}
+      className={`relative h-[18px] w-8 shrink-0 rounded-full transition-colors disabled:opacity-50 ${checked ? "bg-accent" : "bg-ink/15"}`}
+    >
+      <span
+        className={`absolute top-[2px] h-[14px] w-[14px] rounded-full bg-white shadow-sm transition-[left] ${
+          checked ? "left-[16px]" : "left-[2px]"
+        }`}
+      />
+    </button>
+  );
+}
+
+/** Label and value pairs at the top of an entity's side panel. */
+export function DetailList({ items }: { items: [string, ReactNode][] }) {
+  return (
+    <dl className="divide-y divide-ink/8 rounded-lg border border-ink/10">
+      {items.map(([label, value]) => (
+        <div key={label} className="flex min-h-9 items-center justify-between gap-4 px-3 py-2">
+          <dt className="text-[12px] text-ink/50">{label}</dt>
+          <dd className="min-w-0 text-right text-[13px] text-ink">{value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 /** Rows per page the admin tables offer; the choice is kept in this browser. */
 const PAGE_SIZES = [10, 15, 25, 50];
 const DEFAULT_PAGE_SIZE = 15;

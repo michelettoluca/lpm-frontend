@@ -31,6 +31,8 @@ export function useAdmin() {
   return context;
 }
 
+const FOCUS_PAGES = ["/admin/declarations/tavoli"];
+
 const TOAST_OPTIONS = { style: { fontFamily: "var(--font-archivo), system-ui, sans-serif", borderRadius: 8 } };
 
 const WIDTH = "mx-auto w-full max-w-[960px] px-4 sm:px-8";
@@ -53,6 +55,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const [events, setEvents] = useState<ManagedEvent[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<AdminError | null>(null);
+  const path = usePathname();
 
   const toGate = useCallback((reason: AdminError | null) => {
     setStatus("gate");
@@ -120,12 +123,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   }
 
   const connected = status === "connected" && me !== null;
+  // Pages meant for one job on a phone, such as walking the tables, take the
+  // whole screen without the sidebar.
+  const focus = FOCUS_PAGES.includes(path);
 
   return (
     <Context.Provider value={me ? { me, seasons, events, setSeasons, setEvents, call, refresh: load } : null}>
       <div className="admin min-h-screen bg-canvas text-ink">
         <Toaster theme="dark" position="top-center" richColors closeButton toastOptions={TOAST_OPTIONS} />
-        {connected ? (
+        {connected && focus ? (
+          <main className="min-h-screen bg-page">{children}</main>
+        ) : connected ? (
           <>
             <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 lg:flex">
               <Sidebar me={me} busy={busy} onLogout={() => void disconnect()} />
@@ -158,26 +166,26 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
 type NavItem = { href: string; label: string; icon: ReactNode; match: (path: string) => boolean };
 
-const NAV: NavItem[] = [
-  {
-    href: "/admin/seasons",
-    label: "Stagioni",
-    icon: <Icon d="M3 5.5h14M3 5.5v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-10M3 5.5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1M7 3v3M13 3v3M3 9h14" />,
-    match: (path) => path.startsWith("/admin/seasons") || path.startsWith("/admin/events"),
-  },
-  {
-    href: "/admin/declarations",
-    label: "Archetipi",
-    icon: <Icon d="M7 4h6M7 4a1 1 0 0 0-1 1v0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v0a1 1 0 0 0-1-1M7 4H5a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-2M7 10.5l2 2 4-4" />,
-    match: (path) => path === "/admin/declarations",
-  },
-  {
-    href: "/admin/lpi",
-    label: "Lista LPI",
-    icon: <Icon d="M6 4.5h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1ZM8 2.5h8.5a1 1 0 0 1 1 1V14" />,
-    match: (path) => path.startsWith("/admin/lpi"),
-  },
-];
+const SEASONS: NavItem = {
+  href: "/admin/seasons",
+  label: "Stagioni",
+  icon: <Icon d="M3 5.5h14M3 5.5v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-10M3 5.5a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1M7 3v3M13 3v3M3 9h14" />,
+  match: (path) => path.startsWith("/admin/seasons") || path.startsWith("/admin/events"),
+};
+
+const DECKS: NavItem = {
+  href: "/admin/declarations",
+  label: "Archetipi",
+  icon: <Icon d="M7 4h6M7 4a1 1 0 0 0-1 1v0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v0a1 1 0 0 0-1-1M7 4H5a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-2M7 10.5l2 2 4-4" />,
+  match: (path) => path.startsWith("/admin/declarations"),
+};
+
+const LPI: NavItem = {
+  href: "/admin/lpi",
+  label: "Archetipi LPI",
+  icon: <Icon d="M6 4.5h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1ZM8 2.5h8.5a1 1 0 0 1 1 1V14" />,
+  match: (path) => path.startsWith("/admin/lpi"),
+};
 
 const ADMINS: NavItem = {
   href: "/admin/admins",
@@ -186,9 +194,19 @@ const ADMINS: NavItem = {
   match: (path) => path.startsWith("/admin/admins"),
 };
 
+/** The sidebar's groups: running the league, then its settings. */
+function navGroups(me: AdminAccount): { label: string; items: NavItem[] }[] {
+  return [
+    { label: "Lega", items: [SEASONS, DECKS] },
+    { label: "Impostazioni", items: me.is_super ? [LPI, ADMINS] : [LPI] },
+  ];
+}
+
+const ALL_NAV = [SEASONS, DECKS, LPI, ADMINS];
+
 function Icon({ d }: { d: string }) {
   return (
-    <svg viewBox="0 0 20 20" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg viewBox="0 0 20 20" className="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d={d} />
     </svg>
   );
@@ -197,33 +215,39 @@ function Icon({ d }: { d: string }) {
 /** Sections of the panel, then the public site and the account at the bottom. */
 function Sidebar({ me, busy, onLogout, onNavigate }: { me: AdminAccount; busy: boolean; onLogout: () => void; onNavigate?: () => void }) {
   const path = usePathname();
-  const items = me.is_super ? [...NAV, ADMINS] : NAV;
   return (
     <nav className="flex h-full w-full flex-col px-3 py-3" aria-label="Sezioni">
       <Link href="/admin/seasons" onClick={onNavigate} className="mb-4 flex h-8 items-center gap-2 px-2">
         <span className="grid h-5 w-5 place-items-center rounded bg-accent text-[11px] font-bold text-white">L</span>
-        <span className="text-[13px] font-semibold">Lega Pauper Milano</span>
+        <span className="text-[14px] font-semibold">Lega Pauper Milano</span>
       </Link>
-      <ul className="space-y-0.5">
-        {items.map((item) => {
-          const active = item.match(path);
-          return (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                onClick={onNavigate}
-                aria-current={active ? "page" : undefined}
-                className={`flex h-8 items-center gap-2.5 rounded-md px-2 text-[13px] transition-colors ${
-                  active ? "bg-ink/[0.07] font-medium text-ink" : "text-ink/65 hover:bg-ink/[0.04] hover:text-ink"
-                }`}
-              >
-                <span className={active ? "text-accent" : "text-ink/45"}>{item.icon}</span>
-                {item.label}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+      <div className="space-y-5">
+        {navGroups(me).map((group) => (
+          <div key={group.label}>
+            <p className="mb-1 px-2 text-[12px] font-medium text-ink/40">{group.label}</p>
+            <ul className="space-y-0.5">
+              {group.items.map((item) => {
+                const active = item.match(path);
+                return (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={onNavigate}
+                      aria-current={active ? "page" : undefined}
+                      className={`flex h-9 items-center gap-2.5 rounded-md px-2 text-[14px] transition-colors ${
+                        active ? "bg-ink/[0.07] font-medium text-ink" : "text-ink/65 hover:bg-ink/[0.04] hover:text-ink"
+                      }`}
+                    >
+                      <span className={active ? "text-accent" : "text-ink/45"}>{item.icon}</span>
+                      {item.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
       <div className="mt-auto">
         <AccountMenu me={me} busy={busy} onLogout={onLogout} />
       </div>
@@ -265,7 +289,7 @@ function AccountMenu({ me, busy, onLogout }: { me: AdminAccount; busy: boolean; 
       {open && (
         <div
           role="menu"
-          className="absolute right-0 bottom-full left-0 mb-1 rounded-md border border-ink/10 bg-surface p-1 shadow-[0_8px_24px_rgba(28,27,26,0.12)]"
+          className="menu-in-up absolute right-0 bottom-full left-0 mb-1 rounded-md border border-ink/10 bg-surface p-1 shadow-[0_8px_24px_rgba(28,27,26,0.12)]"
         >
           <p className="truncate px-2 pt-1 pb-1.5 text-[12px] text-ink/50">{me.is_super ? "Super admin" : "Admin"}</p>
           <Link href="/" target="_blank" rel="noopener" role="menuitem" className={item} onClick={() => setOpen(false)}>
@@ -306,7 +330,7 @@ function AccountMenu({ me, busy, onLogout }: { me: AdminAccount; busy: boolean; 
 function MobileBar({ me, busy, onLogout }: { me: AdminAccount; busy: boolean; onLogout: () => void }) {
   const [open, setOpen] = useState(false);
   const path = usePathname();
-  const current = [...NAV, ADMINS].find((item) => item.match(path));
+  const current = ALL_NAV.find((item) => item.match(path));
   return (
     <>
       <header className="sticky top-0 z-30 flex h-12 items-center gap-3 border-b border-ink/10 bg-page px-4 lg:hidden">
@@ -316,13 +340,13 @@ function MobileBar({ me, busy, onLogout }: { me: AdminAccount; busy: boolean; on
           aria-label="Apri il menu"
           className="-ml-1.5 grid h-8 w-8 place-items-center rounded-md text-ink/70 hover:bg-ink/[0.05]"
         >
-          <Icon d="M3.5 6h13M3.5 10h13M3.5 14h13" />
+          <Icon d="M4.5 4h11A1.5 1.5 0 0 1 17 5.5v9a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 14.5v-9A1.5 1.5 0 0 1 4.5 4ZM8 4v12" />
         </button>
         <span className="text-[13px] font-semibold">{current?.label ?? "Admin"}</span>
       </header>
       {open && (
         <div className="panel-in fixed inset-0 z-50 bg-black/60 lg:hidden" onMouseDown={(e) => e.target === e.currentTarget && setOpen(false)}>
-          <div className="sheet-in h-full w-64 border-r border-ink/10 bg-canvas">
+          <div className="sheet-in-left h-full w-64 border-r border-ink/10 bg-canvas">
             <Sidebar me={me} busy={busy} onLogout={onLogout} onNavigate={() => setOpen(false)} />
           </div>
         </div>

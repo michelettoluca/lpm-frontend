@@ -10,11 +10,15 @@ import {
   BUTTON_DANGER,
   BUTTON_PRIMARY,
   ConfirmDialog,
+  DetailList,
+  Dialog,
+  DialogBody,
   displayDate,
   EmptyState,
   notify,
   PageHeader,
   Pagination,
+  rowOpens,
   TABLE,
   TD,
   TH,
@@ -26,6 +30,7 @@ export default function AdminsPage() {
   const [admins, setAdmins] = useState<AdminListEntry[] | null>(null);
   const [email, setEmail] = useState("");
   const [removing, setRemoving] = useState<AdminListEntry | null>(null);
+  const [selected, setSelected] = useState<AdminListEntry | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AdminError | null>(null);
   const emailId = useId();
@@ -139,14 +144,11 @@ export default function AdminsPage() {
                 <th className={TH}>Email</th>
                 <th className={TH}>Ruolo</th>
                 <th className={`${TH} hidden sm:table-cell`}>Aggiunto il</th>
-                <th className={TH}>
-                  <span className="sr-only">Azioni</span>
-                </th>
               </tr>
             </thead>
             <tbody>
               {rows.map((a) => (
-                <tr key={a.id} className="last:[&>td]:border-b-0">
+                <tr key={a.id} {...rowOpens(() => setSelected(a))}>
                   <td className={`${TD} font-medium`}>
                     <span className="flex items-center gap-2">
                       <span className="truncate">{a.email}</span>
@@ -155,13 +157,6 @@ export default function AdminsPage() {
                   </td>
                   <td className={`${TD} text-ink/65`}>{a.is_super ? "Super admin" : "Admin"}</td>
                   <td className={`${TD} tn hidden text-ink/55 sm:table-cell`}>{displayDate(a.created_at)}</td>
-                  <td className={`${TD} text-right`}>
-                    {!a.is_super && (
-                      <button type="button" className={BUTTON_DANGER} disabled={pending} onClick={() => setRemoving(a)}>
-                        Rimuovi
-                      </button>
-                    )}
-                  </td>
                 </tr>
               ))}
             </tbody>
@@ -169,6 +164,41 @@ export default function AdminsPage() {
         )}
         <Pagination {...pager} />
       </div>
+
+      {selected && (
+        <Dialog title={selected.email} description="Amministratore della dashboard" onClose={() => setSelected(null)}>
+          <DialogBody>
+            <DetailList
+              items={[
+                ["Ruolo", selected.is_super ? "Super admin" : "Admin"],
+                ["Aggiunto il", <span key="d" className="tn">{displayDate(selected.created_at)}</span>],
+                ["Accesso", "Codice via email"],
+              ]}
+            />
+            {selected.is_super ? (
+              <p>Il super amministratore non può essere rimosso.</p>
+            ) : (
+              <section className="rounded-lg border border-accent/30 px-3 py-3">
+                <h3 className="text-[13px] font-medium text-ink">Zona pericolosa</h3>
+                <p className="mt-0.5 text-[12px] text-ink/50">
+                  Non potrà più accedere alla dashboard e la sua sessione verrà chiusa subito.
+                </p>
+                <button
+                  type="button"
+                  className={`${BUTTON_DANGER} mt-2 -ml-3`}
+                  disabled={pending}
+                  onClick={() => {
+                    setRemoving(selected);
+                    setSelected(null);
+                  }}
+                >
+                  Rimuovi amministratore
+                </button>
+              </section>
+            )}
+          </DialogBody>
+        </Dialog>
+      )}
 
       {removing && (
         <ConfirmDialog

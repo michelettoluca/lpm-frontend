@@ -158,18 +158,25 @@ export function ArchetypePicker({
           autoCorrect="off"
           spellCheck={false}
           maxLength={200}
-          className="w-full rounded-lg border border-ink/15 bg-surface px-4 py-3 text-[16px] outline-none transition-colors focus:border-accent"
+          className={
+            admin
+              ? // 16px on phones keeps iOS from zooming into the field.
+                "h-9 w-full rounded-md border border-ink/15 bg-surface px-2.5 text-[16px] outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/15 sm:text-[13px]"
+              : "w-full rounded-lg border border-ink/15 bg-surface px-4 py-3 text-[16px] outline-none transition-colors focus:border-accent"
+          }
         />
       </div>
 
       {!trimmed ? (
-        <p className="mt-4 px-1 text-[14px] leading-relaxed text-ink/55">
+        <p className={`mt-3 px-1 leading-relaxed text-ink/55 ${admin ? "text-[12px]" : "text-[14px]"}`}>
           Scrivi il nome del mazzo, i suoi colori (es. <strong className="text-ink/75">UB</strong>,{" "}
           <strong className="text-ink/75">mono rosso</strong>) o una carta che giochi.
         </p>
       ) : (
         <ul
-          className="mt-3 min-h-0 flex-1 divide-y divide-ink/8 overflow-y-auto rounded-lg border border-ink/8 bg-surface"
+          className={`min-h-0 flex-1 divide-y divide-ink/8 overflow-y-auto border border-ink/8 bg-surface ${
+            admin ? "mt-2 rounded-md" : "mt-3 rounded-lg"
+          }`}
           aria-busy={searching}
         >
           {rows.map((a) => (
@@ -177,7 +184,9 @@ export function ArchetypePicker({
               <button
                 type="button"
                 onClick={() => onPick(a)}
-                className={`flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left text-[15px] font-semibold transition-colors hover:bg-ink/[0.03] ${
+                className={`flex w-full items-center justify-between gap-3 text-left transition-colors hover:bg-ink/[0.03] ${
+                  admin ? "px-3 py-2 text-[13px] font-medium" : "px-4 py-3.5 text-[15px] font-semibold"
+                } ${
                   a.id === selectedId ? "bg-tint text-accent" : ""
                 }`}
               >

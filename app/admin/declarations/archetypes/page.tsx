@@ -1,3 +1,3 @@
 import { redirect } from "next/navigation";
-// The archetype list is its own section of the panel now.
-export default function OldArchetypeListPage() { redirect("/admin/lpi"); }
+// The Lega Pauper Italia list lives under Impostazioni.
+export default function OldLpiListPage() { redirect("/admin/lpi"); }
