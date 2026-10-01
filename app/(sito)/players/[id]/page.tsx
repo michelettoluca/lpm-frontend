@@ -59,7 +59,7 @@ export default async function PlayerPage(props: PageProps<"/players/[id]">) {
         <Link href="/leaderboard" className="rg-textlink -ml-1 inline-flex min-h-11 items-center px-1 text-[15px]">
           ← la classifica
         </Link>
-        <p className="rg-eyebrow mt-4">giocatore{p.season ? ` · stagione ${p.season.name.toLowerCase()}` : ""}</p>
+        {p.season && <p className="rg-eyebrow mt-4">stagione {p.season.name.toLowerCase()}</p>}
         <h1 className="rg-display rg-tight mt-2 text-[48px] leading-[0.95] break-words sm:text-[72px] lg:text-[104px]">
           {p.first}
           {p.last && (
