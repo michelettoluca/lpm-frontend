@@ -152,13 +152,13 @@ export function DeclareFlow() {
     }
     if (res.status === 409) {
       toast.error(
-        `Per ${seat.name} è già stato dichiarato un mazzo. Se non sei stato tu, avvisa un organizzatore: lo sistema lui.`,
+        `Per ${seat.name} è già stato indicato un mazzo. Se non sei stato tu, avvisa un organizzatore: lo sistema lui.`,
         { duration: 12_000 },
       );
       setStep({ kind: "table" });
     } else if (res.status === 404) {
       await loadCurrent();
-      toast.error("Il turno è cambiato o le dichiarazioni sono chiuse. Reinserisci il numero del tuo tavolo attuale.");
+      toast.error("Il turno è cambiato o la raccolta dei mazzi è chiusa. Reinserisci il numero del tuo tavolo attuale.");
       setStep({ kind: "table" });
     } else {
       toast.error("Qualcosa è andato storto. Riprova.");
@@ -175,13 +175,13 @@ export function DeclareFlow() {
       return false;
     }
     if (!res.data && res.status !== 404) {
-      toast.error("Non siamo riusciti a cancellare la dichiarazione. Riprova.");
+      toast.error("Non siamo riusciti a cancellare il mazzo. Riprova.");
       return false;
     }
     writeReceipts(readReceipts().filter((r) => r !== m.receipt));
     setMine((list) => list.filter((x) => x.receipt !== m.receipt));
     if (res.status === 404) {
-      toast.error("Le dichiarazioni sono chiuse: per cambiare mazzo chiedi a un organizzatore.");
+      toast.error("La raccolta dei mazzi è chiusa: per cambiare mazzo chiedi a un organizzatore.");
       return false;
     }
     return true;
@@ -192,7 +192,7 @@ export function DeclareFlow() {
   }
   if (status === "closed") {
     return (
-      <Panel title="Dichiarazioni chiuse">
+      <Panel title="Raccolta dei mazzi chiusa">
         Al momento nessun torneo sta raccogliendo i mazzi. Si aprono il giorno della tappa: ricarica la pagina quando
         te lo dicono gli organizzatori.
       </Panel>
@@ -220,7 +220,7 @@ export function DeclareFlow() {
             <>
               {/* A phone that has declared can only look at it or withdraw it;
                   the table search comes back once it is withdrawn. */}
-              <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.01em]">Hai già dichiarato</h1>
+              <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.01em]">Hai già indicato il mazzo</h1>
               {mine.map((m) => (
                 <div key={m.receipt}>
                   <Summary player={m.player_name} deck={m.archetype_name} archetype={archetypeOf(m)} />
@@ -236,10 +236,10 @@ export function DeclareFlow() {
                         className={`${SECONDARY} mt-3`}
                         onClick={() => setStep({ kind: "withdraw", mine: m })}
                       >
-                        Cancella la dichiarazione
+                        Cancella il mazzo
                       </button>
                       <p className="mt-3 text-[13px] leading-relaxed text-ink/55">
-                        Lo vedono solo gli organizzatori. Se hai sbagliato, cancellala e dichiara di nuovo.
+                        Lo vedono solo gli organizzatori. Se hai sbagliato, cancellalo e indicalo di nuovo.
                       </p>
                     </>
                   )}
@@ -247,7 +247,7 @@ export function DeclareFlow() {
               ))}
             </>
           ) : (
-            <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.01em]">Dichiara il tuo mazzo</h1>
+            <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.01em]">Che mazzo giochi?</h1>
           )}
           {mine.length > 0 ? null : round.published && round.tables + (round.byes ? 1 : 0) > 0 ? (
             <form
@@ -283,7 +283,7 @@ export function DeclareFlow() {
           ) : (
             <Panel title="Abbinamenti non ancora pubblicati">
               {round.number === 0
-                ? "Puoi dichiarare il mazzo appena escono gli abbinamenti del primo turno."
+                ? "Puoi indicare il mazzo appena escono gli abbinamenti del primo turno."
                 : `Gli abbinamenti del turno ${round.number} non sono ancora pubblicati.`}
               <button type="button" className={`${SECONDARY} mt-4`} onClick={() => void loadCurrent()}>
                 Aggiorna
@@ -315,7 +315,7 @@ export function DeclareFlow() {
                 >
                   <span className="text-[16px] font-semibold leading-tight break-words">{seat.name}</span>
                   <span className="mt-3 text-[12px] font-bold text-ink/50">
-                    {own ? `Hai dichiarato ${deckLabel(own.archetype_name)}` : seat.declared ? "Già dichiarato" : "Sono io →"}
+                    {own ? `Il tuo mazzo: ${deckLabel(own.archetype_name)}` : seat.declared ? "Mazzo già indicato" : "Sono io →"}
                   </span>
                 </button>
               );
@@ -323,7 +323,7 @@ export function DeclareFlow() {
           </div>
           {step.seats.some((s) => s.declared && !mine.some((m) => m.team_id === s.team_id)) && (
             <p className="mt-3 text-[13px] leading-relaxed text-ink/55">
-              Hai già dichiarato da un altro telefono, o qualcuno l&apos;ha fatto al posto tuo? Avvisa un organizzatore.
+              Hai già indicato il mazzo da un altro telefono, o qualcuno l&apos;ha fatto al posto tuo? Avvisa un organizzatore.
             </p>
           )}
         </>
@@ -337,7 +337,7 @@ export function DeclareFlow() {
             player={step.seat.name}
             onPlayer={() => void openTable(step.table)}
           />
-          <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.01em]">Che mazzo giochi?</h1>
+          <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.01em]">Scegli il tuo mazzo</h1>
           <div className="mb-4" />
           {archetypes.length === 0 ? (
             <p className="py-10 text-center text-[14px] text-ink/50">Carico la lista dei mazzi…</p>
@@ -359,7 +359,7 @@ export function DeclareFlow() {
           <Summary player={step.seat.name} deck={step.archetype.name} archetype={step.archetype} />
           <p className="mt-3 text-[13px] leading-relaxed text-ink/55">
             Lo vedono solo gli organizzatori. Da questo telefono potrai ricontrollarlo e cancellarlo finché le
-            dichiarazioni restano aperte.
+            la raccolta dei mazzi resta aperta.
           </p>
           <button
             type="button"
@@ -385,7 +385,7 @@ export function DeclareFlow() {
           <div className="mt-6 grid h-11 w-11 place-items-center rounded-full bg-accent text-[20px] font-semibold text-white">
             ✓
           </div>
-          <h1 className="mt-4 text-[22px] font-semibold leading-tight tracking-[-0.01em]">Mazzo dichiarato</h1>
+          <h1 className="mt-4 text-[22px] font-semibold leading-tight tracking-[-0.01em]">Mazzo registrato</h1>
           <Summary player={step.mine.player_name} deck={step.mine.archetype_name} archetype={archetypeOf(step.mine)} />
           <p className="mt-3 text-[13px] leading-relaxed text-ink/55">Buon torneo! Lo vedono solo gli organizzatori.</p>
           {step.mine.locked ? (
@@ -410,10 +410,10 @@ export function DeclareFlow() {
 
       {step.kind === "withdraw" && (
         <>
-          <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.01em]">Cancellare la dichiarazione?</h1>
+          <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.01em]">Vuoi cancellare il mazzo?</h1>
           <Summary player={step.mine.player_name} deck={step.mine.archetype_name} archetype={archetypeOf(step.mine)} />
           <p className="mt-3 text-[13px] leading-relaxed text-ink/55">
-            Dopo potrai dichiarare di nuovo inserendo il numero del tuo tavolo.
+            Dopo potrai indicarlo di nuovo inserendo il numero del tuo tavolo.
           </p>
           <button
             type="button"
@@ -425,7 +425,7 @@ export function DeclareFlow() {
                 return;
               }
               setStep({ kind: "table" });
-              toast.success("Dichiarazione cancellata. Ora puoi dichiarare di nuovo.");
+              toast.success("Mazzo cancellato. Ora puoi indicarlo di nuovo.");
             }}
           >
             {busy ? "Attendi…" : "Sì, cancella"}

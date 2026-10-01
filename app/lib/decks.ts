@@ -1,6 +1,6 @@
 /**
  * Deck declarations: archetypes from Lega Pauper Italia's list and the fuzzy
- * search players use to find theirs. Shared by the public /dichiara flow and
+ * search players use to find theirs. Shared by the public /mazzo flow and
  * the admin's table walk, so it imports nothing server-only.
  */
 

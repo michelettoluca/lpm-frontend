@@ -87,7 +87,7 @@ type Modal = { kind: "pick"; seat: Seat } | { kind: "close" };
 /**
  * Deck declarations for the current tournament. A status line says which
  * round it is, how many players have declared and whether players can still
- * declare from /dichiara. Above it, the tournament selector: today's Melee
+ * pick their deck from /mazzo. Above it, the tournament selector: today's Melee
  * tournament opens by itself, and any other can be picked there. Below, Tavoli
  * walks the room one table at a time, jumping to the next one that misses a
  * deck; Giocatori lists everyone, including players not paired this round.
@@ -197,7 +197,7 @@ export default function DeclarationsPage() {
       roundRef.current = null;
       setAt(null);
     }
-    notify(reopening ? "I giocatori possono di nuovo dichiarare." : "Dichiarazioni aperte per il torneo scelto.");
+    notify(reopening ? "I giocatori possono di nuovo indicare il mazzo." : "Raccolta dei mazzi aperta per il torneo scelto.");
     await load();
   }
 
@@ -208,7 +208,7 @@ export default function DeclarationsPage() {
     setModal(null);
     if (!res.ok) setError(res.error);
     else {
-      notify("Dichiarazioni chiuse ai giocatori. Tu puoi ancora modificarle.");
+      notify("Raccolta chiusa ai giocatori. Tu puoi ancora modificare i mazzi.");
       await load();
     }
   }
@@ -224,8 +224,8 @@ export default function DeclarationsPage() {
   return (
     <div>
       <PageHeader
-        title="Dichiarazioni"
-        meta="I mazzi che i giocatori dichiarano durante il torneo."
+        title="Archetipi"
+        meta="Il mazzo di ogni giocatore del torneo, per il meta di Lega Pauper Italia."
         actions={
           t && (
             <button type="button" className={BUTTON} onClick={() => exportCsv(view)}>
@@ -260,7 +260,7 @@ export default function DeclarationsPage() {
                 <span className="ml-1.5 text-[12px] font-normal text-ink/50">non pubblicato</span>
               )}
             </Stat>
-            <Stat label="Dichiarati">
+            <Stat label="Con mazzo">
               <span className="tn">
                 {declaredCount}/{active.length}
               </span>
@@ -281,7 +281,7 @@ export default function DeclarationsPage() {
               <div>
                 <p className="text-[13px] font-medium">{t.open ? "Aperte ai giocatori" : "Chiuse ai giocatori"}</p>
                 <p className="text-[12px] text-ink/50">
-                  {t.open ? "Dichiarano da legapaupermilano.it/dichiara" : "Solo gli admin possono modificare"}
+                  {t.open ? "Indicano il mazzo da legapaupermilano.it/mazzo" : "Solo gli admin possono modificare"}
                 </p>
               </div>
             </div>
@@ -341,7 +341,7 @@ export default function DeclarationsPage() {
           description={
             modal.seat.declaration
               ? `Ora: ${modal.seat.declaration.archetype_name} (${modal.seat.declaration.source === "player" ? "dal giocatore" : "da un admin"})`
-              : "Nessun mazzo dichiarato"
+              : "Nessun mazzo indicato"
           }
           busy={busy}
           onClose={() => setModal(null)}
@@ -361,7 +361,7 @@ export default function DeclarationsPage() {
                 disabled={busy}
                 onClick={() => void setDeck(modal.seat, null)}
               >
-                Rimuovi dichiarazione
+                Rimuovi mazzo
               </button>
             )}
           </div>
@@ -370,13 +370,13 @@ export default function DeclarationsPage() {
 
       {modal?.kind === "close" && (
         <ConfirmDialog
-          title="Chiudere le dichiarazioni ai giocatori?"
+          title="Chiudere la raccolta dei mazzi?"
           confirmLabel="Chiudi"
           busy={busy}
           onCancel={() => setModal(null)}
           onConfirm={() => void closeDeclarations()}
         >
-          I giocatori non potranno più dichiarare o cancellare il proprio mazzo da /dichiara. Tu potrai ancora
+          I giocatori non potranno più indicare o cancellare il proprio mazzo da /mazzo. Tu potrai ancora
           modificarli tutti, e riaprire quando vuoi.
         </ConfirmDialog>
       )}

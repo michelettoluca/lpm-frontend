@@ -167,15 +167,15 @@ const NAV: NavItem[] = [
   },
   {
     href: "/admin/declarations",
-    label: "Dichiarazioni",
+    label: "Archetipi",
     icon: <Icon d="M7 4h6M7 4a1 1 0 0 0-1 1v0a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v0a1 1 0 0 0-1-1M7 4H5a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1h-2M7 10.5l2 2 4-4" />,
     match: (path) => path === "/admin/declarations",
   },
   {
-    href: "/admin/archetypes",
-    label: "Mazzi LPI",
+    href: "/admin/lpi",
+    label: "Lista LPI",
     icon: <Icon d="M6 4.5h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1ZM8 2.5h8.5a1 1 0 0 1 1 1V14" />,
-    match: (path) => path.startsWith("/admin/archetypes"),
+    match: (path) => path.startsWith("/admin/lpi"),
   },
 ];
 
