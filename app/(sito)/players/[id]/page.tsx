@@ -82,7 +82,7 @@ export default async function PlayerPage(props: PageProps<"/players/[id]">) {
           <Big label="punti">
             <span className="rg-display rg-tight tnum text-[52px] leading-none lg:text-[68px]">{p.points}</span>
           </Big>
-          <Big label="vinti · persi · patti">
+          <Big label="vinte · perse · patte">
             <span className="rg-display rg-tight tnum text-[36px] leading-none lg:text-[52px]">
               {p.wins}-{p.losses}-{p.draws}
             </span>
@@ -188,7 +188,7 @@ export default async function PlayerPage(props: PageProps<"/players/[id]">) {
       <Section
         label="confronto"
         title="testa a testa"
-        aside={`Scegli un avversario e guarda come è andata contro ${p.first} in questa stagione. Match vinti, persi e patti.`}
+        aside={`Scegli un avversario e guarda come è andata contro ${p.first} in questa stagione. Partite vinte, perse e patte.`}
       >
         <FaceOff
           me={p.first}

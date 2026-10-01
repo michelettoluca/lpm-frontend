@@ -88,9 +88,9 @@ export function FaceOff({ me, others, rows }: { me: string; others: { id: number
             <>
               <div className="rg-hr mt-6 grid max-w-[420px] grid-cols-3 gap-4 pt-5">
                 {[
-                  { n: result.won, l: "vinti" },
-                  { n: result.lost, l: "persi" },
-                  { n: result.drawn, l: "patti" },
+                  { n: result.won, l: "vinte" },
+                  { n: result.lost, l: "perse" },
+                  { n: result.drawn, l: "patte" },
                 ].map((x) => (
                   <div key={x.l}>
                     <div className="rg-muted text-[14px] font-semibold">{x.l}</div>

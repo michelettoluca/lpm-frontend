@@ -305,8 +305,8 @@ export function DeclareFlow() {
         <div>
           <h1 className={H1}>per ora è tutto chiuso.</h1>
           <p className="rg-muted mt-4 text-[16px] leading-relaxed">
-            Il mazzo si indica il giorno della tappa, quando escono gli abbinamenti. Ricarica la pagina quando te lo dicono
-            gli organizzatori.
+            Il mazzo si indica alla tappa, appena escono gli abbinamenti del primo turno. Quando li vedi, ricarica la
+            pagina.
           </p>
         </div>
       </section>

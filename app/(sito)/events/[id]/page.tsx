@@ -84,7 +84,7 @@ export default async function EventPage(props: PageProps<"/events/[id]">) {
           title="com'è finita"
           aside={
             <>
-              Record in vinti-persi-patti, bye contati come vittorie. Con {PRIZE_POINTS} punti o più arriva la stellina{" "}
+              Record in vinte-perse-patte, bye contati come vittorie. Con {PRIZE_POINTS} punti o più arriva la stellina{" "}
               <PixelStar size={12} className="inline-block text-[var(--rg-o)]" />: ci {prizeCount === 1 ? "è riuscito uno" : `sono riusciti in ${prizeCount}`}.
             </>
           }
