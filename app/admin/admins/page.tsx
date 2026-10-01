@@ -4,7 +4,7 @@ import { useEffect, useId, useState } from "react";
 import type { AdminError, AdminListEntry } from "@/app/lib/adminTypes";
 import { useAdmin } from "../AdminShell";
 import { ErrorPanel, FieldError } from "../ErrorPanel";
-import { CONTROL, CONTROL_INVALID } from "../fields";
+import { CONTROL, CONTROL_INVALID, Field } from "../fields";
 import {
   Badge,
   BUTTON_DANGER,
@@ -12,7 +12,9 @@ import {
   ConfirmDialog,
   DetailList,
   Dialog,
+  DIALOG_FORM,
   DialogBody,
+  DialogFooter,
   displayDate,
   EmptyState,
   notify,
@@ -31,6 +33,7 @@ export default function AdminsPage() {
   const [email, setEmail] = useState("");
   const [removing, setRemoving] = useState<AdminListEntry | null>(null);
   const [selected, setSelected] = useState<AdminListEntry | null>(null);
+  const [adding, setAdding] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AdminError | null>(null);
   const emailId = useId();
@@ -74,6 +77,7 @@ export default function AdminsPage() {
     }
     setAdmins((prev) => [...(prev ?? []), res.data]);
     setEmail("");
+    setAdding(false);
     notify(`${res.data.email} ora è un amministratore: può accedere con la sua email.`);
   }
 
@@ -99,40 +103,25 @@ export default function AdminsPage() {
       <PageHeader
         title="Amministratori"
         meta="Chi è in questa lista accede alla dashboard con un codice inviato alla sua email."
+        actions={
+          <button
+            type="button"
+            className={BUTTON_PRIMARY}
+            onClick={() => {
+              setError(null);
+              setAdding(true);
+            }}
+          >
+            Aggiungi amministratore
+          </button>
+        }
       />
 
-      {error && !emailError && (
+      {error && !(adding && emailError) && (
         <div className="mb-6">
           <ErrorPanel error={error} />
         </div>
       )}
-
-      <form onSubmit={add} className="mb-4">
-        <label htmlFor={emailId} className="lbl block">
-          Aggiungi un amministratore
-        </label>
-        <div className="mt-1.5 flex max-w-md gap-2">
-          <input
-            id={emailId}
-            type="email"
-            className={`${CONTROL} ${emailError ? CONTROL_INVALID : ""}`}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="nome@esempio.it"
-            autoComplete="off"
-            disabled={pending}
-            required
-          />
-          <button type="submit" className={`${BUTTON_PRIMARY} h-9`} disabled={pending || !email.trim()}>
-            {pending ? "Attendi…" : "Aggiungi"}
-          </button>
-        </div>
-        {emailError && (
-          <FieldError
-            message={error?.kind === "conflict" ? "Questa email è già un amministratore." : "Email non valida."}
-          />
-        )}
-      </form>
 
       <div className="card overflow-x-auto">
         {admins === null ? (
@@ -168,6 +157,44 @@ export default function AdminsPage() {
         )}
         <Pagination {...pager} />
       </div>
+
+      {adding && (
+        <Dialog
+          title="Aggiungi amministratore"
+          description="Riceverà un codice di accesso alla sua email ogni volta che entra."
+          busy={pending}
+          onClose={() => setAdding(false)}
+        >
+          <form onSubmit={add} className={DIALOG_FORM}>
+            <DialogBody>
+              <Field label="Email" htmlFor={emailId}>
+                <input
+                  id={emailId}
+                  type="email"
+                  className={`${CONTROL} ${emailError ? CONTROL_INVALID : ""}`}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="nome@esempio.it"
+                  autoComplete="off"
+                  autoFocus
+                  disabled={pending}
+                  required
+                />
+                {emailError && (
+                  <FieldError
+                    message={error?.kind === "conflict" ? "Questa email è già un amministratore." : "Email non valida."}
+                  />
+                )}
+              </Field>
+            </DialogBody>
+            <DialogFooter>
+              <button type="submit" className={BUTTON_PRIMARY} disabled={pending || !email.trim()}>
+                {pending ? "Attendi…" : "Aggiungi"}
+              </button>
+            </DialogFooter>
+          </form>
+        </Dialog>
+      )}
 
       {selected && (
         <Dialog title={selected.email} description="Amministratore della dashboard" onClose={() => setSelected(null)}>

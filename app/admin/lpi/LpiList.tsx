@@ -108,7 +108,7 @@ export function LpiList() {
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Nome, colori (es. UB) o una carta…"
             aria-label="Cerca un mazzo"
-            className={`${CONTROL} mb-3 max-w-xs`}
+            className={`${CONTROL} mb-3 sm:max-w-xs`}
           />
           <div className="card overflow-x-auto">
             <table className={TABLE}>

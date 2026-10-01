@@ -7,7 +7,7 @@ import { createContext, useCallback, useContext, useEffect, useId, useRef, useSt
 import type { AdminAccount, AdminError, ManagedEvent, Season } from "@/app/lib/adminTypes";
 import { callAdmin, isAuthLoss, type CallResult } from "./client";
 import { ErrorPanel } from "./ErrorPanel";
-import { BUTTON_PRIMARY } from "./dashboardUi";
+import { BUTTON_PRIMARY, useCloseOnBack } from "./dashboardUi";
 import { CONTROL } from "./fields";
 
 type DashboardContext = {
@@ -326,6 +326,18 @@ function AccountMenu({ me, busy, onLogout }: { me: AdminAccount; busy: boolean; 
   );
 }
 
+/** The sidebar as a drawer on a phone; back closes it like a panel. */
+function Drawer({ me, busy, onLogout, onClose }: { me: AdminAccount; busy: boolean; onLogout: () => void; onClose: () => void }) {
+  useCloseOnBack(onClose);
+  return (
+    <div className="panel-in fixed inset-0 z-50 bg-black/60 lg:hidden" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="sheet-in-left h-full w-64 border-r border-ink/10 bg-canvas">
+        <Sidebar me={me} busy={busy} onLogout={onLogout} onNavigate={onClose} />
+      </div>
+    </div>
+  );
+}
+
 /** On a phone: the brand and a menu button that opens the sidebar as a drawer. */
 function MobileBar({ me, busy, onLogout }: { me: AdminAccount; busy: boolean; onLogout: () => void }) {
   const [open, setOpen] = useState(false);
@@ -344,13 +356,7 @@ function MobileBar({ me, busy, onLogout }: { me: AdminAccount; busy: boolean; on
         </button>
         <span className="text-[13px] font-semibold">{current?.label ?? "Admin"}</span>
       </header>
-      {open && (
-        <div className="panel-in fixed inset-0 z-50 bg-black/60 lg:hidden" onMouseDown={(e) => e.target === e.currentTarget && setOpen(false)}>
-          <div className="sheet-in-left h-full w-64 border-r border-ink/10 bg-canvas">
-            <Sidebar me={me} busy={busy} onLogout={onLogout} onNavigate={() => setOpen(false)} />
-          </div>
-        </div>
-      )}
+      {open && <Drawer me={me} busy={busy} onLogout={onLogout} onClose={() => setOpen(false)} />}
     </>
   );
 }

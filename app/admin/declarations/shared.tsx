@@ -471,7 +471,7 @@ export function PlayersTable({ players, onPick }: { players: Player[]; onPick: (
         onChange={(e) => setQuery(e.target.value)}
         placeholder="Cerca giocatore"
         aria-label="Cerca giocatore"
-        className={`${CONTROL} mb-3 max-w-xs`}
+        className={`${CONTROL} mb-3 sm:max-w-xs`}
       />
       <div className="card overflow-hidden">
         {/* On a phone the player takes what room there is and the deck sits on the right. */}
@@ -519,7 +519,8 @@ export function PlayersTable({ players, onPick }: { players: Player[]; onPick: (
 /**
  * The tournament declarations are collected for, as a dropdown of the Melee
  * tournaments from three days ago to next week. Picking another one opens
- * declarations there; the current one's are kept.
+ * declarations there; the current one's are kept. With a tournament open and
+ * no other to switch to, there is nothing to choose, so it shows nothing.
  */
 export function TournamentSelect({
   call,
@@ -567,81 +568,89 @@ export function TournamentSelect({
   }, [open]);
 
   const currentDate = current ? list?.find((c) => c.id === current.id)?.date : undefined;
+  const nothingElse = list !== null && !list.some((c) => c.id !== current?.id);
+  if (current && (list === null || nothingElse)) return null;
 
   return (
-    <div ref={ref} className="relative max-w-xl">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        disabled={busy}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        className="flex h-9 w-full items-center gap-2 rounded-md border border-ink/15 bg-surface px-2.5 text-left text-[13px] transition-colors hover:border-ink/25 disabled:opacity-60"
-      >
-        {current ? (
-          <span className="flex min-w-0 flex-1 items-baseline gap-2">
-            <span className="min-w-0 truncate font-medium">{tappaTitle(current.name)}</span>
-            {currentDate && <span className="tn shrink-0 text-ink/55">{shortDate(currentDate)}</span>}
-            {tappaTitle(current.name) !== current.name && (
-              <span className="min-w-0 truncate text-[12px] text-ink/45">{tappaSubtitle(current.name)}</span>
-            )}
-          </span>
-        ) : (
-          <span className="min-w-0 flex-1 truncate text-ink/45">Scegli il torneo Melee</span>
-        )}
-        <span className="text-[11px] text-ink/40" aria-hidden>
-          ▾
-        </span>
-      </button>
-      {open && (
-        <div
-          role="listbox"
-          aria-label="Tornei Melee"
-          className="menu-in absolute right-0 left-0 z-20 mt-1 max-h-72 overflow-y-auto rounded-md border border-ink/10 bg-surface p-1 shadow-[0_8px_24px_rgba(28,27,26,0.12)]"
+    <div className="mb-4">
+      <p className="lbl mb-1.5">Torneo</p>
+      <div ref={ref} className="relative max-w-xl">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          disabled={busy}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          className="flex h-9 w-full items-center gap-2 rounded-md border border-ink/15 bg-surface px-2.5 text-left text-[13px] transition-colors hover:border-ink/25 disabled:opacity-60"
         >
-          {error ? (
-            <div className="p-2">
-              <ErrorPanel error={error} />
-            </div>
-          ) : !list ? (
-            <p className="px-2 py-3 text-[13px] text-ink/50">Cerco i tornei su Melee…</p>
-          ) : list.length === 0 ? (
-            <p className="px-2 py-3 text-[13px] text-ink/50">Nessun torneo Melee tra tre giorni fa e la prossima settimana.</p>
+          {current ? (
+            <span className="flex min-w-0 flex-1 items-baseline gap-2">
+              <span className="min-w-0 truncate font-medium">{tappaTitle(current.name)}</span>
+              {currentDate && <span className="tn shrink-0 text-ink/55">{shortDate(currentDate)}</span>}
+              {tappaTitle(current.name) !== current.name && (
+                <span className="min-w-0 truncate text-[12px] text-ink/45">{tappaSubtitle(current.name)}</span>
+              )}
+            </span>
           ) : (
-            list.map((choice) => {
-              const selected = choice.id === current?.id;
-              return (
-                <button
-                  key={choice.id}
-                  type="button"
-                  role="option"
-                  aria-selected={selected}
-                  onClick={() => {
-                    setOpen(false);
-                    if (!selected) onSelect(choice.id);
-                  }}
-                  className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-ink/[0.05] ${selected ? "bg-ink/[0.04]" : ""}`}
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-baseline gap-2">
-                      <span className="shrink-0 text-[13px] font-medium">{tappaTitle(choice.name)}</span>
-                      <span className="tn shrink-0 text-[12px] text-ink/55">{shortDate(choice.date)}</span>
-                      <span className="ml-auto shrink-0 text-[12px] text-ink/45">{choice.status || "—"}</span>
-                    </span>
-                    {tappaTitle(choice.name) !== choice.name && (
-                      <span className="block truncate text-[12px] text-ink/45">{tappaSubtitle(choice.name)}</span>
-                    )}
-                  </span>
-                  {selected && (
-                    <span className="text-[12px] text-accent" aria-hidden>
-                      ✓
-                    </span>
-                  )}
-                </button>
-              );
-            })
+            <span className="min-w-0 flex-1 truncate text-ink/45">Scegli il torneo Melee</span>
           )}
-        </div>
+          <span className="text-[11px] text-ink/40" aria-hidden>
+            ▾
+          </span>
+        </button>
+        {open && (
+          <div
+            role="listbox"
+            aria-label="Tornei Melee"
+            className="menu-in absolute right-0 left-0 z-20 mt-1 max-h-72 overflow-y-auto rounded-md border border-ink/10 bg-surface p-1 shadow-[0_8px_24px_rgba(28,27,26,0.12)]"
+          >
+            {error ? (
+              <div className="p-2">
+                <ErrorPanel error={error} />
+              </div>
+            ) : !list ? (
+              <p className="px-2 py-3 text-[13px] text-ink/50">Cerco i tornei su Melee…</p>
+            ) : list.length === 0 ? (
+              <p className="px-2 py-3 text-[13px] text-ink/50">Nessun torneo Melee tra tre giorni fa e la prossima settimana.</p>
+            ) : (
+              list.map((choice) => {
+                const selected = choice.id === current?.id;
+                return (
+                  <button
+                    key={choice.id}
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    onClick={() => {
+                      setOpen(false);
+                      if (!selected) onSelect(choice.id);
+                    }}
+                    className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-ink/[0.05] ${selected ? "bg-ink/[0.04]" : ""}`}
+                  >
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-baseline gap-2">
+                        <span className="shrink-0 text-[13px] font-medium">{tappaTitle(choice.name)}</span>
+                        <span className="tn shrink-0 text-[12px] text-ink/55">{shortDate(choice.date)}</span>
+                        <span className="ml-auto shrink-0 text-[12px] text-ink/45">{choice.status || "—"}</span>
+                      </span>
+                      {tappaTitle(choice.name) !== choice.name && (
+                        <span className="block truncate text-[12px] text-ink/45">{tappaSubtitle(choice.name)}</span>
+                      )}
+                    </span>
+                    {selected && (
+                      <span className="text-[12px] text-accent" aria-hidden>
+                        ✓
+                      </span>
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        )}
+      </div>
+      {!current && (
+        <p className="mt-2 text-[12px] text-ink/50">Il torneo Melee di oggi si apre da solo. Se non compare, sceglilo qui.</p>
       )}
     </div>
   );

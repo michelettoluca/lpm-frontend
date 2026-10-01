@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 const BUTTON_BASE =
@@ -261,6 +261,43 @@ export function EmptyState({ children }: { children: ReactNode }) {
 }
 
 /**
+ * Makes the browser's back, the gesture on a phone, close an overlay instead
+ * of leaving the page: opening adds a history entry for it, and back pops it
+ * and closes. Closing it any other way only marks the entry as spent: going
+ * back on it here could cancel a navigation that is just starting, such as a
+ * link in the mobile menu, so it is left in place and the next back simply
+ * steps over it.
+ */
+export function useCloseOnBack(onClose: () => void) {
+  const close = useRef(onClose);
+  useEffect(() => {
+    close.current = onClose;
+  });
+  const entry = useRef<string | null>(null);
+  useEffect(() => {
+    // React's development double mount keeps the ref: push only once.
+    if (entry.current === null) {
+      entry.current = Math.random().toString(36).slice(2);
+      window.history.pushState({ ...window.history.state, lpmOverlay: entry.current }, "");
+    }
+    const mine = entry.current;
+    const onPop = () => {
+      if (window.history.state?.lpmOverlay === mine) return;
+      close.current();
+    };
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      if (window.history.state?.lpmOverlay === mine) {
+        const { lpmOverlay: _spent, ...state } = window.history.state;
+        void _spent;
+        window.history.replaceState(state, "");
+      }
+    };
+  }, []);
+}
+
+/**
  * Full-height panel sliding in from the right, used for every form and
  * confirmation. Escape and a click on the backdrop close it, except while a
  * request is in flight. A form inside wraps DialogBody and DialogFooter with
@@ -280,6 +317,7 @@ export function Dialog({
   children: ReactNode;
 }) {
   const headingId = useId();
+  useCloseOnBack(onClose);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {

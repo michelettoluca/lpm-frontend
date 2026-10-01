@@ -62,13 +62,7 @@ export default function DeclarationsPage() {
         </div>
       )}
 
-      <div className="mb-4">
-        <p className="lbl mb-1.5">Torneo</p>
-        <TournamentSelect call={call} current={t} busy={busy} onSelect={(id) => void openTournament(id)} />
-        {!t && (
-          <p className="mt-2 text-[12px] text-ink/50">Il torneo Melee di oggi si apre da solo. Se non compare, sceglilo qui.</p>
-        )}
-      </div>
+      <TournamentSelect call={call} current={t} busy={busy} onSelect={(id) => void openTournament(id)} />
 
       {!t ? (
         <section className="card">

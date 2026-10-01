@@ -161,8 +161,8 @@ export function ArchetypePicker({
           className={
             admin
               ? // 16px on phones keeps iOS from zooming into the field.
-                "h-9 w-full rounded-md border border-ink/15 bg-surface px-2.5 text-[16px] outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent/15 sm:text-[13px]"
-              : "w-full rounded-lg border border-ink/15 bg-surface px-4 py-3 text-[16px] outline-none transition-colors focus:border-accent"
+                "h-9 w-full rounded-md border border-ink/15 bg-surface px-2.5 text-[16px] outline-none transition-colors placeholder:text-[13px] focus:border-accent focus:ring-2 focus:ring-accent/15 sm:text-[13px]"
+              : "w-full rounded-lg border border-ink/15 bg-surface px-4 py-3 text-[16px] outline-none transition-colors placeholder:text-[13px] focus:border-accent"
           }
         />
       </div>
