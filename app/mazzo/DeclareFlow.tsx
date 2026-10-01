@@ -358,7 +358,7 @@ export function DeclareFlow() {
           <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.01em]">Confermi?</h1>
           <Summary player={step.seat.name} deck={step.archetype.name} archetype={step.archetype} />
           <p className="mt-3 text-[13px] leading-relaxed text-ink/55">
-            Lo vedono solo gli organizzatori. Da questo telefono potrai ricontrollarlo e cancellarlo finché le
+            Lo vedono solo gli organizzatori. Da questo telefono potrai ricontrollarlo e cancellarlo finché
             la raccolta dei mazzi resta aperta.
           </p>
           <button
