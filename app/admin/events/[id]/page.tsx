@@ -28,7 +28,7 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
   return (
     <div className="flex items-baseline justify-between gap-4 border-b border-ink/8 py-2.5 last:border-b-0">
       <dt className="lbl shrink-0">{label}</dt>
-      <dd className="tn min-w-0 text-right text-sm break-words">{children}</dd>
+      <dd className="tn min-w-0 text-right text-[13px] break-words">{children}</dd>
     </div>
   );
 }
@@ -130,8 +130,8 @@ export default function EventDetailPage() {
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         {event.has_results ? (
           <section className="card p-4">
-            <h2 className="text-lg font-semibold tracking-[-0.01em]">Risultati importati</h2>
-            <p className="mt-1 max-w-xl text-sm leading-relaxed text-ink/55">
+            <h2 className="text-[15px] font-semibold">Risultati importati</h2>
+            <p className="mt-1 max-w-xl text-[13px] leading-relaxed text-ink/55">
               Classifica, turni e match della tappa sono pubblicati sul sito e contano per la classifica di stagione.
               Se l&apos;import è sbagliato, reimposta i risultati e carica di nuovo i file: la tappa resta.
             </p>

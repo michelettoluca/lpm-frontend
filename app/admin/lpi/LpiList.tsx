@@ -115,8 +115,9 @@ export function LpiList() {
               <thead>
                 <tr>
                   <th className={TH}>Mazzo</th>
-                  <th className={`${TH} w-28`}>Colori</th>
-                  <th className={`${TH} w-32`}>Stato</th>
+                  {/* Colors and state hug the right edge, leaving the name all the room it can get. */}
+                  <th className={`${TH} w-px text-right whitespace-nowrap`}>Colori</th>
+                  <th className={`${TH} w-px text-right whitespace-nowrap`}>Stato</th>
                 </tr>
               </thead>
               <tbody>
@@ -124,15 +125,17 @@ export function LpiList() {
                   const row = rowOpens(() => setSelected(a));
                   return (
                     <tr key={a.id} {...row} className={`${row.className} ${a.hidden ? "text-ink/40" : ""}`}>
-                      <td className={`${TD} font-medium`}>
-                        <span className={a.hidden ? "line-through" : ""}>{a.name}</span>
+                      <td className={`${TD} max-w-0 font-medium`}>
+                        <span className={`block truncate ${a.hidden ? "line-through" : ""}`}>{a.name}</span>
                       </td>
-                      <td className={TD}>
-                        <span className={a.hidden ? "opacity-40" : ""}>
+                      <td className={`${TD} w-px whitespace-nowrap`}>
+                        <span className={`flex justify-end ${a.hidden ? "opacity-40" : ""}`}>
                           <ManaCost archetype={a} small />
                         </span>
                       </td>
-                      <td className={TD}>{a.hidden ? <Badge>Nascosto</Badge> : <Badge tone="accent">Visibile</Badge>}</td>
+                      <td className={`${TD} w-px text-right whitespace-nowrap`}>
+                        {a.hidden ? <Badge>Nascosto</Badge> : <Badge tone="success">Visibile</Badge>}
+                      </td>
                     </tr>
                   );
                 })}

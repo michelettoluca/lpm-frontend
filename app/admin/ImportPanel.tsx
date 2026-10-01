@@ -116,8 +116,8 @@ const MELEE_STATUS: Record<string, string> = {
 };
 
 function TournamentStatus({ tournament }: { tournament: MeleeTournament }) {
-  if (tournament.imported_event_id !== null) return <Badge tone="ink">Già importato</Badge>;
-  if (tournament.ended) return <Badge tone="outline">Concluso</Badge>;
+  if (tournament.imported_event_id !== null) return <Badge tone="success">Già importato</Badge>;
+  if (tournament.ended) return <Badge>Concluso</Badge>;
   return <Badge>{MELEE_STATUS[tournament.status.toLowerCase()] ?? (tournament.status || "Stato sconosciuto")}</Badge>;
 }
 
@@ -242,9 +242,9 @@ export function ImportPanel({
 
   return (
     <div className="card p-4">
-      <h2 className="text-lg font-semibold tracking-[-0.01em]">Importa risultati</h2>
+      <h2 className="text-[15px] font-semibold">Importa risultati</h2>
 
-      <p className="mt-1 max-w-xl text-sm leading-relaxed text-ink/55">
+      <p className="mt-1 max-w-xl text-[13px] leading-relaxed text-ink/55">
         Scegli il torneo su melee.gg: il backend scarica classifica e match e li confronta fra loro prima di salvarli.
         Il torneo deve essere concluso.
       </p>
@@ -343,7 +343,7 @@ export function ImportPanel({
       </div>
 
       <form onSubmit={runImport}>
-        <p className="mt-4 max-w-xl text-sm leading-relaxed text-ink/55">
+        <p className="mt-4 max-w-xl text-[13px] leading-relaxed text-ink/55">
           Carica i due CSV scaricati dalla pagina del torneo su melee.gg, standings e matches. Il backend li confronta
           fra loro e rifiuta l&apos;import se non tornano.
         </p>
@@ -364,7 +364,7 @@ export function ImportPanel({
             dragging ? "bg-tint-grad border-accent" : "border-ink/20 bg-surface/50 hover:border-ink/40 hover:bg-surface"
           } ${pending ? "pointer-events-none opacity-60" : ""}`}
         >
-          <span className="text-sm font-medium">
+          <span className="text-[13px] font-medium">
             Trascina qui i file <span className="text-accent">oppure sceglili</span>
           </span>
           <span className="text-[12px] text-ink/50">Puoi selezionarli insieme: li riconosciamo dal contenuto.</span>

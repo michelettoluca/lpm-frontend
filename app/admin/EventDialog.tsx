@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 import type { AdminError, ManagedEvent } from "@/app/lib/adminTypes";
 import { tappaNumber } from "@/app/lib/format";
 import { useAdmin } from "./AdminShell";
-import { BUTTON, BUTTON_PRIMARY, Dialog, DIALOG_FORM, DialogBody, DialogFooter, localDateTime } from "./dashboardUi";
+import { BUTTON_PRIMARY, Dialog, DIALOG_FORM, DialogBody, DialogFooter, localDateTime } from "./dashboardUi";
 import { ErrorPanel, FieldError } from "./ErrorPanel";
 import { CONTROL, CONTROL_INVALID, Field } from "./fields";
 
@@ -160,9 +160,6 @@ export function EventDialog({
           {error && !(error.field && shownFields.includes(error.field)) && <ErrorPanel error={error} />}
         </DialogBody>
         <DialogFooter>
-          <button type="button" className={BUTTON} onClick={onClose} disabled={pending}>
-            Annulla
-          </button>
           <button type="submit" className={BUTTON_PRIMARY} disabled={pending || !canSave}>
             {pending ? "Salvataggio…" : isNew ? "Crea tappa" : "Salva modifiche"}
           </button>

@@ -84,7 +84,7 @@ export function DangerZone() {
             className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-accent)]"
           />
           <span>
-            <span className="block text-[14px] font-medium">Cancella anche le stagioni</span>
+            <span className="block text-[13px] font-medium">Cancella anche le stagioni</span>
             <span className="mt-0.5 block text-[12px] leading-[1.4] text-ink/55">
               Dopo dovrai crearne una nuova e renderla attiva. Senza questa opzione le stagioni restano.
             </span>

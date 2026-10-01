@@ -3,7 +3,7 @@
 import { useId, useState } from "react";
 import type { AdminError, Season } from "@/app/lib/adminTypes";
 import { useAdmin } from "./AdminShell";
-import { BUTTON, BUTTON_PRIMARY, Dialog, DIALOG_FORM, DialogBody, DialogFooter, localDate } from "./dashboardUi";
+import { BUTTON_PRIMARY, Dialog, DIALOG_FORM, DialogBody, DialogFooter, localDate } from "./dashboardUi";
 import { ErrorPanel, FieldError } from "./ErrorPanel";
 import { CONTROL, CONTROL_INVALID, Field } from "./fields";
 
@@ -139,9 +139,6 @@ export function SeasonDialog({
           {error && !error.field && <ErrorPanel error={error} />}
         </DialogBody>
         <DialogFooter>
-          <button type="button" className={BUTTON} onClick={onClose} disabled={pending}>
-            Annulla
-          </button>
           <button type="submit" className={BUTTON_PRIMARY} disabled={pending || !canSave}>
             {pending ? "Salvataggio…" : isNew ? "Crea stagione" : "Salva modifiche"}
           </button>

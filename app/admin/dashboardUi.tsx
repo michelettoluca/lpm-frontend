@@ -56,12 +56,15 @@ export function SectionHeader({ title, aside, action }: { title: string; aside?:
   );
 }
 
-export function Badge({ tone = "muted", children }: { tone?: "accent" | "ink" | "muted" | "outline"; children: ReactNode }) {
+/**
+ * Small status label. Tones carry meaning, the same on every page: success for
+ * done or live, attention for something that needs doing, muted for neutral.
+ */
+export function Badge({ tone = "muted", children }: { tone?: "success" | "attention" | "muted"; children: ReactNode }) {
   const skin = {
-    accent: "bg-accent/10 text-accent",
-    ink: "bg-ink text-canvas",
-    muted: "bg-ink/[0.06] text-ink/60",
-    outline: "border border-accent/40 text-accent",
+    success: "bg-[#22c55e]/12 text-[#4ade80]",
+    attention: "bg-accent/12 text-[#ff6a55]",
+    muted: "bg-ink/[0.07] text-ink/60",
   }[tone];
   return (
     <span className={`inline-flex h-5 items-center whitespace-nowrap rounded px-1.5 text-[11px] font-medium ${skin}`}>
@@ -72,8 +75,8 @@ export function Badge({ tone = "muted", children }: { tone?: "accent" | "ink" | 
 
 /** Data table inside a .card: header row in small grey type, thin row rules. */
 export const TABLE = "w-full border-collapse text-left text-[13px]";
-export const TH = "h-8 border-b border-ink/10 bg-ink/[0.015] px-4 text-[12px] font-normal text-ink/50";
-export const TD = "h-10 border-b border-ink/[0.07] px-4 align-middle";
+export const TH = "h-8 border-b border-ink/10 bg-ink/[0.015] px-3 text-[12px] font-normal text-ink/50 sm:px-4";
+export const TD = "h-10 border-b border-ink/[0.07] px-3 align-middle sm:px-4";
 
 /**
  * Props for a table row that opens its entity's side panel: clickable, and

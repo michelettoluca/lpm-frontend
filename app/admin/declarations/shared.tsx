@@ -20,6 +20,7 @@ import {
   usePage,
 } from "../dashboardUi";
 import { CONTROL } from "../fields";
+import { tappaSubtitle, tappaTitle } from "@/app/lib/format";
 
 // What the Archetipi pages share: the tournament's data and the actions on
 // it, and the pieces both the dashboard and the table walk show.
@@ -52,7 +53,8 @@ export type View = {
   players: Player[];
 };
 
-export type TournamentChoice = { id: number; name: string; status: string };
+/** date is the day the tournament starts on in Rome, YYYY-MM-DD. */
+export type TournamentChoice = { id: number; name: string; status: string; date: string };
 
 /** How far a table is: every seat declared, some, or none. */
 export type Fill = "full" | "partial" | "empty";
@@ -472,9 +474,10 @@ export function PlayersTable({ players, onPick }: { players: Player[]; onPick: (
         className={`${CONTROL} mb-3 max-w-xs`}
       />
       <div className="card overflow-hidden">
-        <div className="grid grid-cols-[1fr_1fr] gap-4 border-b border-ink/8 bg-ink/[0.015] px-4 py-2 text-[12px] text-ink/50 sm:grid-cols-[1.2fr_1fr_100px]">
+        {/* On a phone the player takes what room there is and the deck sits on the right. */}
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,auto)] gap-3 border-b border-ink/8 bg-ink/[0.015] px-3 py-2 text-[12px] text-ink/50 sm:grid-cols-[1.2fr_1fr_100px] sm:gap-4 sm:px-4">
           <span>Giocatore</span>
-          <span>Mazzo</span>
+          <span className="text-right sm:text-left">Mazzo</span>
           <span className="hidden sm:block">Fonte</span>
         </div>
         <ul className="divide-y divide-ink/8">
@@ -483,16 +486,16 @@ export function PlayersTable({ players, onPick }: { players: Player[]; onPick: (
               <button
                 type="button"
                 onClick={() => onPick(p)}
-                className="grid min-h-10 w-full grid-cols-[1fr_1fr] items-center gap-4 px-4 py-2 text-left transition-colors hover:bg-ink/[0.02] sm:grid-cols-[1.2fr_1fr_100px]"
+                className="grid min-h-10 w-full grid-cols-[minmax(0,1fr)_minmax(0,auto)] items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-ink/[0.02] sm:grid-cols-[1.2fr_1fr_100px] sm:gap-4 sm:px-4"
               >
                 <span className="min-w-0">
-                  <span className={`flex items-center gap-2 truncate text-[13px] font-medium ${p.dropped ? "text-ink/40" : ""}`}>
-                    {p.name}
+                  <span className={`flex items-center gap-2 text-[13px] font-medium ${p.dropped ? "text-ink/40" : ""}`}>
+                    <span className="truncate">{p.name}</span>
                     {p.dropped && <Badge>Ritirato</Badge>}
                   </span>
                   {p.username && <span className="block truncate text-[12px] text-ink/45">{p.username}</span>}
                 </span>
-                <span className={`truncate text-[13px] ${p.declaration ? "" : "text-ink/35"}`}>
+                <span className={`max-w-[45vw] truncate text-right text-[13px] sm:max-w-none sm:text-left ${p.declaration ? "" : "text-ink/35"}`}>
                   {p.declaration?.archetype_name ?? "—"}
                 </span>
                 <span className="hidden text-[12px] text-ink/50 sm:block">
@@ -534,14 +537,21 @@ export function TournamentSelect({
   const [error, setError] = useState<AdminError | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
+  // Loaded up front too, so the current tournament can show its date.
   useEffect(() => {
-    if (!open) return;
     let cancelled = false;
     void call<TournamentChoice[]>("/api/admin/declarations/tournaments").then((res) => {
       if (cancelled) return;
       if (res.ok) setList(res.data);
       else setError(res.error);
     });
+    return () => {
+      cancelled = true;
+    };
+  }, [call]);
+
+  useEffect(() => {
+    if (!open) return;
     const close = (event: MouseEvent) => {
       if (!ref.current?.contains(event.target as Node)) setOpen(false);
     };
@@ -551,11 +561,12 @@ export function TournamentSelect({
     document.addEventListener("mousedown", close);
     document.addEventListener("keydown", onKey);
     return () => {
-      cancelled = true;
       document.removeEventListener("mousedown", close);
       document.removeEventListener("keydown", onKey);
     };
-  }, [open, call]);
+  }, [open]);
+
+  const currentDate = current ? list?.find((c) => c.id === current.id)?.date : undefined;
 
   return (
     <div ref={ref} className="relative max-w-xl">
@@ -565,11 +576,19 @@ export function TournamentSelect({
         disabled={busy}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="flex h-9 w-full items-center gap-2 rounded-md border border-ink/15 bg-surface px-3 text-left text-[13px] transition-colors hover:border-ink/25 disabled:opacity-60"
+        className="flex h-9 w-full items-center gap-2 rounded-md border border-ink/15 bg-surface px-2.5 text-left text-[13px] transition-colors hover:border-ink/25 disabled:opacity-60"
       >
-        <span className={`min-w-0 flex-1 truncate ${current ? "font-medium" : "text-ink/45"}`}>
-          {current ? current.name : "Scegli il torneo Melee"}
-        </span>
+        {current ? (
+          <span className="flex min-w-0 flex-1 items-baseline gap-2">
+            <span className="min-w-0 truncate font-medium">{tappaTitle(current.name)}</span>
+            {currentDate && <span className="tn shrink-0 text-ink/55">{shortDate(currentDate)}</span>}
+            {tappaTitle(current.name) !== current.name && (
+              <span className="min-w-0 truncate text-[12px] text-ink/45">{tappaSubtitle(current.name)}</span>
+            )}
+          </span>
+        ) : (
+          <span className="min-w-0 flex-1 truncate text-ink/45">Scegli il torneo Melee</span>
+        )}
         <span className="text-[11px] text-ink/40" aria-hidden>
           ▾
         </span>
@@ -604,8 +623,14 @@ export function TournamentSelect({
                   className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-left hover:bg-ink/[0.05] ${selected ? "bg-ink/[0.04]" : ""}`}
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13px] font-medium">{choice.name}</span>
-                    <span className="block text-[12px] text-ink/50">{choice.status || "—"}</span>
+                    <span className="flex items-baseline gap-2">
+                      <span className="shrink-0 text-[13px] font-medium">{tappaTitle(choice.name)}</span>
+                      <span className="tn shrink-0 text-[12px] text-ink/55">{shortDate(choice.date)}</span>
+                      <span className="ml-auto shrink-0 text-[12px] text-ink/45">{choice.status || "—"}</span>
+                    </span>
+                    {tappaTitle(choice.name) !== choice.name && (
+                      <span className="block truncate text-[12px] text-ink/45">{tappaSubtitle(choice.name)}</span>
+                    )}
                   </span>
                   {selected && (
                     <span className="text-[12px] text-accent" aria-hidden>
@@ -620,6 +645,13 @@ export function TournamentSelect({
       )}
     </div>
   );
+}
+
+/** "2026-10-01" → "gio 1 ott". */
+function shortDate(date: string) {
+  return new Date(`${date}T12:00:00Z`)
+    .toLocaleDateString("it-IT", { timeZone: "UTC", weekday: "short", day: "numeric", month: "short" })
+    .replace(/\./g, "");
 }
 
 /** Every registered player with their archetype; missing ones are Non Disponibile. */

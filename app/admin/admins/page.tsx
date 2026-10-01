@@ -123,7 +123,7 @@ export default function AdminsPage() {
             disabled={pending}
             required
           />
-          <button type="submit" className={BUTTON_PRIMARY} disabled={pending || !email.trim()}>
+          <button type="submit" className={`${BUTTON_PRIMARY} h-9`} disabled={pending || !email.trim()}>
             {pending ? "Attendi…" : "Aggiungi"}
           </button>
         </div>
@@ -142,21 +142,25 @@ export default function AdminsPage() {
             <thead>
               <tr>
                 <th className={TH}>Email</th>
-                <th className={TH}>Ruolo</th>
-                <th className={`${TH} hidden sm:table-cell`}>Aggiunto il</th>
+                <th className={`${TH} hidden w-px whitespace-nowrap sm:table-cell`}>Ruolo</th>
+                <th className={`${TH} hidden w-px whitespace-nowrap sm:table-cell`}>Aggiunto il</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((a) => (
                 <tr key={a.id} {...rowOpens(() => setSelected(a))}>
-                  <td className={`${TD} font-medium`}>
+                  <td className={`${TD} max-w-0 py-2`}>
                     <span className="flex items-center gap-2">
-                      <span className="truncate">{a.email}</span>
+                      <span className="truncate font-medium">{a.email}</span>
                       {a.id === me.id && <Badge>Tu</Badge>}
                     </span>
+                    {/* On a phone the role sits under the email instead of in its own column. */}
+                    <span className="block text-[12px] text-ink/50 sm:hidden">{a.is_super ? "Super admin" : "Admin"}</span>
                   </td>
-                  <td className={`${TD} text-ink/65`}>{a.is_super ? "Super admin" : "Admin"}</td>
-                  <td className={`${TD} tn hidden text-ink/55 sm:table-cell`}>{displayDate(a.created_at)}</td>
+                  <td className={`${TD} hidden whitespace-nowrap text-ink/65 sm:table-cell`}>
+                    {a.is_super ? "Super admin" : "Admin"}
+                  </td>
+                  <td className={`${TD} tn hidden whitespace-nowrap text-ink/55 sm:table-cell`}>{displayDate(a.created_at)}</td>
                 </tr>
               ))}
             </tbody>

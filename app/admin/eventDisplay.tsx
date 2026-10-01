@@ -6,8 +6,8 @@ export function isPast(event: ManagedEvent) {
 }
 
 export function EventStatus({ event }: { event: ManagedEvent }) {
-  if (event.has_results) return <Badge tone="ink">Importata</Badge>;
-  if (isPast(event)) return <Badge tone="outline">Da importare</Badge>;
+  if (event.has_results) return <Badge tone="success">Importata</Badge>;
+  if (isPast(event)) return <Badge tone="attention">Da importare</Badge>;
   return <Badge>In programma</Badge>;
 }
 

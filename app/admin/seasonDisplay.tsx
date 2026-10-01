@@ -2,9 +2,9 @@ import type { Season } from "@/app/lib/adminTypes";
 import { Badge, displayDate } from "./dashboardUi";
 
 export function seasonStatus(season: Season) {
-  if (season.is_active) return <Badge tone="accent">Attiva</Badge>;
+  if (season.is_active) return <Badge tone="success">Attiva</Badge>;
   if (season.ended_at) return <Badge>Conclusa</Badge>;
-  return <Badge tone="outline">In corso</Badge>;
+  return <Badge>In corso</Badge>;
 }
 
 export function seasonPeriod(season: Season) {
