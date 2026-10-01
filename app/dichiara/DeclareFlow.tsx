@@ -25,8 +25,9 @@ type Step =
   | { kind: "player"; table: number; seats: Seat[] }
   | { kind: "deck"; table: number; seat: Seat }
   | { kind: "confirm"; table: number; seat: Seat; archetype: Archetype }
-  /** table is known when the declaration was just made here. */
-  | { kind: "done"; mine: Mine; table?: number };
+  | { kind: "done"; mine: Mine }
+  /** Asks before withdrawing a declaration, as the submission does. */
+  | { kind: "withdraw"; mine: Mine };
 
 const RECEIPTS_KEY = "lpm:deck-receipts";
 
@@ -77,10 +78,17 @@ export function DeclareFlow() {
   const [status, setStatus] = useState<"loading" | "closed" | "error" | "ready">("loading");
   const [archetypes, setArchetypes] = useState<Archetype[]>([]);
   const [mine, setMine] = useState<Mine[]>([]);
+  // The table step depends on whether this phone has declared already, so it
+  // waits for the receipts to be checked.
+  const [mineLoaded, setMineLoaded] = useState(false);
   const [step, setStep] = useState<Step>({ kind: "table" });
   const [tableInput, setTableInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  /** A success line, as opposed to message, which reports a problem. */
+  const [notice, setNotice] = useState<string | null>(null);
+
+  const archetypeOf = (m: Mine) => archetypes.find((a) => a.id === m.archetype_id);
 
   const loadCurrent = useCallback(async () => {
     const res = await call<Current>("/api/dichiara");
@@ -95,9 +103,11 @@ export function DeclareFlow() {
 
   const loadMine = useCallback(async () => {
     const receipts = readReceipts();
-    if (receipts.length === 0) return setMine([]);
-    const res = await call<Mine[]>("/api/dichiara/mine", postJSON({ receipts }));
-    if (res.data) setMine(res.data);
+    if (receipts.length > 0) {
+      const res = await call<Mine[]>("/api/dichiara/mine", postJSON({ receipts }));
+      if (res.data) setMine(res.data);
+    }
+    setMineLoaded(true);
   }, []);
 
   useEffect(() => {
@@ -110,6 +120,7 @@ export function DeclareFlow() {
   async function openTable(table: number) {
     setBusy(true);
     setMessage(null);
+    setNotice(null);
     const res = await call<{ seats: Seat[] }>(`/api/dichiara/tables/${table}`);
     setBusy(false);
     if (res.data) {
@@ -136,7 +147,7 @@ export function DeclareFlow() {
     if (res.data) {
       writeReceipts([...readReceipts(), res.data.receipt]);
       setMine((list) => [...list.filter((m) => m.team_id !== res.data!.team_id), res.data!]);
-      setStep({ kind: "done", mine: res.data, table });
+      setStep({ kind: "done", mine: res.data });
       return;
     }
     if (res.status === 409) {
@@ -171,7 +182,7 @@ export function DeclareFlow() {
     return true;
   }
 
-  if (status === "loading") {
+  if (status === "loading" || (status === "ready" && !mineLoaded)) {
     return <p className="py-16 text-center text-[15px] text-ink/50">Caricamento…</p>;
   }
   if (status === "closed") {
@@ -202,24 +213,43 @@ export function DeclareFlow() {
           {message}
         </p>
       )}
+      {notice && step.kind === "table" && (
+        <p role="status" className="mt-4 rounded-2xl border border-ink/10 bg-white px-4 py-3 text-[14px] font-semibold leading-snug">
+          {notice}
+        </p>
+      )}
 
       {step.kind === "table" && (
         <>
-          <h1 className="mt-2 text-[30px] font-extrabold leading-[1.05] tracking-[-0.02em]">Dichiara il tuo mazzo</h1>
-          {mine.length > 0 && (
-            <div className="mt-5 space-y-2.5">
+          {mine.length > 0 ? (
+            <>
+              {/* A phone that has declared can only look at it or withdraw it;
+                  the table search comes back once it is withdrawn. */}
+              <h1 className="mt-2 text-[30px] font-extrabold leading-[1.05] tracking-[-0.02em]">Hai già dichiarato</h1>
               {mine.map((m) => (
-                <MineCard
-                  key={m.receipt}
-                  mine={m}
-                  busy={busy}
-                  onWithdraw={() => void withdraw(m)}
-                  archetype={archetypes.find((a) => a.id === m.archetype_id)}
-                />
+                <div key={m.receipt}>
+                  <Summary player={m.player_name} deck={m.archetype_name} archetype={archetypeOf(m)} />
+                  <button
+                    type="button"
+                    disabled={busy}
+                    className={`${SECONDARY} mt-3`}
+                    onClick={() => {
+                      setMessage(null);
+                      setStep({ kind: "withdraw", mine: m });
+                    }}
+                  >
+                    Cancella la dichiarazione
+                  </button>
+                </div>
               ))}
-            </div>
+              <p className="mt-3 text-[13px] leading-relaxed text-ink/55">
+                Lo vedono solo gli organizzatori. Se hai sbagliato, cancellala e dichiara di nuovo.
+              </p>
+            </>
+          ) : (
+            <h1 className="mt-2 text-[30px] font-extrabold leading-[1.05] tracking-[-0.02em]">Dichiara il tuo mazzo</h1>
           )}
-          {round.published && round.tables + (round.byes ? 1 : 0) > 0 ? (
+          {mine.length > 0 ? null : round.published && round.tables + (round.byes ? 1 : 0) > 0 ? (
             <form
               className="mt-6"
               onSubmit={(event) => {
@@ -277,7 +307,7 @@ export function DeclareFlow() {
                   type="button"
                   disabled={seat.declared && !own}
                   onClick={() => {
-                    if (own) setStep({ kind: "done", mine: own, table: step.table });
+                    if (own) setStep({ kind: "done", mine: own });
                     else setStep({ kind: "deck", table: step.table, seat });
                   }}
                   className="surface lift flex min-h-[132px] flex-col justify-between rounded-[22px] p-4 text-left disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0"
@@ -327,14 +357,7 @@ export function DeclareFlow() {
       {step.kind === "confirm" && (
         <>
           <h1 className="mt-2 text-[30px] font-extrabold leading-[1.05] tracking-[-0.02em]">Confermi?</h1>
-          <div className="surface mt-6 rounded-[22px] p-5">
-            <p className="lbl">Giocatore</p>
-            <p className="mt-1 text-[18px] font-extrabold">{step.seat.name}</p>
-            <p className="lbl mt-4">Mazzo</p>
-            <p className="mt-1 flex items-center gap-2 text-[22px] font-extrabold tracking-[-0.01em]">
-              {deckLabel(step.archetype.name)} <ManaCost archetype={step.archetype} />
-            </p>
-          </div>
+          <Summary player={step.seat.name} deck={step.archetype.name} archetype={step.archetype} />
           <p className="mt-3 text-[13px] leading-relaxed text-ink/55">
             Lo vedono solo gli organizzatori. Da questo telefono potrai ricontrollarlo e cancellarlo finché le
             dichiarazioni restano aperte.
@@ -364,37 +387,51 @@ export function DeclareFlow() {
             ✓
           </div>
           <h1 className="mt-4 text-[30px] font-extrabold leading-[1.05] tracking-[-0.02em]">Mazzo dichiarato</h1>
-          <div className="surface mt-6 rounded-[22px] p-5">
-            <p className="lbl">Giocatore</p>
-            <p className="mt-1 text-[18px] font-extrabold">{step.mine.player_name}</p>
-            <p className="lbl mt-4">Mazzo</p>
-            <p className="mt-1 flex items-center gap-2 text-[22px] font-extrabold tracking-[-0.01em]">
-              {deckLabel(step.mine.archetype_name)}
-              {archetypes.find((a) => a.id === step.mine.archetype_id) && (
-                <ManaCost archetype={archetypes.find((a) => a.id === step.mine.archetype_id)!} />
-              )}
-            </p>
-          </div>
+          <Summary player={step.mine.player_name} deck={step.mine.archetype_name} archetype={archetypeOf(step.mine)} />
           <p className="mt-3 text-[13px] leading-relaxed text-ink/55">Buon torneo! Lo vedono solo gli organizzatori.</p>
           <button
             type="button"
             disabled={busy}
             className={`${SECONDARY} mt-5`}
-            onClick={async () => {
-              const { mine: m, table } = step;
-              if (!(await withdraw(m))) return;
-              const seat = { team_id: m.team_id, name: m.player_name, declared: false };
-              if (table !== undefined) setStep({ kind: "deck", table, seat });
-              else {
-                setStep({ kind: "table" });
-                setMessage(`Dichiarazione di ${seat.name} cancellata. Reinserisci il tavolo per dichiarare di nuovo.`);
-              }
-            }}
+            onClick={() => setStep({ kind: "withdraw", mine: step.mine })}
           >
-            {busy ? "Attendi…" : "Ho sbagliato, cancella"}
+            Ho sbagliato, cancella
           </button>
           <button type="button" className={`${LINK} mt-4 block w-full text-center`} onClick={() => setStep({ kind: "table" })}>
             Torna all&apos;inizio
+          </button>
+        </>
+      )}
+
+      {step.kind === "withdraw" && (
+        <>
+          <h1 className="mt-2 text-[30px] font-extrabold leading-[1.05] tracking-[-0.02em]">Cancellare la dichiarazione?</h1>
+          <Summary player={step.mine.player_name} deck={step.mine.archetype_name} archetype={archetypeOf(step.mine)} />
+          <p className="mt-3 text-[13px] leading-relaxed text-ink/55">
+            Dopo potrai dichiarare di nuovo inserendo il numero del tuo tavolo.
+          </p>
+          <button
+            type="button"
+            disabled={busy}
+            className={`${PRIMARY} mt-5`}
+            onClick={async () => {
+              if (!(await withdraw(step.mine))) {
+                setStep({ kind: "table" });
+                return;
+              }
+              setStep({ kind: "table" });
+              setNotice("Dichiarazione cancellata. Ora puoi dichiarare di nuovo.");
+            }}
+          >
+            {busy ? "Attendi…" : "Sì, cancella"}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            className={`${SECONDARY} mt-2.5`}
+            onClick={() => setStep({ kind: "table" })}
+          >
+            No, tienila
           </button>
         </>
       )}
@@ -402,29 +439,16 @@ export function DeclareFlow() {
   );
 }
 
-function MineCard({
-  mine,
-  archetype,
-  busy,
-  onWithdraw,
-}: {
-  mine: Mine;
-  archetype?: Archetype;
-  busy: boolean;
-  onWithdraw: () => void;
-}) {
+/** Who declared what, as the confirmation, receipt and withdrawal show it. */
+function Summary({ player, deck, archetype }: { player: string; deck: string; archetype?: Archetype }) {
   return (
-    <div className="surface flex items-center justify-between gap-3 rounded-[20px] px-4 py-3.5">
-      <div className="min-w-0">
-        <p className="lbl">Hai dichiarato</p>
-        <p className="mt-0.5 truncate text-[15px] font-extrabold">{mine.player_name}</p>
-        <p className="mt-0.5 flex items-center gap-1.5 text-[14px] font-semibold text-ink/70">
-          {deckLabel(mine.archetype_name)} {archetype && <ManaCost archetype={archetype} />}
-        </p>
-      </div>
-      <button type="button" disabled={busy} onClick={onWithdraw} className="shrink-0 text-[13px] font-bold text-accent disabled:opacity-40">
-        Cancella
-      </button>
+    <div className="surface mt-6 rounded-[22px] p-5">
+      <p className="lbl">Giocatore</p>
+      <p className="mt-1 text-[18px] font-extrabold">{player}</p>
+      <p className="lbl mt-4">Mazzo</p>
+      <p className="mt-1 flex flex-wrap items-center gap-2 text-[22px] font-extrabold tracking-[-0.01em]">
+        {deckLabel(deck)} {archetype && <ManaCost archetype={archetype} />}
+      </p>
     </div>
   );
 }
