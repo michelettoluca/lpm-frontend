@@ -13,18 +13,7 @@ export type Archetype = {
   name: string;
   /** WUBRG letters from Lega Pauper Italia; may be empty. */
   colors: string[];
-  /** Ours, written by the admin: what the deck does, for Jev. */
-  description?: string;
-  /** Ours: other names players use for the deck. */
-  aliases?: string[];
-  /** Ours: cards that give the deck away. */
-  key_cards?: string[];
 };
-
-/** The names a deck goes by and its key cards, all of which find it. */
-export function searchNames(a: Archetype): string[] {
-  return [a.name, ...(a.aliases ?? []), ...(a.key_cards ?? [])];
-}
 
 /** Lega Pauper Italia's catch-all for decks outside the list. */
 export const ROGUE = "Rogue";
@@ -141,7 +130,7 @@ type Indexed = { archetype: Archetype; words: string[]; colors: ManaColor[] };
 export function indexArchetypes(list: Archetype[]): Indexed[] {
   return list.map((archetype) => {
     const colors = colorsOf(archetype);
-    const words = searchNames(archetype).flatMap((n) => normalize(n).split(" "));
+    const words = normalize(archetype.name).split(" ");
     for (const c of colors) words.push(...COLOR_SEARCH[c]);
     if (colors.length === 1) words.push("mono");
     return { archetype, words, colors };
@@ -150,8 +139,7 @@ export function indexArchetypes(list: Archetype[]): Indexed[] {
 
 /**
  * Archetypes matching the typed text, best first. Every typed word has to
- * match something: a word of the name, an alias or a key card (with typos
- * tolerated), a color in
+ * match something: a word of the name (with typos tolerated), a color in
  * English or Italian, a guild or shard name, or a run of WUBRG letters such
  * as "ub". An empty query keeps the list in alphabetical order.
  */
