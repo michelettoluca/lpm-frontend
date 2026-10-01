@@ -48,7 +48,7 @@ export default function EventDetailPage() {
     return (
       <PageHeader
         back={
-          <Link href="/admin/seasons" className="text-[13px] font-bold text-ink/50 hover:text-ink">
+          <Link href="/admin/seasons" className="text-[13px] font-medium text-ink/50 hover:text-ink">
             ← Stagioni
           </Link>
         }
@@ -98,7 +98,7 @@ export default function EventDetailPage() {
     <>
       <PageHeader
         back={
-          <Link href={`/admin/seasons/${event.season_id}`} className="text-[13px] font-bold text-ink/50 hover:text-ink">
+          <Link href={`/admin/seasons/${event.season_id}`} className="text-[13px] font-medium text-ink/50 hover:text-ink">
             ← {season?.name ?? "Stagione"}
           </Link>
         }
@@ -129,8 +129,8 @@ export default function EventDetailPage() {
 
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         {event.has_results ? (
-          <section className="card p-5 sm:p-6">
-            <h2 className="text-lg font-extrabold tracking-[-0.01em]">Risultati importati</h2>
+          <section className="card p-4">
+            <h2 className="text-lg font-semibold tracking-[-0.01em]">Risultati importati</h2>
             <p className="mt-1 max-w-xl text-sm leading-relaxed text-ink/55">
               Classifica, turni e match della tappa sono pubblicati sul sito e contano per la classifica di stagione.
               Se l&apos;import è sbagliato, reimposta i risultati e carica di nuovo i file: la tappa resta.
@@ -172,7 +172,7 @@ export default function EventDetailPage() {
           </div>
         )}
 
-        <section className="card px-5 py-3">
+        <section className="card px-4 py-3">
           <dl>
             <Detail label="Nome">{event.name}</Detail>
             <Detail label="Stagione">{season?.name ?? `id ${event.season_id}`}</Detail>

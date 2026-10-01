@@ -1,11 +1,20 @@
 @import "tailwindcss";
 
-@theme inline {
+/* Colors are plain theme variables, not inlined, so a scope can swap them:
+   the admin panel redefines them for its dark look. */
+@theme {
   --color-ink: #1c1b1a;
   --color-accent: #ff2d1a;
   --color-tint: #fff2ef;
   --color-draw: #cfcdc8;
   --color-ground: #faf9f7;
+  /* Behind everything, the main panel, and cards, inputs and menus. */
+  --color-canvas: #f5f5f4;
+  --color-page: #ffffff;
+  --color-surface: #ffffff;
+}
+
+@theme inline {
   --font-sans: var(--font-archivo), system-ui, sans-serif;
 }
 
@@ -160,4 +169,41 @@ body::before {
   .sheet-in {
     animation: none;
   }
+}
+
+/* Dark dashboard look for the admin panel: flat panels, thin borders and
+   small radii instead of the public site's glowing cards. Swapping the color
+   variables turns every ink/surface utility light-on-dark; the leaderboard
+   keeps its own style. */
+.admin {
+  --color-ink: #e6e6e8;
+  --color-tint: rgba(255, 45, 26, 0.12);
+  --color-canvas: #0b0b0c;
+  --color-page: #111113;
+  --color-surface: #19191c;
+  --grad-tint: linear-gradient(150deg, rgba(255, 45, 26, 0.1) 0%, rgba(255, 45, 26, 0.16) 100%);
+  color-scheme: dark;
+  font-size: 13px;
+}
+.admin .card,
+.admin .surface {
+  background: var(--color-surface);
+  border: 1px solid color-mix(in srgb, var(--color-ink) 9%, transparent);
+  border-radius: 8px;
+  box-shadow: none;
+}
+.admin .lbl {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: color-mix(in srgb, var(--color-ink) 55%, transparent);
+}
+/* The public site's dot grid is 900px tall: in the admin it would only add a
+   phantom scroll behind the panel, and the page edge should stay dark. */
+body:has(.admin) {
+  background-color: #0b0b0c;
+}
+body:has(.admin)::before {
+  display: none;
 }

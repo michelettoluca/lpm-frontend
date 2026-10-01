@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useId, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 const BUTTON_BASE =
-  "inline-flex h-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-3.5 text-[13px] font-bold transition disabled:cursor-not-allowed disabled:opacity-40";
+  "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-3 text-[13px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40";
 /** Neutral action. */
-export const BUTTON = `${BUTTON_BASE} border border-ink/12 bg-white shadow-[0_1px_2px_rgba(28,27,26,0.06)] hover:bg-ink/[0.03]`;
+export const BUTTON = `${BUTTON_BASE} border border-ink/12 bg-surface hover:bg-ink/[0.06]`;
 /** The one thing the view is for. At most one per row or dialog. */
-export const BUTTON_PRIMARY = `${BUTTON_BASE} bg-accent-grad shadow-glow text-white hover:brightness-105`;
+export const BUTTON_PRIMARY = `${BUTTON_BASE} bg-accent text-white hover:bg-[#e8220f]`;
 /** Low-emphasis action that sits next to others. */
-export const BUTTON_GHOST = `${BUTTON_BASE} text-ink/60 hover:bg-ink/5 hover:text-ink`;
+export const BUTTON_GHOST = `${BUTTON_BASE} text-ink/60 hover:bg-ink/[0.05] hover:text-ink`;
 /** Destructive action that opens a confirmation. */
-export const BUTTON_DANGER = `${BUTTON_BASE} text-accent hover:bg-tint`;
+export const BUTTON_DANGER = `${BUTTON_BASE} text-accent hover:bg-accent/[0.08]`;
 
 export function PageHeader({
   back,
@@ -28,15 +28,15 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="mb-8">
-      {back && <div className="mb-3">{back}</div>}
-      <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+    <header className="mb-6">
+      {back && <div className="mb-2 text-[13px]">{back}</div>}
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-[28px] font-extrabold leading-tight tracking-[-0.02em] lg:text-[34px]">{title}</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-[20px] font-semibold leading-tight tracking-[-0.01em]">{title}</h1>
             {badge}
           </div>
-          {meta && <div className="mt-1.5 text-sm text-ink/55">{meta}</div>}
+          {meta && <div className="mt-1 text-[13px] text-ink/55">{meta}</div>}
         </div>
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       </div>
@@ -46,10 +46,10 @@ export function PageHeader({
 
 export function SectionHeader({ title, aside, action }: { title: string; aside?: ReactNode; action?: ReactNode }) {
   return (
-    <div className="mb-3 flex min-h-9 items-center justify-between gap-4">
-      <div className="flex items-baseline gap-3">
-        <h2 className="text-[13px] font-extrabold uppercase tracking-[0.08em]">{title}</h2>
-        {aside && <span className="tn text-[13px] text-ink/45">{aside}</span>}
+    <div className="mb-2 flex min-h-8 items-center justify-between gap-4">
+      <div className="flex items-baseline gap-2">
+        <h2 className="text-[13px] font-semibold">{title}</h2>
+        {aside && <span className="tn text-[12px] text-ink/45">{aside}</span>}
       </div>
       {action}
     </div>
@@ -58,17 +58,115 @@ export function SectionHeader({ title, aside, action }: { title: string; aside?:
 
 export function Badge({ tone = "muted", children }: { tone?: "accent" | "ink" | "muted" | "outline"; children: ReactNode }) {
   const skin = {
-    accent: "bg-accent-grad text-white shadow-[0_4px_12px_-4px_rgba(255,45,26,0.6)]",
-    ink: "bg-ink text-white",
-    muted: "bg-ink/5 text-ink/55",
-    outline: "border border-accent text-accent",
+    accent: "bg-accent/10 text-accent",
+    ink: "bg-ink text-canvas",
+    muted: "bg-ink/[0.06] text-ink/60",
+    outline: "border border-accent/40 text-accent",
   }[tone];
   return (
-    <span
-      className={`inline-flex h-6 items-center whitespace-nowrap rounded-full px-2.5 text-[10px] font-bold uppercase tracking-wider ${skin}`}
-    >
+    <span className={`inline-flex h-5 items-center whitespace-nowrap rounded px-1.5 text-[11px] font-medium ${skin}`}>
       {children}
     </span>
+  );
+}
+
+/** Data table inside a .card: header row in small grey type, thin row rules. */
+export const TABLE = "w-full border-collapse text-left text-[13px]";
+export const TH = "h-8 border-b border-ink/10 bg-ink/[0.015] px-4 text-[12px] font-normal text-ink/50";
+export const TD = "h-10 border-b border-ink/[0.07] px-4 align-middle";
+
+/** Rows per page the admin tables offer; the choice is kept in this browser. */
+const PAGE_SIZES = [10, 15, 25, 50];
+const DEFAULT_PAGE_SIZE = 15;
+const PAGE_SIZE_KEY = "lpm:admin-page-size";
+
+function storedPageSize() {
+  try {
+    const stored = Number(localStorage.getItem(PAGE_SIZE_KEY));
+    return PAGE_SIZES.includes(stored) ? stored : DEFAULT_PAGE_SIZE;
+  } catch {
+    return DEFAULT_PAGE_SIZE;
+  }
+}
+
+/**
+ * Paging over a list already in memory: the admin lists are small enough to
+ * load whole, and the pages need all of it for counts and search anyway. A
+ * list that changes length, such as a new search, starts again at page one.
+ */
+export function usePage<T>(items: T[]) {
+  const [page, setPage] = useState(0);
+  const [size, setSizeState] = useState(() => (typeof window === "undefined" ? DEFAULT_PAGE_SIZE : storedPageSize()));
+  const [length, setLength] = useState(items.length);
+  if (length !== items.length) {
+    setLength(items.length);
+    setPage(0);
+  }
+  const pages = Math.max(1, Math.ceil(items.length / size));
+  const current = Math.min(page, pages - 1);
+  function setSize(next: number) {
+    setSizeState(next);
+    setPage(0);
+    try {
+      localStorage.setItem(PAGE_SIZE_KEY, String(next));
+    } catch {
+      // Private browsing: the choice lasts until the page is left.
+    }
+  }
+  return {
+    rows: items.slice(current * size, (current + 1) * size),
+    pager: { page: current, pages, total: items.length, size, setPage, setSize },
+  };
+}
+
+/**
+ * "16–30 di 56", rows per page, previous and next, under a table. Hidden when
+ * even the smallest page holds everything.
+ */
+export function Pagination({ page, pages, total, size, setPage, setSize }: ReturnType<typeof usePage>["pager"]) {
+  if (total <= PAGE_SIZES[0]) return null;
+  return (
+    <div className="flex items-center justify-between gap-3 border-t border-ink/8 px-4 py-2 text-[12px] text-ink/50">
+      <span className="tn">
+        {page * size + 1}–{Math.min(total, (page + 1) * size)} di {total}
+      </span>
+      <div className="flex items-center gap-3">
+        <label className="flex items-center gap-1.5">
+          Righe
+          <select
+            value={size}
+            onChange={(event) => setSize(Number(event.target.value))}
+            className="h-7 rounded-md border border-ink/12 bg-surface px-1.5 text-[12px] text-ink outline-none focus:border-accent"
+          >
+            {PAGE_SIZES.map((n) => (
+              <option key={n} value={n}>
+                {n}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="flex gap-1">
+          <button
+            type="button"
+            className={`${BUTTON} h-7 w-7 px-0`}
+            disabled={page === 0}
+            onClick={() => setPage(page - 1)}
+            aria-label="Pagina precedente"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            className={`${BUTTON} h-7 w-7 px-0`}
+            disabled={page >= pages - 1}
+            onClick={() => setPage(page + 1)}
+            aria-label="Pagina successiva"
+          >
+            ›
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -83,15 +181,15 @@ export function notify(content: ReactNode, options: { long?: boolean } = {}) {
 /** Blocking condition the page can't work around, with the way out. */
 export function Callout({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section role="alert" className="mb-6 rounded-2xl border border-accent bg-tint p-5">
-      <h2 className="font-bold">{title}</h2>
-      <div className="mt-1.5 text-sm text-ink/65">{children}</div>
+    <section role="alert" className="mb-6 rounded-lg border border-accent/30 bg-accent/[0.04] px-4 py-3">
+      <h2 className="text-[13px] font-semibold">{title}</h2>
+      <div className="mt-1 text-[13px] text-ink/65">{children}</div>
     </section>
   );
 }
 
 export function EmptyState({ children }: { children: ReactNode }) {
-  return <p className="px-5 py-12 text-center text-sm text-ink/50">{children}</p>;
+  return <p className="px-4 py-10 text-center text-[13px] text-ink/50">{children}</p>;
 }
 
 /**
@@ -131,7 +229,7 @@ export function Dialog({
 
   return (
     <div
-      className="panel-in fixed inset-0 z-50 flex justify-end bg-ink/45"
+      className="panel-in fixed inset-0 z-50 flex justify-end bg-black/60"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget && !busy) onClose();
       }}
@@ -140,14 +238,14 @@ export function Dialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={headingId}
-        className="sheet-in flex h-full w-full max-w-[520px] flex-col bg-white shadow-[-18px_0_44px_rgba(28,27,26,0.18)]"
+        className="sheet-in flex h-full w-full max-w-[480px] flex-col border-l border-ink/10 bg-page shadow-[-12px_0_32px_rgba(0,0,0,0.4)]"
       >
-        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-ink/10 px-6 pt-5 pb-4">
+        <div className="flex shrink-0 items-start justify-between gap-4 border-b border-ink/10 px-5 py-3.5">
           <div className="min-w-0">
-            <h2 id={headingId} className="text-lg font-extrabold tracking-[-0.01em]">
+            <h2 id={headingId} className="text-[15px] font-semibold">
               {title}
             </h2>
-            {description && <div className="mt-1 text-sm text-ink/55">{description}</div>}
+            {description && <div className="mt-0.5 text-[13px] text-ink/55">{description}</div>}
           </div>
           <button type="button" onClick={onClose} disabled={busy} className={`${BUTTON_GHOST} -mr-2`} aria-label="Chiudi">
             ✕
@@ -163,11 +261,11 @@ export function Dialog({
 export const DIALOG_FORM = "flex min-h-0 flex-1 flex-col";
 
 export function DialogBody({ children }: { children: ReactNode }) {
-  return <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5 text-sm leading-relaxed text-ink/75">{children}</div>;
+  return <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4 text-[13px] leading-relaxed text-ink/75">{children}</div>;
 }
 
 export function DialogFooter({ children }: { children: ReactNode }) {
-  return <div className="flex shrink-0 justify-end gap-2 border-t border-ink/10 px-6 py-4">{children}</div>;
+  return <div className="flex shrink-0 justify-end gap-2 border-t border-ink/10 px-5 py-3">{children}</div>;
 }
 
 /** Yes/no confirmation for actions that are quick to undo or only affect the public view. */

@@ -14,10 +14,10 @@ export function EventStatus({ event }: { event: ManagedEvent }) {
 export function DateTile({ iso }: { iso: string }) {
   const { day, month } = dayAndMonth(iso);
   return (
-    <div className="grid h-[52px] w-[52px] place-items-center rounded-xl bg-ink/5 text-center leading-none">
+    <div className="grid h-9 w-9 place-items-center rounded-md border border-ink/10 bg-surface text-center leading-none">
       <div>
-        <div className="tn text-[19px] font-extrabold tracking-[-0.02em]">{day}</div>
-        <div className="mt-0.5 text-[10px] font-bold uppercase tracking-wider text-ink/50">{month}</div>
+        <div className="tn text-[13px] font-semibold">{day}</div>
+        <div className="mt-px text-[9px] font-medium uppercase text-ink/50">{month}</div>
       </div>
     </div>
   );

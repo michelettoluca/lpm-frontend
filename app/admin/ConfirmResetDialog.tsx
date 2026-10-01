@@ -57,7 +57,7 @@ function TypedConfirm({ word = "RESET", title, children, confirmLabel, pending, 
               spellCheck={false}
               disabled={pending}
               placeholder={word}
-              className={`${CONTROL} tn mt-1.5 font-bold tracking-[0.08em]`}
+              className={`${CONTROL} tn mt-1.5 font-medium tracking-[0.08em]`}
             />
           </div>
         </DialogBody>

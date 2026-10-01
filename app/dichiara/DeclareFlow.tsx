@@ -19,6 +19,8 @@ type Mine = {
   player_name: string;
   archetype_id: number;
   archetype_name: string;
+  /** An organizer set the deck: it shows, but can't be withdrawn from here. */
+  locked?: boolean;
 };
 
 type Step =
@@ -64,12 +66,12 @@ function postJSON(body: unknown): RequestInit {
 }
 
 const PRIMARY =
-  "bg-accent-grad shadow-glow inline-flex h-12 w-full items-center justify-center rounded-2xl px-5 text-[16px] font-bold text-white transition hover:brightness-105 disabled:opacity-40";
+  "inline-flex h-11 w-full items-center justify-center rounded-lg bg-accent px-5 text-[15px] font-medium text-white transition-colors hover:bg-[#e8220f] disabled:opacity-40";
 const SECONDARY =
-  "inline-flex h-12 w-full items-center justify-center rounded-2xl border border-ink/12 bg-white px-5 text-[15px] font-bold shadow-[0_1px_2px_rgba(28,27,26,0.06)] transition hover:bg-ink/[0.03] disabled:opacity-40";
+  "inline-flex h-11 w-full items-center justify-center rounded-lg border border-ink/12 bg-white px-5 text-[15px] font-medium shadow-[0_1px_2px_rgba(28,27,26,0.06)] transition hover:bg-ink/[0.03] disabled:opacity-40";
 /** Destructive but not the action the screen is for: outlined, not filled. */
 const DANGER =
-  "inline-flex h-12 w-full items-center justify-center rounded-2xl border-[1.5px] border-accent bg-white px-5 text-[15px] font-bold text-accent transition hover:bg-tint disabled:opacity-40";
+  "inline-flex h-11 w-full items-center justify-center rounded-lg border border-accent/60 bg-white px-5 text-[15px] font-medium text-accent transition hover:bg-tint disabled:opacity-40";
 const LINK = "text-[14px] font-bold text-ink/55 hover:text-ink disabled:opacity-40";
 
 /**
@@ -167,6 +169,11 @@ export function DeclareFlow() {
     setBusy(true);
     const res = await call<{ ok: boolean }>("/api/dichiara/clear", postJSON({ receipt: m.receipt }));
     setBusy(false);
+    if (res.status === 409) {
+      toast.error("Il mazzo è stato inserito da un organizzatore: per cambiarlo chiedi a loro.");
+      setMine((list) => list.map((x) => (x.receipt === m.receipt ? { ...x, locked: true } : x)));
+      return false;
+    }
     if (!res.data && res.status !== 404) {
       toast.error("Non siamo riusciti a cancellare la dichiarazione. Riprova.");
       return false;
@@ -213,26 +220,34 @@ export function DeclareFlow() {
             <>
               {/* A phone that has declared can only look at it or withdraw it;
                   the table search comes back once it is withdrawn. */}
-              <h1 className="mt-2 text-[30px] font-extrabold leading-[1.05] tracking-[-0.02em]">Hai già dichiarato</h1>
+              <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.01em]">Hai già dichiarato</h1>
               {mine.map((m) => (
                 <div key={m.receipt}>
                   <Summary player={m.player_name} deck={m.archetype_name} archetype={archetypeOf(m)} />
-                  <button
-                    type="button"
-                    disabled={busy}
-                    className={`${SECONDARY} mt-3`}
-                    onClick={() => setStep({ kind: "withdraw", mine: m })}
-                  >
-                    Cancella la dichiarazione
-                  </button>
+                  {m.locked ? (
+                    <p className="mt-3 text-[13px] leading-relaxed text-ink/55">
+                      Il mazzo è stato inserito da un organizzatore: per cambiarlo chiedi a loro.
+                    </p>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        className={`${SECONDARY} mt-3`}
+                        onClick={() => setStep({ kind: "withdraw", mine: m })}
+                      >
+                        Cancella la dichiarazione
+                      </button>
+                      <p className="mt-3 text-[13px] leading-relaxed text-ink/55">
+                        Lo vedono solo gli organizzatori. Se hai sbagliato, cancellala e dichiara di nuovo.
+                      </p>
+                    </>
+                  )}
                 </div>
               ))}
-              <p className="mt-3 text-[13px] leading-relaxed text-ink/55">
-                Lo vedono solo gli organizzatori. Se hai sbagliato, cancellala e dichiara di nuovo.
-              </p>
             </>
           ) : (
-            <h1 className="mt-2 text-[30px] font-extrabold leading-[1.05] tracking-[-0.02em]">Dichiara il tuo mazzo</h1>
+            <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.01em]">Dichiara il tuo mazzo</h1>
           )}
           {mine.length > 0 ? null : round.published && round.tables + (round.byes ? 1 : 0) > 0 ? (
             <form
@@ -254,7 +269,7 @@ export function DeclareFlow() {
                 value={tableInput}
                 onChange={(event) => setTableInput(event.target.value.replace(/\D/g, "").slice(0, 3))}
                 placeholder="Es. 12"
-                className="tn mt-2 w-full rounded-2xl border-[1.5px] border-ink/15 bg-white px-4 py-4 text-center text-[34px] font-extrabold tracking-[-0.02em] outline-none transition-colors focus:border-accent"
+                className="tn mt-2 w-full rounded-lg border border-ink/15 bg-white px-4 py-4 text-center text-[28px] font-semibold tracking-[-0.02em] outline-none transition-colors focus:border-accent"
               />
               <button type="submit" disabled={busy || !tableInput} className={`${PRIMARY} mt-3`}>
                 {busy ? "Cerco il tavolo…" : "Avanti"}
@@ -281,7 +296,7 @@ export function DeclareFlow() {
       {step.kind === "player" && (
         <>
           <Recap onTable={() => setStep({ kind: "table" })} table={step.table} />
-          <h1 className="mt-2 text-[30px] font-extrabold leading-[1.05] tracking-[-0.02em]">
+          <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.01em]">
             {step.table === 0 ? "Chi sei?" : `Tavolo ${step.table}: chi sei?`}
           </h1>
           <div className={`mt-6 grid gap-3 ${step.seats.length === 2 ? "grid-cols-2" : "grid-cols-1"}`}>
@@ -296,9 +311,9 @@ export function DeclareFlow() {
                     if (own) setStep({ kind: "done", mine: own });
                     else setStep({ kind: "deck", table: step.table, seat });
                   }}
-                  className="surface lift flex min-h-[132px] flex-col justify-between rounded-[22px] p-4 text-left disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0"
+                  className="surface flex min-h-[112px] flex-col justify-between rounded-xl p-4 transition-colors hover:border-ink/25 text-left disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:translate-y-0"
                 >
-                  <span className="text-[18px] font-extrabold leading-tight break-words">{seat.name}</span>
+                  <span className="text-[16px] font-semibold leading-tight break-words">{seat.name}</span>
                   <span className="mt-3 text-[12px] font-bold text-ink/50">
                     {own ? `Hai dichiarato ${deckLabel(own.archetype_name)}` : seat.declared ? "Già dichiarato" : "Sono io →"}
                   </span>
@@ -322,7 +337,7 @@ export function DeclareFlow() {
             player={step.seat.name}
             onPlayer={() => void openTable(step.table)}
           />
-          <h1 className="mt-2 text-[26px] font-extrabold leading-[1.05] tracking-[-0.02em]">Che mazzo giochi?</h1>
+          <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.01em]">Che mazzo giochi?</h1>
           <div className="mb-4" />
           {archetypes.length === 0 ? (
             <p className="py-10 text-center text-[14px] text-ink/50">Carico la lista dei mazzi…</p>
@@ -340,7 +355,7 @@ export function DeclareFlow() {
         <>
           {/* No recap here: the summary below already shows the choices, and
               "Cambia mazzo" goes back. */}
-          <h1 className="mt-2 text-[30px] font-extrabold leading-[1.05] tracking-[-0.02em]">Confermi?</h1>
+          <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.01em]">Confermi?</h1>
           <Summary player={step.seat.name} deck={step.archetype.name} archetype={step.archetype} />
           <p className="mt-3 text-[13px] leading-relaxed text-ink/55">
             Lo vedono solo gli organizzatori. Da questo telefono potrai ricontrollarlo e cancellarlo finché le
@@ -367,20 +382,26 @@ export function DeclareFlow() {
 
       {step.kind === "done" && (
         <>
-          <div className="bg-accent-grad shadow-glow mt-6 grid h-14 w-14 place-items-center rounded-full text-[26px] font-extrabold text-white">
+          <div className="mt-6 grid h-11 w-11 place-items-center rounded-full bg-accent text-[20px] font-semibold text-white">
             ✓
           </div>
-          <h1 className="mt-4 text-[30px] font-extrabold leading-[1.05] tracking-[-0.02em]">Mazzo dichiarato</h1>
+          <h1 className="mt-4 text-[22px] font-semibold leading-tight tracking-[-0.01em]">Mazzo dichiarato</h1>
           <Summary player={step.mine.player_name} deck={step.mine.archetype_name} archetype={archetypeOf(step.mine)} />
           <p className="mt-3 text-[13px] leading-relaxed text-ink/55">Buon torneo! Lo vedono solo gli organizzatori.</p>
-          <button
-            type="button"
-            disabled={busy}
-            className={`${SECONDARY} mt-5`}
-            onClick={() => setStep({ kind: "withdraw", mine: step.mine })}
-          >
-            Ho sbagliato, cancella
-          </button>
+          {step.mine.locked ? (
+            <p className="mt-3 text-[13px] leading-relaxed text-ink/55">
+              Il mazzo è stato inserito da un organizzatore: per cambiarlo chiedi a loro.
+            </p>
+          ) : (
+            <button
+              type="button"
+              disabled={busy}
+              className={`${SECONDARY} mt-5`}
+              onClick={() => setStep({ kind: "withdraw", mine: step.mine })}
+            >
+              Ho sbagliato, cancella
+            </button>
+          )}
           <button type="button" className={`${LINK} mt-4 block w-full text-center`} onClick={() => setStep({ kind: "table" })}>
             Torna all&apos;inizio
           </button>
@@ -389,7 +410,7 @@ export function DeclareFlow() {
 
       {step.kind === "withdraw" && (
         <>
-          <h1 className="mt-2 text-[30px] font-extrabold leading-[1.05] tracking-[-0.02em]">Cancellare la dichiarazione?</h1>
+          <h1 className="mt-2 text-[22px] font-semibold leading-tight tracking-[-0.01em]">Cancellare la dichiarazione?</h1>
           <Summary player={step.mine.player_name} deck={step.mine.archetype_name} archetype={archetypeOf(step.mine)} />
           <p className="mt-3 text-[13px] leading-relaxed text-ink/55">
             Dopo potrai dichiarare di nuovo inserendo il numero del tuo tavolo.
@@ -472,11 +493,11 @@ function Recap({
 /** Who declared what, as the confirmation, receipt and withdrawal show it. */
 function Summary({ player, deck, archetype }: { player: string; deck: string; archetype?: Archetype }) {
   return (
-    <div className="surface mt-6 rounded-[22px] p-5">
+    <div className="surface mt-5 rounded-xl p-4">
       <p className="lbl">Giocatore</p>
-      <p className="mt-1 text-[18px] font-extrabold">{player}</p>
+      <p className="mt-1 text-[16px] font-semibold">{player}</p>
       <p className="lbl mt-4">Mazzo</p>
-      <p className="mt-1 flex flex-wrap items-center gap-2 text-[22px] font-extrabold tracking-[-0.01em]">
+      <p className="mt-1 flex flex-wrap items-center gap-2 text-[18px] font-semibold">
         {deckLabel(deck)} {archetype && <ManaCost archetype={archetype} />}
       </p>
     </div>
@@ -485,8 +506,8 @@ function Summary({ player, deck, archetype }: { player: string; deck: string; ar
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="surface mt-6 rounded-[22px] p-5">
-      <h2 className="text-[18px] font-extrabold">{title}</h2>
+    <section className="surface mt-5 rounded-xl p-4">
+      <h2 className="text-[16px] font-semibold">{title}</h2>
       <div className="mt-1.5 text-[14px] leading-relaxed text-ink/60">{children}</div>
     </section>
   );

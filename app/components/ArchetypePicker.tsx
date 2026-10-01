@@ -15,13 +15,13 @@ import {
 } from "../lib/decks";
 
 /** The mana symbol as printed on cards, from Scryfall, served from /public/mana. */
-export function ManaPip({ color }: { color: ManaColor }) {
+export function ManaPip({ color, size = 17 }: { color: ManaColor; size?: number }) {
   return (
     <Image
       src={`/mana/${color}.svg`}
       alt=""
-      width={17}
-      height={17}
+      width={size}
+      height={size}
       unoptimized
       aria-hidden
       className="shrink-0 rounded-full shadow-[-1px_1px_0_rgba(0,0,0,0.85)]"
@@ -29,13 +29,17 @@ export function ManaPip({ color }: { color: ManaColor }) {
   );
 }
 
-export function ManaCost({ archetype }: { archetype: Archetype }) {
+/** The archetype's colors as mana symbols; `small` matches 13px text, for the admin. */
+export function ManaCost({ archetype, small = false }: { archetype: Archetype; small?: boolean }) {
   const colors = colorsOf(archetype);
   if (colors.length === 0) return null;
   return (
-    <span className="flex gap-[3px]" aria-label={colors.map((c) => COLOR_NAMES[c]).join(", ")}>
+    <span
+      className={`flex ${small ? "gap-0.5" : "gap-[3px]"}`}
+      aria-label={colors.map((c) => COLOR_NAMES[c]).join(", ")}
+    >
       {colors.map((c) => (
-        <ManaPip key={c} color={c} />
+        <ManaPip key={c} color={c} size={small ? 12 : 17} />
       ))}
     </span>
   );
@@ -49,39 +53,17 @@ const MAX_ROWS = 8;
 type Suggested = { query: string; ids: number[] };
 
 /**
- * Deck search. The list starts hidden, since most of the archetypes are
- * irrelevant to any one player: typing shows the name matches at once, then
- * Jev's picks (up to five, likeliest first) as soon as the player pauses.
- * Jev reads colors as WUBRG letters or guild names, nicknames, typos and card
- * names; without it the name search still works on its own.
- *
- * Players never see "Non Disponibile"; admins get it, and Rogue, as quick
- * picks. Once a player is searching, the way out is "my deck isn't on the
- * list", which records Rogue without making anyone guess what Rogue means.
+ * The deck search shared by the player flow and the admin pages: name matches
+ * at once, then Jev's picks (up to five, likeliest first) as soon as the
+ * typing pauses. Jev reads colors as WUBRG letters or guild names, nicknames,
+ * typos and card names; without it, or while it answers, the name search
+ * works on its own. An empty query finds nothing.
  */
-export function ArchetypePicker({
-  archetypes,
-  onPick,
-  selectedId,
-  admin = false,
-  autoFocus = false,
-}: {
-  archetypes: Archetype[];
-  onPick: (archetype: Archetype) => void;
-  selectedId?: number;
-  admin?: boolean;
-  autoFocus?: boolean;
-}) {
-  const [query, setQuery] = useState("");
+export function useArchetypeSearch<T extends Archetype>(archetypes: T[], query: string, maxRows = MAX_ROWS) {
   const [suggested, setSuggested] = useState<Suggested | null>(null);
   const [asking, setAsking] = useState<string | null>(null);
   const [jevOff, setJevOff] = useState(false);
-
-  const visible = useMemo(
-    () => archetypes.filter((a) => admin || (a.name !== UNAVAILABLE && a.name !== ROGUE)),
-    [archetypes, admin],
-  );
-  const index = useMemo(() => indexArchetypes(visible), [visible]);
+  const index = useMemo(() => indexArchetypes(archetypes), [archetypes]);
   const trimmed = query.trim();
 
   useEffect(() => {
@@ -113,23 +95,52 @@ export function ArchetypePicker({
     };
   }, [trimmed, jevOff]);
 
-  const rows = useMemo(() => {
+  const rows = useMemo((): T[] => {
     if (!trimmed) return [];
-    const local = searchArchetypes(index, query);
+    const byId = new Map(archetypes.map((a) => [a.id, a]));
+    const local = searchArchetypes(index, trimmed).map((a) => byId.get(a.id)!);
     // Until Jev answers, the name search fills the list on its own.
-    if (suggested?.query !== trimmed || suggested.ids.length === 0) return local.slice(0, MAX_ROWS);
-    const byId = new Map(visible.map((a) => [a.id, a]));
-    const picks = suggested.ids
-      .map((id) => byId.get(id))
-      .filter((a): a is Archetype => a !== undefined);
+    if (suggested?.query !== trimmed || suggested.ids.length === 0) return local.slice(0, maxRows);
+    const picks = suggested.ids.map((id) => byId.get(id)).filter((a): a is T => a !== undefined);
     // After that, only names that contain what was typed join Jev's picks:
     // looser matches such as "every blue-black deck" for "UB" are noise.
     const typed = normalize(trimmed);
     const named = local.filter((a) => !picks.includes(a) && normalize(a.name).includes(typed));
-    return [...picks, ...named].slice(0, MAX_ROWS);
-  }, [index, query, trimmed, visible, suggested]);
+    return [...picks, ...named].slice(0, maxRows);
+  }, [index, trimmed, archetypes, suggested, maxRows]);
 
   const searching = trimmed.length >= 2 && asking === trimmed && rows.length === 0;
+  return { rows, searching };
+}
+
+/**
+ * Deck picker. The list starts hidden, since most of the archetypes are
+ * irrelevant to any one player; typing runs useArchetypeSearch.
+ *
+ * Players never see "Non Disponibile"; admins get it, and Rogue, as quick
+ * picks. Once a player is searching, the way out is "my deck isn't on the
+ * list", which records Rogue without making anyone guess what Rogue means.
+ */
+export function ArchetypePicker({
+  archetypes,
+  onPick,
+  selectedId,
+  admin = false,
+  autoFocus = false,
+}: {
+  archetypes: Archetype[];
+  onPick: (archetype: Archetype) => void;
+  selectedId?: number;
+  admin?: boolean;
+  autoFocus?: boolean;
+}) {
+  const [query, setQuery] = useState("");
+  const visible = useMemo(
+    () => archetypes.filter((a) => admin || (a.name !== UNAVAILABLE && a.name !== ROGUE)),
+    [archetypes, admin],
+  );
+  const trimmed = query.trim();
+  const { rows, searching } = useArchetypeSearch(visible, query);
   const rogue = archetypes.find((a) => a.name === ROGUE);
   const unavailable = archetypes.find((a) => a.name === UNAVAILABLE);
 
@@ -147,7 +158,7 @@ export function ArchetypePicker({
           autoCorrect="off"
           spellCheck={false}
           maxLength={200}
-          className="w-full rounded-2xl border-[1.5px] border-ink/15 bg-white px-4 py-3 text-[16px] outline-none transition-colors focus:border-accent"
+          className="w-full rounded-lg border border-ink/15 bg-surface px-4 py-3 text-[16px] outline-none transition-colors focus:border-accent"
         />
       </div>
 
@@ -158,7 +169,7 @@ export function ArchetypePicker({
         </p>
       ) : (
         <ul
-          className="mt-3 min-h-0 flex-1 divide-y divide-ink/8 overflow-y-auto rounded-2xl border border-ink/8 bg-white"
+          className="mt-3 min-h-0 flex-1 divide-y divide-ink/8 overflow-y-auto rounded-lg border border-ink/8 bg-surface"
           aria-busy={searching}
         >
           {rows.map((a) => (
@@ -171,7 +182,7 @@ export function ArchetypePicker({
                 }`}
               >
                 <span className="min-w-0 truncate">{a.name}</span>
-                <ManaCost archetype={a} />
+                <ManaCost archetype={a} small={admin} />
               </button>
             </li>
           ))}
@@ -196,7 +207,7 @@ export function ArchetypePicker({
                   key={a.id}
                   type="button"
                   onClick={() => onPick(a)}
-                  className="inline-flex h-9 items-center rounded-xl border border-ink/12 bg-white px-3.5 text-[13px] font-bold hover:bg-ink/[0.03]"
+                  className="inline-flex h-9 items-center rounded-lg border border-ink/12 bg-surface px-3.5 text-[13px] font-bold hover:bg-ink/[0.03]"
                 >
                   {a.name}
                 </button>
@@ -207,7 +218,7 @@ export function ArchetypePicker({
 
       {rogue && !admin && trimmed && (
         <div
-          className={`mt-3 rounded-2xl border border-dashed px-4 py-3.5 ${
+          className={`mt-3 rounded-lg border border-dashed px-4 py-3.5 ${
             rows.length === 0 && !searching ? "border-accent bg-tint" : "border-ink/20"
           }`}
         >
@@ -218,7 +229,7 @@ export function ArchetypePicker({
           <button
             type="button"
             onClick={() => onPick(rogue)}
-            className="mt-2.5 inline-flex h-10 items-center rounded-xl border border-ink/12 bg-white px-4 text-[14px] font-bold shadow-[0_1px_2px_rgba(28,27,26,0.06)] hover:bg-ink/[0.03]"
+            className="mt-2.5 inline-flex h-10 items-center rounded-lg border border-ink/12 bg-surface px-4 text-[14px] font-bold shadow-[0_1px_2px_rgba(28,27,26,0.06)] hover:bg-ink/[0.03]"
           >
             Il mio mazzo non è nella lista
           </button>

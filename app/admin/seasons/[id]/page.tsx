@@ -19,7 +19,9 @@ import {
   EmptyState,
   notify,
   PageHeader,
+  Pagination,
   SectionHeader,
+  usePage,
 } from "../../dashboardUi";
 import { DateTile, EventStatus, isPast } from "../../eventDisplay";
 import { countedLabel, seasonPeriod, seasonStatus } from "../../seasonDisplay";
@@ -46,7 +48,7 @@ function SyncSummary({ result }: { result: MeleeSyncResult }) {
         <ul className="mt-1.5 space-y-1 text-[13px] font-normal text-ink/65">
           {skipped.map((s) => (
             <li key={s.event_id}>
-              <Link href={`/admin/events/${s.event_id}`} className="font-bold text-ink underline-offset-2 hover:underline">
+              <Link href={`/admin/events/${s.event_id}`} className="font-medium text-ink underline-offset-2 hover:underline">
                 {tappaTitle(s.event_name)}
               </Link>
               : {SKIP_REASONS[s.reason]}
@@ -63,7 +65,7 @@ type Modal = "edit-season" | "activate" | "delete-season" | "new-event";
 
 // Date · event · status · chevron, with fixed side columns so rows align.
 const ROW =
-  "grid grid-cols-[52px_minmax(0,1fr)_auto] items-center gap-x-4 px-5 py-3.5 md:grid-cols-[52px_minmax(0,1fr)_128px_16px]";
+  "grid grid-cols-[52px_minmax(0,1fr)_auto] items-center gap-x-4 px-4 py-3.5 md:grid-cols-[52px_minmax(0,1fr)_128px_16px]";
 
 export default function SeasonDetailPage() {
   const params = useParams<{ id: string }>();
@@ -76,18 +78,20 @@ export default function SeasonDetailPage() {
 
   const season = seasons.find((s) => String(s.id) === params.id);
   const back = (
-    <Link href="/admin/seasons" className="text-[13px] font-bold text-ink/50 hover:text-ink">
+    <Link href="/admin/seasons" className="text-[13px] font-medium text-ink/50 hover:text-ink">
       ← Stagioni
     </Link>
   );
+
+  const seasonEvents = events
+    .filter((event) => event.season_id === season?.id)
+    .sort((a, b) => a.played_at.localeCompare(b.played_at));
+  const { rows: eventRows, pager: eventPager } = usePage(seasonEvents);
 
   if (!season) {
     return <PageHeader back={back} title="Stagione non trovata" meta="Potrebbe essere stata eliminata." />;
   }
 
-  const seasonEvents = events
-    .filter((event) => event.season_id === season.id)
-    .sort((a, b) => a.played_at.localeCompare(b.played_at));
   const withResults = seasonEvents.filter((event) => event.has_results).length;
   const toImport = seasonEvents.filter((event) => !event.has_results && isPast(event)).length;
 
@@ -202,12 +206,12 @@ export default function SeasonDetailPage() {
           <EmptyState>Nessuna tappa in questa stagione. Programmane una: comparirà sul sito tra i prossimi eventi.</EmptyState>
         ) : (
           <ul>
-            {seasonEvents.map((event) => (
+            {eventRows.map((event) => (
               <li key={event.id} className="border-b border-ink/8 last:border-b-0">
                 <Link href={`/admin/events/${event.id}`} className={`row-link ${ROW}`}>
                   <DateTile iso={event.played_at} />
                   <div className="min-w-0">
-                    <p className="truncate font-bold">{tappaTitle(event.name)}</p>
+                    <p className="truncate font-medium">{tappaTitle(event.name)}</p>
                     <p className="tn mt-0.5 truncate text-[13px] text-ink/50">
                       {displayTime(event.played_at)} · {event.format || "formato non indicato"} ·{" "}
                       {tappaSubtitle(event.name)}
@@ -224,6 +228,7 @@ export default function SeasonDetailPage() {
             ))}
           </ul>
         )}
+        <Pagination {...eventPager} />
       </div>
 
       {modal === "edit-season" && (

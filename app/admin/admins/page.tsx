@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useId, useState } from "react";
 import type { AdminError, AdminListEntry } from "@/app/lib/adminTypes";
 import { useAdmin } from "../AdminShell";
@@ -15,6 +14,11 @@ import {
   EmptyState,
   notify,
   PageHeader,
+  Pagination,
+  TABLE,
+  TD,
+  TH,
+  usePage,
 } from "../dashboardUi";
 
 export default function AdminsPage() {
@@ -40,15 +44,11 @@ export default function AdminsPage() {
     };
   }, [me.is_super, call]);
 
-  const back = (
-    <Link href="/admin/seasons" className="text-[13px] font-bold text-ink/50 hover:text-ink">
-      ← Stagioni
-    </Link>
-  );
+  const { rows, pager } = usePage(admins ?? []);
 
   if (!me.is_super) {
     return (
-      <PageHeader back={back} title="Amministratori" meta="Solo il super amministratore può gestire gli amministratori." />
+      <PageHeader title="Amministratori" meta="Solo il super amministratore può gestire gli amministratori." />
     );
   }
 
@@ -92,7 +92,6 @@ export default function AdminsPage() {
   return (
     <>
       <PageHeader
-        back={back}
         title="Amministratori"
         meta="Chi è in questa lista accede alla dashboard con un codice inviato alla sua email."
       />
@@ -103,11 +102,11 @@ export default function AdminsPage() {
         </div>
       )}
 
-      <form onSubmit={add} className="card mb-6 p-5">
+      <form onSubmit={add} className="mb-4">
         <label htmlFor={emailId} className="lbl block">
           Aggiungi un amministratore
         </label>
-        <div className="mt-1.5 flex flex-col gap-2 sm:flex-row">
+        <div className="mt-1.5 flex max-w-md gap-2">
           <input
             id={emailId}
             type="email"
@@ -119,7 +118,7 @@ export default function AdminsPage() {
             disabled={pending}
             required
           />
-          <button type="submit" className={`${BUTTON_PRIMARY} h-auto min-h-10 sm:w-auto`} disabled={pending || !email.trim()}>
+          <button type="submit" className={BUTTON_PRIMARY} disabled={pending || !email.trim()}>
             {pending ? "Attendi…" : "Aggiungi"}
           </button>
         </div>
@@ -130,33 +129,45 @@ export default function AdminsPage() {
         )}
       </form>
 
-      <div className="card">
+      <div className="card overflow-x-auto">
         {admins === null ? (
           <EmptyState>Caricamento…</EmptyState>
         ) : (
-          <ul>
-            {admins.map((a) => (
-              <li
-                key={a.id}
-                className="flex min-h-14 items-center justify-between gap-3 border-b border-ink/8 px-5 py-2.5 last:border-b-0"
-              >
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="truncate font-bold">{a.email}</span>
-                    {a.is_super && <Badge tone="accent">Super admin</Badge>}
-                    {a.id === me.id && !a.is_super && <Badge>Tu</Badge>}
-                  </div>
-                  <div className="tn mt-0.5 text-[12px] text-ink/45">aggiunto il {displayDate(a.created_at)}</div>
-                </div>
-                {!a.is_super && (
-                  <button type="button" className={BUTTON_DANGER} disabled={pending} onClick={() => setRemoving(a)}>
-                    Rimuovi
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
+          <table className={TABLE}>
+            <thead>
+              <tr>
+                <th className={TH}>Email</th>
+                <th className={TH}>Ruolo</th>
+                <th className={`${TH} hidden sm:table-cell`}>Aggiunto il</th>
+                <th className={TH}>
+                  <span className="sr-only">Azioni</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((a) => (
+                <tr key={a.id} className="last:[&>td]:border-b-0">
+                  <td className={`${TD} font-medium`}>
+                    <span className="flex items-center gap-2">
+                      <span className="truncate">{a.email}</span>
+                      {a.id === me.id && <Badge>Tu</Badge>}
+                    </span>
+                  </td>
+                  <td className={`${TD} text-ink/65`}>{a.is_super ? "Super admin" : "Admin"}</td>
+                  <td className={`${TD} tn hidden text-ink/55 sm:table-cell`}>{displayDate(a.created_at)}</td>
+                  <td className={`${TD} text-right`}>
+                    {!a.is_super && (
+                      <button type="button" className={BUTTON_DANGER} disabled={pending} onClick={() => setRemoving(a)}>
+                        Rimuovi
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
+        <Pagination {...pager} />
       </div>
 
       {removing && (

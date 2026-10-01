@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND_TEXT } from "../components/ui";
+import { Toaster } from "sonner";
 import { DeclareFlow } from "./DeclareFlow";
 
 export const metadata: Metadata = {
@@ -18,6 +19,12 @@ export default function DeclarePage() {
       <div className="mt-6">
         <DeclareFlow />
       </div>
+      <Toaster
+        position="top-center"
+        richColors
+        closeButton
+        toastOptions={{ style: { fontFamily: "var(--font-archivo), system-ui, sans-serif", borderRadius: 12 } }}
+      />
     </main>
   );
 }

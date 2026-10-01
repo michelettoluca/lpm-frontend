@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useAdmin } from "../AdminShell";
 import { DangerZone } from "../DangerZone";
 import { SeasonDialog } from "../SeasonDialog";
-import { BUTTON_PRIMARY, Callout, EmptyState, notify, PageHeader } from "../dashboardUi";
+import { BUTTON_PRIMARY, Callout, EmptyState, notify, PageHeader, Pagination, usePage } from "../dashboardUi";
 import { countedLabel, seasonPeriod, seasonStatus } from "../seasonDisplay";
 
 /**
@@ -18,7 +18,7 @@ function Progress({ done, total, counted }: { done: number; total: number; count
   return (
     <div className="relative h-1.5 w-24" aria-hidden>
       <div className="h-full overflow-hidden rounded-full bg-ink/8">
-        <div className="bg-accent-grad h-full rounded-full" style={{ width: total ? `${(done / total) * 100}%` : 0 }} />
+        <div className="bg-accent h-full rounded-full" style={{ width: total ? `${(done / total) * 100}%` : 0 }} />
       </div>
       {tick !== null && (
         <div
@@ -31,13 +31,14 @@ function Progress({ done, total, counted }: { done: number; total: number; count
   );
 }
 
-const ROW = "grid items-center gap-x-6 gap-y-2 px-5 py-4 sm:grid-cols-[minmax(0,1fr)_180px_110px_16px]";
+const ROW = "grid items-center gap-x-6 gap-y-2 px-4 py-2.5 sm:grid-cols-[minmax(0,1fr)_180px_110px_16px]";
 
 export default function SeasonsPage() {
   const { seasons, events, setSeasons } = useAdmin();
   const [creating, setCreating] = useState(false);
 
   const hasActive = seasons.some((season) => season.is_active);
+  const { rows, pager } = usePage(seasons);
 
   return (
     <>
@@ -69,14 +70,14 @@ export default function SeasonsPage() {
           <EmptyState>Nessuna stagione. Creane una per poter programmare le tappe.</EmptyState>
         ) : (
           <ul>
-            {seasons.map((season) => {
+            {rows.map((season) => {
               const own = events.filter((event) => event.season_id === season.id);
               const done = own.filter((event) => event.has_results).length;
               return (
                 <li key={season.id} className="border-b border-ink/8 last:border-b-0">
                   <Link href={`/admin/seasons/${season.id}`} className={`row-link ${ROW}`}>
                     <div className="min-w-0">
-                      <p className="truncate font-bold">{season.name}</p>
+                      <p className="truncate font-medium">{season.name}</p>
                       <p className="tn mt-0.5 text-[13px] text-ink/50">
                         {seasonPeriod(season)} · {countedLabel(season).toLowerCase()}
                       </p>
@@ -97,6 +98,7 @@ export default function SeasonsPage() {
             })}
           </ul>
         )}
+        <Pagination {...pager} />
       </div>
 
       <DangerZone />

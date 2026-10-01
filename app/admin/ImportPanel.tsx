@@ -241,8 +241,8 @@ export function ImportPanel({
   }
 
   return (
-    <div className="card p-5 sm:p-6">
-      <h2 className="text-lg font-extrabold tracking-[-0.01em]">Importa risultati</h2>
+    <div className="card p-4">
+      <h2 className="text-lg font-semibold tracking-[-0.01em]">Importa risultati</h2>
 
       <p className="mt-1 max-w-xl text-sm leading-relaxed text-ink/55">
         Scegli il torneo su melee.gg: il backend scarica classifica e match e li confronta fra loro prima di salvarli.
@@ -263,7 +263,7 @@ export function ImportPanel({
         </p>
       )}
       {tournaments !== null && tournaments.length > 0 && (
-        <ul className="mt-5 divide-y divide-ink/8 rounded-2xl border border-ink/10">
+        <ul className="mt-5 divide-y divide-ink/8 rounded-lg border border-ink/10">
           {tournaments.map((t) => (
             <li key={t.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5 pr-2.5 pl-4">
               <div className="min-w-0 flex-1 basis-56">
@@ -271,7 +271,7 @@ export function ImportPanel({
                   href={t.url}
                   target="_blank"
                   rel="noopener"
-                  className="block truncate font-bold underline-offset-2 hover:underline"
+                  className="block truncate font-medium underline-offset-2 hover:underline"
                 >
                   {t.name || `Torneo ${t.id}`}
                 </a>
@@ -336,7 +336,7 @@ export function ImportPanel({
         {apiError && !tournamentFieldError && apiError.kind !== "disabled" && <ErrorPanel error={apiError} source="api" />}
       </form>
 
-      <div className="mt-6 flex items-center gap-3 text-[12px] font-semibold uppercase tracking-[0.06em] text-ink/40">
+      <div className="mt-6 flex items-center gap-3 text-[12px] font-semibold  text-ink/40">
         <span className="h-px flex-1 bg-ink/10" />
         oppure carica i CSV
         <span className="h-px flex-1 bg-ink/10" />
@@ -360,11 +360,11 @@ export function ImportPanel({
             setDragging(false);
             if (pending === null) void add(e.dataTransfer.files);
           }}
-          className={`mt-5 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border-[1.5px] border-dashed px-4 py-7 text-center transition-colors ${
-            dragging ? "bg-tint-grad border-accent" : "border-ink/20 bg-white/50 hover:border-ink/40 hover:bg-white"
+          className={`mt-5 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed px-4 py-7 text-center transition-colors ${
+            dragging ? "bg-tint-grad border-accent" : "border-ink/20 bg-surface/50 hover:border-ink/40 hover:bg-surface"
           } ${pending ? "pointer-events-none opacity-60" : ""}`}
         >
-          <span className="text-sm font-bold">
+          <span className="text-sm font-medium">
             Trascina qui i file <span className="text-accent">oppure sceglili</span>
           </span>
           <span className="text-[12px] text-ink/50">Puoi selezionarli insieme: li riconosciamo dal contenuto.</span>
@@ -382,14 +382,14 @@ export function ImportPanel({
           />
         </label>
 
-        <ul className="mt-3 divide-y divide-ink/8 rounded-2xl border border-ink/10">
+        <ul className="mt-3 divide-y divide-ink/8 rounded-lg border border-ink/10">
           {(["standings", "matches"] as const).map((kind) => {
             const file = files[kind]?.file;
             return (
               <li key={kind} className="flex min-h-12 items-center gap-3 py-1.5 pr-1.5 pl-4">
                 <span
-                  className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] font-bold ${
-                    file ? "bg-accent-grad text-white" : "border border-ink/20"
+                  className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] font-medium ${
+                    file ? "bg-accent text-white" : "border border-ink/20"
                   }`}
                   aria-hidden
                 >

@@ -12,9 +12,9 @@ function Panel({
   return (
     <div
       role="alert"
-      className="mt-4 rounded-[18px] border-[1.5px] border-accent bg-tint p-4"
+      className="mt-4 rounded-lg border border-accent bg-tint p-4"
     >
-      <div className="text-[13px] font-extrabold uppercase tracking-[0.06em] text-accent">
+      <div className="text-[13px] font-semibold  text-accent">
         {title}
       </div>
       <div className="mt-2 space-y-2 text-[13px] leading-[1.5] text-ink/80">
@@ -99,7 +99,7 @@ export function ErrorPanel({
               Controlla che tutti i risultati siano stati inseriti su melee.gg e riprova. Se il problema resta, importa i
               due CSV del torneo.
             </p>
-            <pre className="tn max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-xl border border-ink/15 bg-white p-3 font-mono text-[12px] leading-[1.5] text-ink/80">
+            <pre className="tn max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-md border border-ink/15 bg-surface p-3 font-mono text-[12px] leading-[1.5] text-ink/80">
               {error.message}
             </pre>
           </Panel>
@@ -118,7 +118,7 @@ export function ErrorPanel({
             momenti diversi del torneo. Riscaricali entrambi da melee.gg e
             riprova.
           </p>
-          <pre className="tn max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-xl border border-ink/15 bg-white p-3 font-mono text-[12px] leading-[1.5] text-ink/80">
+          <pre className="tn max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-md border border-ink/15 bg-surface p-3 font-mono text-[12px] leading-[1.5] text-ink/80">
             {error.message}
           </pre>
         </Panel>
