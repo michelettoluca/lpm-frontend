@@ -129,6 +129,44 @@ export function Switch({
   );
 }
 
+/** A switch between a few named choices, the chosen one in the brand red. */
+export function Segmented<T extends string>({
+  value,
+  options,
+  disabled,
+  label,
+  onChange,
+}: {
+  value: T;
+  options: { value: T; label: string }[];
+  disabled?: boolean;
+  label: string;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div role="radiogroup" aria-label={label} className="inline-flex shrink-0 rounded-full bg-ink/10 p-[2px]">
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={on}
+            disabled={disabled}
+            onClick={() => !on && onChange(o.value)}
+            className={`h-6 rounded-full px-3 text-[12px] font-medium transition-colors disabled:opacity-50 ${
+              on ? "bg-accent text-white shadow-sm" : "text-ink/60 hover:text-ink"
+            }`}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 /** Label and value pairs at the top of an entity's side panel. */
 export function DetailList({ items }: { items: [string, ReactNode][] }) {
   return (

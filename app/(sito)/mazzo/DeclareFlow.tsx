@@ -6,7 +6,12 @@ import { colorsOf, ROGUE, UNAVAILABLE, type Archetype } from "@/app/lib/decks";
 import { tappaTitle } from "@/app/lib/format";
 import { Comune, Mana } from "../ui";
 
+/** How players find themselves: by their table's number, or by name. */
+type FindBy = "table" | "name";
+
 type Current = {
+  /** Missing from an API that predates the choice, which went by table. */
+  find_by?: FindBy;
   tournament: { id: number; name: string };
   round: { number: number; published: boolean; tables: number; byes: boolean };
 };
@@ -24,11 +29,12 @@ type Mine = {
   locked?: boolean;
 };
 
+/** table is null for a player who found themselves by name. */
 type Step =
-  | { kind: "table" }
+  | { kind: "start" }
   | { kind: "player"; table: number; seats: Seat[] }
-  | { kind: "deck"; table: number; seat: Seat }
-  | { kind: "confirm"; table: number; seat: Seat; archetype: Archetype }
+  | { kind: "deck"; table: number | null; seat: Seat }
+  | { kind: "confirm"; table: number | null; seat: Seat; archetype: Archetype }
   | { kind: "done"; mine: Mine; table?: number }
   /** Asks before withdrawing a declaration, as the submission does. */
   | { kind: "withdraw"; mine: Mine };
@@ -69,18 +75,20 @@ function postJSON(body: unknown): RequestInit {
   return { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) };
 }
 
-const STEPS = ["tavolo", "chi sei", "mazzo", "conferma"];
-const STEP_AT: Record<Step["kind"], number> = { table: 0, player: 1, deck: 2, confirm: 3, done: 3, withdraw: 3 };
+const STEPS: Record<FindBy, string[]> = { table: ["tavolo", "chi sei", "mazzo", "conferma"], name: ["chi sei", "mazzo", "conferma"] };
+const STEP_AT: Record<Step["kind"], number> = { start: 0, player: 1, deck: 2, confirm: 3, done: 3, withdraw: 3 };
+/** By name, finding yourself is the first step: no table to ask for. */
+const stepAt = (kind: Step["kind"], by: FindBy) => (by === "name" ? Math.max(0, STEP_AT[kind] - 1) : STEP_AT[kind]);
 const H1 = "rg-display rg-tight text-[36px] leading-[1] lg:text-[42px]";
 const LOCKED = "Il mazzo è stato inserito da un organizzatore: per cambiarlo chiedi a loro.";
 
 const first = (name: string) => name.split(" ")[0];
 const tableLabel = (table: number) => (table === 0 ? "bye" : `tavolo ${table}`);
 
-function Progress({ at }: { at: number }) {
+function Progress({ steps, at }: { steps: string[]; at: number }) {
   return (
-    <ol className="flex items-center gap-2" aria-label={`Passo ${at + 1} di ${STEPS.length}: ${STEPS[at]}`}>
-      {STEPS.map((s, i) => (
+    <ol className="flex items-center gap-2" aria-label={`Passo ${at + 1} di ${steps.length}: ${steps[at]}`}>
+      {steps.map((s, i) => (
         <li key={s} className="flex items-center gap-2" aria-hidden="true">
           <span
             className={`block h-2.5 rounded-full transition-all ${i === at ? "w-6" : "w-2.5"} ${
@@ -123,11 +131,13 @@ function Receipt({ label, mine, archetype, detail }: { label: string; mine: Mine
 }
 
 /**
- * Table number → which of the two players you are → your deck → confirm.
+ * Table number → which of the two players you are → your deck → confirm; or,
+ * when an admin has players go by name, your name → your deck → confirm.
  * The phone keeps a receipt for each declaration, so it can show it again
  * and withdraw it; other phones only ever learn that a player has declared.
+ * onFindBy hears how players find themselves, for the steps beside the flow.
  */
-export function DeclareFlow() {
+export function DeclareFlow({ onFindBy }: { onFindBy?: (by: FindBy) => void }) {
   const [current, setCurrent] = useState<Current | null>(null);
   const [status, setStatus] = useState<"loading" | "closed" | "error" | "ready">("loading");
   const [archetypes, setArchetypes] = useState<Archetype[]>([]);
@@ -135,8 +145,11 @@ export function DeclareFlow() {
   // The table step depends on whether this phone has declared already, so it
   // waits for the receipts to be checked.
   const [mineLoaded, setMineLoaded] = useState(false);
-  const [step, setStep] = useState<Step>({ kind: "table" });
+  const [step, setStep] = useState<Step>({ kind: "start" });
   const [digits, setDigits] = useState("");
+  // By name: what the player typed, and who matches it once the search is back.
+  const [name, setName] = useState("");
+  const [found, setFound] = useState<{ q: string; players: Seat[] } | null>(null);
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<Note | null>(null);
@@ -144,6 +157,12 @@ export function DeclareFlow() {
   const moved = useRef(false);
 
   const archetypeOf = (m: Mine) => archetypes.find((a) => a.id === m.archetype_id);
+  const findBy: FindBy = current?.find_by === "name" ? "name" : "table";
+  const byName = findBy === "name";
+
+  useEffect(() => {
+    if (status === "ready") onFindBy?.(findBy);
+  }, [status, findBy, onFindBy]);
 
   const loadCurrent = useCallback(async () => {
     const res = await call<Current>("/api/dichiara");
@@ -230,7 +249,7 @@ export function DeclareFlow() {
 
   // A physical keyboard works on the keypad too.
   useEffect(() => {
-    if (step.kind !== "table" || mine.length > 0) return;
+    if (step.kind !== "start" || mine.length > 0 || byName) return;
     function onKey(e: KeyboardEvent) {
       if (e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey || busy) return;
       if (/^[0-9]$/.test(e.key)) press(e.key);
@@ -241,21 +260,52 @@ export function DeclareFlow() {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  async function declare(table: number, seat: Seat, archetype: Archetype) {
+  // Looks the name up a moment after the player stops typing.
+  const q = name.trim();
+  const searchable = byName && step.kind === "start" && mine.length === 0 && q.length >= 2;
+  useEffect(() => {
+    if (!searchable) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const res = await call<{ players: Seat[] }>(`/api/dichiara/players?q=${encodeURIComponent(q)}`);
+      if (cancelled) return;
+      if (res.data) {
+        setFound({ q, players: res.data.players });
+        setNote(null);
+      } else if (res.status === 404 || res.status === 409) {
+        // Closed, or an admin switched back to tables: start over the new way.
+        await loadCurrent();
+      } else {
+        setNote({ tone: "error", text: "Non riusciamo a cercare il nome. Riprova tra qualche secondo." });
+      }
+    }, 250);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [searchable, q, loadCurrent]);
+  const results = searchable && found?.q === q ? found.players : null;
+
+  async function declare(table: number | null, seat: Seat, archetype: Archetype) {
     setBusy(true);
-    const res = await call<Mine>("/api/dichiara", postJSON({ table, team_id: seat.team_id, archetype_id: archetype.id }));
+    const res = await call<Mine>(
+      "/api/dichiara",
+      postJSON({ ...(table !== null && { table }), team_id: seat.team_id, archetype_id: archetype.id }),
+    );
     setBusy(false);
     if (res.data) {
       const made = res.data;
       writeReceipts([...readReceipts(), made.receipt]);
       setMine((list) => [...list.filter((m) => m.team_id !== made.team_id), made]);
       setQuery("");
-      go({ kind: "done", mine: made, table });
+      go({ kind: "done", mine: made, table: table ?? undefined });
       return;
     }
-    if (res.status === 409) {
+    if (res.status === 409 && table === null && (await loadCurrent())?.find_by !== "name") {
+      go({ kind: "start" }, { tone: "error", text: "Ora il mazzo si indica dal numero del tavolo: ricomincia da qui." });
+    } else if (res.status === 409) {
       go(
-        { kind: "table" },
+        { kind: "start" },
         {
           tone: "error",
           text: `Per ${seat.name} è già stato indicato un mazzo. Se non sei stato tu, avvisa un organizzatore: lo sistema lui.`,
@@ -264,8 +314,14 @@ export function DeclareFlow() {
     } else if (res.status === 404) {
       await loadCurrent();
       go(
-        { kind: "table" },
-        { tone: "error", text: "Il turno è cambiato, o i mazzi non si possono più indicare. Reinserisci il numero del tuo tavolo attuale." },
+        { kind: "start" },
+        {
+          tone: "error",
+          text:
+            table === null
+              ? "Non riusciamo a indicare il mazzo: forse la raccolta è chiusa. Se continua, avvisa un organizzatore."
+              : "Il turno è cambiato, o i mazzi non si possono più indicare. Reinserisci il numero del tuo tavolo attuale.",
+        },
       );
     } else {
       setNote({ tone: "error", text: "Qualcosa è andato storto. Riprova." });
@@ -279,7 +335,7 @@ export function DeclareFlow() {
     setBusy(false);
     if (res.status === 409) {
       setMine((list) => list.map((x) => (x.receipt === m.receipt ? { ...x, locked: true } : x)));
-      go({ kind: "table" }, { tone: "error", text: LOCKED });
+      go({ kind: "start" }, { tone: "error", text: LOCKED });
       return false;
     }
     if (!res.data && res.status !== 404) {
@@ -289,7 +345,7 @@ export function DeclareFlow() {
     writeReceipts(readReceipts().filter((r) => r !== m.receipt));
     setMine((list) => list.filter((x) => x.receipt !== m.receipt));
     if (res.status === 404) {
-      go({ kind: "table" }, { tone: "error", text: "I mazzi non si possono più cambiare da qui: chiedi a un organizzatore." });
+      go({ kind: "start" }, { tone: "error", text: "I mazzi non si possono più cambiare da qui: chiedi a un organizzatore." });
       return false;
     }
     return true;
@@ -326,7 +382,8 @@ export function DeclareFlow() {
 
   const { round } = current;
   const tappa = tappaTitle(current.tournament.name).toLowerCase();
-  const open = round.published && round.tables + (round.byes ? 1 : 0) > 0;
+  // By name nobody waits for the pairings: everyone registered can declare.
+  const open = byName || (round.published && round.tables + (round.byes ? 1 : 0) > 0);
 
   return (
     <div>
@@ -335,11 +392,11 @@ export function DeclareFlow() {
           {tappa}
           {round.number > 0 && ` · turno ${round.number}`}
         </p>
-        {mine.length === 0 && step.kind !== "done" && step.kind !== "withdraw" && open && <Progress at={STEP_AT[step.kind]} />}
+        {mine.length === 0 && step.kind !== "done" && step.kind !== "withdraw" && open && <Progress steps={STEPS[findBy]} at={stepAt(step.kind, findBy)} />}
       </div>
 
       {/* ---------------- 1. table, or what this phone declared ---------------- */}
-      {step.kind === "table" &&
+      {step.kind === "start" &&
         (mine.length > 0 ? (
           // A phone that has declared can only look at it or withdraw it; the
           // keypad comes back once it is withdrawn.
@@ -372,6 +429,68 @@ export function DeclareFlow() {
                 </div>
               ))}
             </div>
+          </section>
+        ) : byName ? (
+          <section className="mt-6">
+            <h1 ref={heading} tabIndex={-1} className={H1}>
+              come ti chiami?
+            </h1>
+            <Message note={note} />
+            <label htmlFor="rg-name" className="sr-only">
+              Cerca il tuo nome
+            </label>
+            <input
+              id="rg-name"
+              type="search"
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="words"
+              spellCheck={false}
+              maxLength={100}
+              placeholder="nome o cognome"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="rg-input mt-5"
+            />
+            {q.length < 2 ? (
+              <p className="rg-muted mt-4 text-[15px] leading-relaxed">
+                Scrivi il tuo nome o cognome, come sei iscritto su Melee.
+              </p>
+            ) : !results ? (
+              <p className="rg-muted mt-4 text-[15px]">cerco…</p>
+            ) : results.length === 0 ? (
+              <div className="py-6">
+                <p className="rg-display text-[22px] leading-tight">Nessun iscritto con questo nome.</p>
+                <p className="rg-muted mt-2 text-[15px]">
+                  Prova solo il cognome, o come ti sei iscritto su Melee. Se non ti trovi, avvisa un organizzatore.
+                </p>
+              </div>
+            ) : (
+              <>
+                <div className="mt-5 grid gap-3">
+                  {results.map((seat) => (
+                    <button
+                      key={seat.team_id}
+                      type="button"
+                      disabled={seat.declared}
+                      onClick={() => go({ kind: "deck", table: null, seat })}
+                      className="rg-seat"
+                    >
+                      <span className="rg-display block text-[26px] leading-tight">{seat.name}</span>
+                      <span className="rg-muted mt-1 block text-[15px] font-semibold">
+                        {seat.declared ? "ha già indicato il mazzo" : "sono io"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                {results.some((s) => s.declared) && (
+                  <p className="rg-muted mt-4 text-[15px] leading-relaxed">
+                    Hai già indicato il mazzo da un altro telefono, o qualcuno l&apos;ha fatto al posto tuo? Avvisa un
+                    organizzatore.
+                  </p>
+                )}
+              </>
+            )}
           </section>
         ) : open ? (
           <section className="mt-6">
@@ -481,7 +600,7 @@ export function DeclareFlow() {
               Hai già indicato il mazzo da un altro telefono, o qualcuno l&apos;ha fatto al posto tuo? Avvisa un organizzatore.
             </p>
           )}
-          <button type="button" onClick={() => go({ kind: "table" })} className="rg-textlink mt-6 inline-flex min-h-11 items-center">
+          <button type="button" onClick={() => go({ kind: "start" })} className="rg-textlink mt-6 inline-flex min-h-11 items-center">
             ← ho sbagliato tavolo
           </button>
         </section>
@@ -563,7 +682,7 @@ export function DeclareFlow() {
           <button
             type="button"
             disabled={busy}
-            onClick={() => void openTable(step.table)}
+            onClick={() => (step.table === null ? go({ kind: "start" }) : void openTable(step.table))}
             className="rg-textlink mt-6 inline-flex min-h-11 items-center"
           >
             ← non sono {first(step.seat.name)}
@@ -581,7 +700,7 @@ export function DeclareFlow() {
           <dl className="mt-6 rounded-[20px] bg-[var(--rg-soft)] px-5 py-1">
             {[
               { k: "giocatore", v: step.seat.name },
-              { k: "tavolo", v: step.table === 0 ? "bye" : String(step.table) },
+              ...(step.table === null ? [] : [{ k: "tavolo", v: step.table === 0 ? "bye" : String(step.table) }]),
               ...(round.number > 0 ? [{ k: "turno", v: String(round.number) }] : []),
             ].map((x, i) => (
               <div key={x.k} className={`grid grid-cols-[6.5rem_1fr] items-baseline py-3 ${i ? "rg-hr" : ""}`}>
@@ -669,7 +788,7 @@ export function DeclareFlow() {
           <Message note={note} />
           <p className="mt-5 text-[17px] leading-relaxed">
             Cancelli <strong>{deckLabel(step.mine.archetype_name)}</strong> per {step.mine.player_name}. Poi puoi indicarne un
-            altro inserendo il numero del tuo tavolo.
+            altro {byName ? "cercando di nuovo il tuo nome" : "inserendo il numero del tuo tavolo"}.
           </p>
           <div className="mt-8 grid gap-3">
             <button
@@ -678,7 +797,8 @@ export function DeclareFlow() {
               onClick={async () => {
                 if (!(await withdraw(step.mine))) return;
                 setDigits("");
-                go({ kind: "table" }, { tone: "ok", text: "Mazzo cancellato. Ora puoi indicarne un altro." });
+                setName("");
+                go({ kind: "start" }, { tone: "ok", text: "Mazzo cancellato. Ora puoi indicarne un altro." });
               }}
               className="rg-btn rg-btn-fill w-full"
             >
@@ -687,7 +807,7 @@ export function DeclareFlow() {
             <button
               type="button"
               disabled={busy}
-              onClick={() => go({ kind: "table" })}
+              onClick={() => go({ kind: "start" })}
               className="rg-btn rg-btn-line w-full"
             >
               no, tienilo

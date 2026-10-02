@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ErrorPanel } from "../ErrorPanel";
-import { BUTTON, BUTTON_PRIMARY, ConfirmDialog, EmptyState, PageHeader, Switch } from "../dashboardUi";
+import { BUTTON, BUTTON_PRIMARY, ConfirmDialog, EmptyState, PageHeader, Segmented, Switch } from "../dashboardUi";
 import {
   DeckPickerDialog,
   exportCsv,
@@ -24,7 +24,8 @@ type Modal = { kind: "pick"; seat: Seat } | { kind: "close" };
  * table happens on its own page, opened from "Inserisci ai tavoli".
  */
 export default function DeclarationsPage() {
-  const { view, archetypes, error, busy, walk, setDeck, openTournament, closeDeclarations } = useDeclarations();
+  const { view, archetypes, error, busy, walk, setDeck, openTournament, closeDeclarations, setFindBy } =
+    useDeclarations();
   const [modal, setModal] = useState<Modal | null>(null);
 
   if (!view) {
@@ -34,6 +35,7 @@ export default function DeclarationsPage() {
   const t = view.tournament;
   const active = view.players.filter((p) => !p.dropped);
   const declaredCount = active.filter((p) => p.declaration).length;
+  const findBy = view.find_by ?? "table";
 
   return (
     <div>
@@ -88,18 +90,33 @@ export default function DeclarationsPage() {
                 />
               </span>
             </Stat>
-            <div className="flex items-center gap-3 sm:ml-auto">
-              <Switch
-                checked={t.open}
-                disabled={busy}
-                label="Aperte ai giocatori"
-                onChange={() => (t.open ? setModal({ kind: "close" }) : void openTournament(t.id, true))}
-              />
-              <div>
-                <p className="text-[13px] font-medium">{t.open ? "Aperte ai giocatori" : "Chiuse ai giocatori"}</p>
-                <p className="text-[12px] text-ink/50">
-                  {t.open ? "Indicano il mazzo da legapaupermilano.it/mazzo" : "Solo gli admin possono modificare"}
-                </p>
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-3 sm:ml-auto">
+              <div className="flex items-center gap-3">
+                <p className="text-[13px] font-medium">Tipo di ricerca</p>
+                <Segmented
+                  value={findBy}
+                  options={[
+                    { value: "name", label: "Nome" },
+                    { value: "table", label: "Tavolo" },
+                  ]}
+                  disabled={busy}
+                  label="Tipo di ricerca"
+                  onChange={(by) => void setFindBy(by)}
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <Switch
+                  checked={t.open}
+                  disabled={busy}
+                  label="Aperte ai giocatori"
+                  onChange={() => (t.open ? setModal({ kind: "close" }) : void openTournament(t.id, true))}
+                />
+                <div>
+                  <p className="text-[13px] font-medium">{t.open ? "Aperte ai giocatori" : "Chiuse ai giocatori"}</p>
+                  <p className="text-[12px] text-ink/50">
+                    {t.open ? "Indicano il mazzo da legapaupermilano.it/mazzo" : "Solo gli admin possono modificare"}
+                  </p>
+                </div>
               </div>
             </div>
           </section>

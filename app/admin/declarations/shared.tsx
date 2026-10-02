@@ -46,7 +46,12 @@ export type Player = Seat & { dropped: boolean };
 
 export type Table = { number: number; seats: Seat[] };
 
+/** How players find themselves on /mazzo: by their table's number, or by name. */
+export type FindBy = "table" | "name";
+
 export type View = {
+  /** Missing from an API that predates the choice, which went by table. */
+  find_by?: FindBy;
   tournament: { id: number; name: string; opened_at: string; closed_at: string | null; open: boolean } | null;
   round: { number: number; published: boolean; tables: Table[]; byes: Seat[] } | null;
   players: Player[];
@@ -173,7 +178,28 @@ export function useDeclarations() {
     return true;
   }
 
-  return { call, view, archetypes, error, busy, walk, setDeck, openTournament, closeDeclarations };
+  async function setFindBy(by: FindBy) {
+    setBusy(true);
+    const res = await call<{ find_by: FindBy }>("/api/admin/declarations/find-by", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ find_by: by }),
+    });
+    setBusy(false);
+    if (!res.ok) {
+      setError(res.error);
+      return false;
+    }
+    setView((v) => (v ? { ...v, find_by: res.data.find_by } : v));
+    notify(
+      by === "name"
+        ? "Su /mazzo i giocatori ora cercano il proprio nome."
+        : "Su /mazzo i giocatori ora inseriscono il numero del tavolo.",
+    );
+    return true;
+  }
+
+  return { call, view, archetypes, error, busy, walk, setDeck, openTournament, closeDeclarations, setFindBy };
 }
 
 /**
