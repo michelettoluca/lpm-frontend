@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { COUNTED_EVENTS, dateTile, getHomeData } from "@/app/lib/site";
-import { ArrowLink, ColHeads, Comune, MarkerCircle, MarkerUnderline, PixelStar, Section, plural, sameRomeDay, weekday } from "./ui";
+import { Emblem } from "@/app/lib/emblem";
+import { ArrowLink, ColHeads, MarkerCircle, MarkerUnderline, PixelStar, Section, plural, sameRomeDay, weekday } from "./ui";
 
 function Stat({ label, value, sub }: { label: string; value: ReactNode; sub?: ReactNode }) {
   return (
@@ -34,7 +35,8 @@ export default async function Home() {
           <h1 className="rg-display rg-tight max-w-[12ch] text-[46px] leading-[0.95] sm:text-[72px] lg:text-[112px]">
             lega pauper milano
           </h1>
-          <Comune pose="run" className="h-[76px] w-[76px] shrink-0 sm:h-[110px] sm:w-[110px] lg:h-[150px] lg:w-[150px]" />
+          {/* The league's emblem, as tall as the name beside it. */}
+          <Emblem className="h-[120px] w-auto shrink-0 text-[var(--rg-o)] sm:h-[136px] lg:h-[160px]" />
         </div>
         <p className="rg-muted mt-4 text-[16px] leading-relaxed lg:text-[18px]">
           Tornei di Magic: The Gathering in formato Pauper, ogni giovedì sera alla Casa dei Giochi. Solo carte
