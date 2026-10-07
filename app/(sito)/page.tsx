@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { COUNTED_EVENTS, dateTile, getHomeData } from "@/app/lib/site";
-import { Emblem } from "@/app/lib/emblem";
+import { Crown } from "@/app/lib/emblem";
 import { ArrowLink, ColHeads, MarkerCircle, MarkerUnderline, PixelStar, Section, plural, sameRomeDay, weekday } from "./ui";
 
 function Stat({ label, value, sub }: { label: string; value: ReactNode; sub?: ReactNode }) {
@@ -31,8 +31,8 @@ export default async function Home() {
       {/* ---------------- hero ---------------- */}
       {/* Its own layer, so the emblem can sit behind the text and still above the panel's paper. */}
       <section className="rg-panel relative isolate overflow-hidden">
-        {/* The league's emblem as a watermark, large on the right: its spires whole, running off the bottom. */}
-        <Emblem className="pointer-events-none absolute top-12 -right-[22%] -z-10 h-[150%] w-auto text-[var(--rg-o)] opacity-[0.07] sm:-right-[6%] lg:top-16 lg:right-0" />
+        {/* The emblem's crown as a watermark, large on the right, standing on the panel's bottom edge. */}
+        <Crown className="pointer-events-none absolute bottom-0 -right-[24%] -z-10 h-[72%] w-auto text-[var(--rg-o)] opacity-[0.07] sm:-right-[6%] sm:h-[88%] lg:right-0" />
         <p className="rg-eyebrow">{season ? `stagione ${season.name.toLowerCase()}` : "la lega del giovedì"}</p>
         <h1 className="rg-display rg-tight mt-4 max-w-[12ch] text-[46px] leading-[0.95] sm:text-[72px] lg:text-[112px]">
           lega pauper milano
