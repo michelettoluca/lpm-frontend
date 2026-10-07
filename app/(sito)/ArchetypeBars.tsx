@@ -1,3 +1,4 @@
+import { archetypeLabel } from "@/app/lib/decks";
 import { Mana } from "./ui";
 
 /** On phones the name takes its own line above the bar; from sm up it is the first column. */
@@ -33,7 +34,7 @@ export function ArchetypeBars({ rows, countLabel }: { rows: BarRow[]; countLabel
                 aria-hidden="true"
                 className="col-span-2 flex min-w-0 items-center gap-1.5 text-[15px] font-semibold sm:col-span-1"
               >
-                <span className={`truncate ${r.hot ? "text-[var(--rg-link)]" : ""}`}>{r.name}</span>
+                <span className={`truncate ${r.hot ? "text-[var(--rg-link)]" : ""}`}>{archetypeLabel(r.name)}</span>
                 <Mana colors={r.colors} size={14} />
               </span>
               <span aria-hidden="true" className="block h-2 min-w-0">

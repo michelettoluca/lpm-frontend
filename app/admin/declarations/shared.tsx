@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AdminError } from "@/app/lib/adminTypes";
 import { ArchetypePicker, ManaCost } from "@/app/components/ArchetypePicker";
-import { normalize, UNAVAILABLE, type Archetype } from "@/app/lib/decks";
+import { archetypeLabel, normalize, UNAVAILABLE, type Archetype } from "@/app/lib/decks";
 import { useAdmin } from "../AdminShell";
 import {
   Badge,
@@ -362,7 +362,7 @@ export function TableCard({
                 <span className="min-w-0 text-right sm:text-left">
                   <span className="flex flex-wrap items-center justify-end gap-1.5 text-[13px] font-medium sm:justify-start">
                     <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#22c55e]" aria-hidden />
-                    {d.archetype_name}
+                    {archetypeLabel(d.archetype_name)}
                     {archetype && <ManaCost archetype={archetype} small />}
                   </span>
                   <span className="mt-0.5 block text-[12px] text-ink/45">
@@ -485,7 +485,7 @@ export function DeckDialog({
           {draft ? (
             <div className="flex h-10 items-center justify-between gap-3 rounded-md border border-ink/15 bg-surface pr-1 pl-3">
               <span className="flex min-w-0 items-center gap-2 text-[13px] font-medium">
-                <span className="truncate">{draft.name}</span>
+                <span className="truncate">{archetypeLabel(draft.name)}</span>
                 <ManaCost archetype={draft} small />
               </span>
               <button type="button" className={BUTTON_DANGER} disabled={busy} onClick={() => setDraft(null)}>
@@ -544,7 +544,7 @@ export function PlayersTable({ players, onPick }: { players: Player[]; onPick: (
                   {p.username && <span className="block truncate text-[12px] text-ink/45">{p.username}</span>}
                 </span>
                 <span className={`max-w-[45vw] truncate text-right text-[13px] sm:max-w-none sm:text-left ${p.declaration ? "" : "text-ink/35"}`}>
-                  {p.declaration?.archetype_name ?? "—"}
+                  {p.declaration ? archetypeLabel(p.declaration.archetype_name) : "—"}
                 </span>
                 <span className="hidden text-[12px] text-ink/50 sm:block">
                   {p.declaration ? (p.declaration.source === "player" ? "Giocatore" : "Admin") : ""}

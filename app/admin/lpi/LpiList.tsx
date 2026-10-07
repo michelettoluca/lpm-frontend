@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AdminError } from "@/app/lib/adminTypes";
 import { ManaCost, useArchetypeSearch } from "@/app/components/ArchetypePicker";
-import { colorsOf, type Archetype } from "@/app/lib/decks";
+import { archetypeLabel, colorsOf, type Archetype } from "@/app/lib/decks";
 import { useAdmin } from "../AdminShell";
 import { ErrorPanel } from "../ErrorPanel";
 import {
@@ -75,7 +75,11 @@ export function LpiList() {
     setError(null);
     setSelected(null);
     setList((current) => current?.map((x) => (x.id === a.id ? { ...x, hidden: res.data.hidden } : x)) ?? null);
-    notify(res.data.hidden ? `${a.name} nascosto ai giocatori.` : `${a.name} di nuovo visibile ai giocatori.`);
+    notify(
+      res.data.hidden
+        ? `${archetypeLabel(a.name)} nascosto ai giocatori.`
+        : `${archetypeLabel(a.name)} di nuovo visibile ai giocatori.`,
+    );
   }
 
   const hidden = list?.filter((a) => a.hidden).length ?? 0;
@@ -126,7 +130,7 @@ export function LpiList() {
                   return (
                     <tr key={a.id} {...row} className={`${row.className} ${a.hidden ? "text-ink/40" : ""}`}>
                       <td className={`${TD} max-w-0 font-medium`}>
-                        <span className={`block truncate ${a.hidden ? "line-through" : ""}`}>{a.name}</span>
+                        <span className={`block truncate ${a.hidden ? "line-through" : ""}`}>{archetypeLabel(a.name)}</span>
                       </td>
                       <td className={`${TD} w-px whitespace-nowrap`}>
                         <span className={`flex justify-end ${a.hidden ? "opacity-40" : ""}`}>

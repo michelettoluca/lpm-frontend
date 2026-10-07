@@ -10,6 +10,7 @@ import {
   ROGUE,
   searchArchetypes,
   UNAVAILABLE,
+  archetypeLabel,
   type Archetype,
   type ManaColor,
 } from "../lib/decks";
@@ -207,7 +208,7 @@ export function ArchetypePicker({
                   a.id === selectedId ? "bg-tint text-accent" : ""
                 }`}
               >
-                <span className="min-w-0 truncate">{a.name}</span>
+                <span className="min-w-0 truncate">{archetypeLabel(a.name)}</span>
                 <ManaCost archetype={a} small={admin} />
               </button>
             </li>
@@ -235,7 +236,7 @@ export function ArchetypePicker({
                   onClick={() => onPick(a)}
                   className="inline-flex h-9 items-center rounded-lg border border-ink/12 bg-surface px-3.5 text-[13px] font-bold hover:bg-ink/[0.03]"
                 >
-                  {a.name}
+                  {archetypeLabel(a.name)}
                 </button>
               ),
           )}
@@ -267,5 +268,5 @@ export function ArchetypePicker({
 
 /** How a declared archetype reads to a player: Rogue says what it means. */
 export function deckLabel(name: string): string {
-  return name === ROGUE ? "Mazzo fuori lista (Rogue)" : name;
+  return name === ROGUE ? "Mazzo fuori lista (Rogue)" : archetypeLabel(name);
 }

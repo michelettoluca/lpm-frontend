@@ -20,6 +20,15 @@ export const ROGUE = "Rogue";
 /** Lega Pauper Italia's marker for a player whose deck is unknown. Admin only. */
 export const UNAVAILABLE = "Non Disponibile";
 
+/**
+ * An archetype's name as we show it: Lega Pauper Italia's "Non Disponibile"
+ * is "Sconosciuto" to us. The data keeps their name, which the backend and
+ * the export for them rely on.
+ */
+export function archetypeLabel(name: string): string {
+  return name === UNAVAILABLE ? "Sconosciuto" : name;
+}
+
 export const COLOR_NAMES: Record<ManaColor, string> = {
   W: "Bianco",
   U: "Blu",
@@ -130,7 +139,7 @@ type Indexed = { archetype: Archetype; words: string[]; colors: ManaColor[] };
 export function indexArchetypes(list: Archetype[]): Indexed[] {
   return list.map((archetype) => {
     const colors = colorsOf(archetype);
-    const words = normalize(archetype.name).split(" ");
+    const words = normalize(archetypeLabel(archetype.name)).split(" ");
     for (const c of colors) words.push(...COLOR_SEARCH[c]);
     if (colors.length === 1) words.push("mono");
     return { archetype, words, colors };

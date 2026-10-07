@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { AdminError } from "@/app/lib/adminTypes";
 import { ManaCost } from "@/app/components/ArchetypePicker";
-import { UNAVAILABLE, type Archetype } from "@/app/lib/decks";
+import { archetypeLabel, UNAVAILABLE, type Archetype } from "@/app/lib/decks";
 import { useAdmin } from "../../AdminShell";
 import { ErrorPanel } from "../../ErrorPanel";
 import { DeckDialog } from "../../declarations/shared";
@@ -100,7 +100,7 @@ export function EventDecks({ eventId, eventName }: { eventId: number; eventName:
     setBusy(false);
     if (!res.ok) return setError(res.error);
     setEditing(null);
-    notify(archetype ? `${row.player_name}: ${archetype.name}.` : `Mazzo di ${row.player_name} rimosso.`);
+    notify(archetype ? `${row.player_name}: ${archetypeLabel(archetype.name)}.` : `Mazzo di ${row.player_name} rimosso.`);
     await load();
   }
 
@@ -167,7 +167,7 @@ export function EventDecks({ eventId, eventName }: { eventId: number; eventName:
                     <td className={`${TD} py-1.5`}>
                       {r.deck ? (
                         <span className="flex min-w-0 items-center gap-1.5">
-                          <span className="truncate">{r.deck.archetype_name}</span>
+                          <span className="truncate">{archetypeLabel(r.deck.archetype_name)}</span>
                           {archetype && <ManaCost archetype={archetype} small />}
                           {r.deck.source === "admin" && <Badge>a mano</Badge>}
                         </span>
@@ -175,7 +175,7 @@ export function EventDecks({ eventId, eventName }: { eventId: number; eventName:
                         <span className="text-ink/35">—</span>
                       )}
                       {differs && (
-                        <span className="block truncate text-[12px] text-ink/45">indicato: {r.collected!.archetype_name}</span>
+                        <span className="block truncate text-[12px] text-ink/45">indicato: {archetypeLabel(r.collected!.archetype_name)}</span>
                       )}
                     </td>
                   </tr>
@@ -215,7 +215,7 @@ export function EventDecks({ eventId, eventName }: { eventId: number; eventName:
                 <span className="truncate">
                   {u.player_name} {u.username && <span className="text-ink/45">· {u.username}</span>}
                 </span>
-                <span className="shrink-0 text-ink/60">{u.archetype_name}</span>
+                <span className="shrink-0 text-ink/60">{archetypeLabel(u.archetype_name)}</span>
               </li>
             ))}
           </ul>
@@ -227,7 +227,7 @@ export function EventDecks({ eventId, eventName }: { eventId: number; eventName:
           title={editing.player_name}
           description={
             editing.collected
-              ? `Indicato durante la serata: ${editing.collected.archetype_name}`
+              ? `Indicato durante la serata: ${archetypeLabel(editing.collected.archetype_name)}`
               : "Nessun mazzo indicato durante la serata"
           }
           current={editing.deck}

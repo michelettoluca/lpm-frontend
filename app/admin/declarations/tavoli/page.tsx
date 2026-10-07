@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ManaCost } from "@/app/components/ArchetypePicker";
-import type { Archetype } from "@/app/lib/decks";
+import { archetypeLabel, type Archetype } from "@/app/lib/decks";
 import { ErrorPanel } from "../../ErrorPanel";
 import { BUTTON, BUTTON_PRIMARY, EmptyState } from "../../dashboardUi";
 import {
@@ -158,7 +158,7 @@ function SeatBox({ seat, archetypes, onPick }: { seat: Seat; archetypes: Archety
         <span className="min-w-0">
           <span className="flex flex-wrap items-center gap-2 text-[17px] font-medium">
             <span className="h-2 w-2 shrink-0 rounded-full bg-[#22c55e]" aria-hidden />
-            {d.archetype_name}
+            {archetypeLabel(d.archetype_name)}
             {archetype && <ManaCost archetype={archetype} />}
           </span>
           <span className="mt-1 block text-[13px] text-ink/45">
