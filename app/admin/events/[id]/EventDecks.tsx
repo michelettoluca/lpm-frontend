@@ -23,7 +23,7 @@ import {
   usePage,
 } from "../../dashboardUi";
 
-type Deck = { archetype_id: number; archetype_name: string; source?: "declaration" | "admin" };
+type Deck = { archetype_id: number; archetype_name: string; source?: "declaration" | "admin" | "lpi" };
 
 type Row = {
   rank: number;
@@ -170,6 +170,7 @@ export function EventDecks({ eventId, eventName }: { eventId: number; eventName:
                           <span className="truncate">{archetypeLabel(r.deck.archetype_name)}</span>
                           {archetype && <ManaCost archetype={archetype} small />}
                           {r.deck.source === "admin" && <Badge>a mano</Badge>}
+                          {r.deck.source === "lpi" && <Badge>LPI</Badge>}
                         </span>
                       ) : (
                         <span className="text-ink/35">—</span>
