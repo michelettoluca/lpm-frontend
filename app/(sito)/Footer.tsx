@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { RULES } from "@/app/lib/rules";
+import { ThemeToggle } from "./ThemeToggle";
 import { Comune } from "./ui";
 
 /**
@@ -35,6 +36,9 @@ export function Footer() {
           </p>
         </div>
         <Comune pose="wave" className="-mt-4 h-[96px] w-[96px] justify-self-end lg:mt-0 lg:h-[132px] lg:w-[132px]" />
+      </div>
+      <div className="mt-2 flex justify-end">
+        <ThemeToggle />
       </div>
     </footer>
   );

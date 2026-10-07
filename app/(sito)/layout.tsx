@@ -1,6 +1,7 @@
 import { Fraunces, Instrument_Sans } from "next/font/google";
 import { HomeLink, Nav } from "./Nav";
 import { Footer } from "./Footer";
+import { FontSwitch } from "./FontSwitch";
 import { WobbleDefs } from "./ui";
 import "./sito.css";
 
@@ -37,6 +38,8 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       </main>
 
       <Footer />
+      {/* Inlined at build time: production drops the switch and its code. */}
+      {process.env.NODE_ENV === "development" && <FontSwitch />}
     </div>
   );
 }

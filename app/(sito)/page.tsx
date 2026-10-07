@@ -32,7 +32,7 @@ export default async function Home() {
       {/* Its own layer, so the emblem can sit behind the text and still above the panel's paper. */}
       <section className="rg-panel relative isolate overflow-hidden">
         {/* The emblem's crown as a watermark, large on the right, standing on the panel's bottom edge. */}
-        <Crown className="pointer-events-none absolute bottom-0 -right-[24%] -z-10 h-[72%] w-auto text-[var(--rg-ink)] opacity-[0.05] sm:-right-[6%] sm:h-[88%] lg:right-0" />
+        <Crown className="pointer-events-none absolute bottom-0 -right-[24%] -z-10 rg-watermark h-[72%] w-auto sm:-right-[6%] sm:h-[88%] lg:right-0" />
         <p className="rg-eyebrow">{season ? `stagione ${season.name.toLowerCase()}` : "la lega del giovedì"}</p>
         <h1 className="rg-display rg-tight mt-4 max-w-[12ch] text-[46px] leading-[0.95] sm:text-[72px] lg:text-[112px]">
           lega pauper milano

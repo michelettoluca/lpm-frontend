@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Archivo } from "next/font/google";
 import { getActiveSeason } from "./lib/api";
+import { THEME_SCRIPT } from "./lib/theme";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -68,7 +69,11 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="it" className={`${archivo.variable} h-full antialiased`}>
+    // The inline script may set data-theme before React hydrates.
+    <html lang="it" suppressHydrationWarning className={`${archivo.variable} h-full antialiased`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="flex min-h-full flex-col font-sans">
         <script
           type="application/ld+json"
