@@ -1,39 +1,31 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { ImageResponse } from "next/og";
+import { CROWN_PATH, CROWN_VIEWBOX } from "./emblem";
 
-/* The header wordmark: Fraunces 500 with soft corners, white on the LPM red.
-   The font file is a static instance (SOFT 100, WONK 0, opsz 144) cut down to
-   L, P and M, since the icon renderer can't read variable fonts. */
+/* The header's badge: the emblem's crown, white on the LPM red. Here the
+   crown fills more of the square than in the header, to read at 16px. */
 const RED = "#fa1e32";
+const [, , W, H] = CROWN_VIEWBOX.split(" ").map(Number);
 
-export async function brandMark(px: number, opts: { radius: number }) {
-  const font = await readFile(join(process.cwd(), "app/fraunces-lpm.woff"));
+export function brandMark(px: number, opts: { radius: number }) {
+  const height = Math.round(px * 0.62);
+  const width = Math.round((height * W) / H);
   return new ImageResponse(
-    (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: RED,
-          borderRadius: opts.radius,
-          color: "#fff",
-          fontFamily: "Fraunces",
-          fontSize: Math.round(px * 0.46),
-          letterSpacing: "-0.025em",
-          lineHeight: 1,
-        }}
-      >
-        LPM
-      </div>
-    ),
-    {
-      width: px,
-      height: px,
-      fonts: [{ name: "Fraunces", data: font, weight: 500, style: "normal" }],
-    },
+    <div
+      style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: RED,
+        borderRadius: opts.radius,
+      }}
+    >
+      {/* Lifted a touch: the spires are thin, the base is heavy. */}
+      <svg width={width} height={height} viewBox={CROWN_VIEWBOX} style={{ marginBottom: Math.round(px * 0.04) }}>
+        <path fill="#fff" fillRule="evenodd" d={CROWN_PATH} />
+      </svg>
+    </div>,
+    { width: px, height: px },
   );
 }

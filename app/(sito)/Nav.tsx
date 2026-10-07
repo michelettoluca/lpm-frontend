@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Crown } from "@/app/lib/emblem";
+import { CrownBadge } from "@/app/lib/emblem";
 import { MarkerUnderline } from "./ui";
 
 const LINKS = [
@@ -12,7 +12,7 @@ const LINKS = [
   { href: "/regole", label: "regole" },
 ];
 
-/** The emblem's crown in the league's red and the LPM wordmark, underlined like a nav link while you are on the home page. */
+/** The crown's badge and the LPM wordmark, underlined like a nav link while you are on the home page. */
 export function HomeLink() {
   const home = usePathname() === "/";
   return (
@@ -20,15 +20,12 @@ export function HomeLink() {
       href="/"
       aria-label="LPM, Lega Pauper Milano: home"
       aria-current={home ? "page" : undefined}
-      className="rg-display rg-strong relative flex min-h-11 items-center px-2.5 text-[24px] leading-none lg:px-0 lg:text-[26px]"
+      className="rg-display rg-strong relative flex min-h-11 items-center gap-2.5 px-2.5 text-[24px] leading-none lg:px-0 lg:text-[26px]"
     >
-      {/* The crown stands on the wordmark's baseline. */}
-      <span className="flex items-baseline gap-2 lg:gap-2.5">
-        <Crown className="h-[1.25em] w-auto text-[var(--rg-o)]" />
-        LPM
-      </span>
+      <CrownBadge className="h-[1.45em] w-[1.45em] rounded-[10px]" />
+      LPM
       {/* Under the wordmark alone, from the right: "LPM" is about 2.2em wide. */}
-      <MarkerUnderline className="right-1.5 top-[calc(50%+0.75em)] h-[8px] w-[calc(2.2em+8px)] lg:-right-1" />
+      <MarkerUnderline className="right-1.5 top-[calc(50%+0.55em)] h-[8px] w-[calc(2.2em+8px)] lg:-right-1" />
     </Link>
   );
 }

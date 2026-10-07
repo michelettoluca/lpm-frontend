@@ -29,3 +29,11 @@ export const Emblem = ({ className }: { className?: string }) => (
 export const Crown = ({ className }: { className?: string }) => (
   <Mark viewBox={CROWN_VIEWBOX} d={CROWN_PATH} className={className} />
 );
+
+/** The crown, white in a rounded square of the league's red: the header's mark and the site's icon. */
+export const CrownBadge = ({ className = "" }: { className?: string }) => (
+  <span aria-hidden="true" className={`flex items-center justify-center bg-[var(--rg-o)] ${className}`}>
+    {/* Lifted a touch: the spires are thin, the base is heavy. */}
+    <Crown className="mb-[8%] h-[62%] w-auto text-white" />
+  </span>
+);
