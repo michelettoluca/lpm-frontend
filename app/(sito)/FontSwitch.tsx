@@ -5,7 +5,7 @@ import { useEffect, useSyncExternalStore } from "react";
 /**
  * Development only: tries other fonts on the live site, one picker for the
  * display font (headings and big numbers, Fraunces) and one for the text
- * (Instrument Sans). The layout renders it only under `next dev`, so
+ * (Figtree). The layout renders it only under `next dev`, so
  * production never ships it; the alternatives load from Google Fonts on first
  * pick.
  */
@@ -98,13 +98,18 @@ const DISPLAY: Font[] = [
 ];
 
 const TEXT: Font[] = [
-  { id: "instrument", label: "Instrument Sans (attuale)" },
+  { id: "figtree", label: "Figtree (attuale)" },
+  {
+    id: "instrument",
+    label: "Instrument Sans",
+    family: '"Instrument Sans"',
+    href: google("Instrument+Sans:wght@400..700"),
+  },
   // Already loaded, for the admin.
   { id: "archivo", label: "Archivo", family: "var(--font-archivo)" },
   { id: "inter", label: "Inter", family: '"Inter"', href: google("Inter:opsz,wght@14..32,300..700") },
   { id: "geist", label: "Geist", family: '"Geist"', href: google("Geist:wght@300..700") },
   { id: "dm", label: "DM Sans", family: '"DM Sans"', href: google("DM+Sans:opsz,wght@9..40,300..700") },
-  { id: "figtree", label: "Figtree", family: '"Figtree"', href: google("Figtree:wght@300..800") },
   { id: "manrope", label: "Manrope", family: '"Manrope"', href: google("Manrope:wght@300..800") },
   { id: "onest", label: "Onest", family: '"Onest"', href: google("Onest:wght@300..700") },
   { id: "public", label: "Public Sans", family: '"Public Sans"', href: google("Public+Sans:wght@300..700") },

@@ -1,4 +1,4 @@
-import { Fraunces, Instrument_Sans } from "next/font/google";
+import { Figtree, Fraunces } from "next/font/google";
 import { HomeLink, Nav } from "./Nav";
 import { Footer } from "./Footer";
 import { FontSwitch } from "./FontSwitch";
@@ -13,7 +13,8 @@ const display = Fraunces({
   display: "swap",
 });
 
-const text = Instrument_Sans({
+/* Figtree for the text: friendly and modern, easy to read small. */
+const text = Figtree({
   variable: "--font-rg-text",
   subsets: ["latin"],
   display: "swap",
