@@ -29,15 +29,14 @@ export default async function Home() {
   return (
     <div className="rg-stack">
       {/* ---------------- hero ---------------- */}
-      <section className="rg-panel">
+      {/* Its own layer, so the emblem can sit behind the text and still above the panel's paper. */}
+      <section className="rg-panel relative isolate overflow-hidden">
+        {/* The league's emblem as a watermark, large on the right and running off the panel's edges. */}
+        <Emblem className="pointer-events-none absolute -top-[12%] -right-[14%] -z-10 h-[124%] w-auto text-[var(--rg-o)] opacity-[0.07] sm:-right-[4%] lg:right-[2%]" />
         <p className="rg-eyebrow">{season ? `stagione ${season.name.toLowerCase()}` : "la lega del giovedì"}</p>
-        <div className="mt-4 flex items-end justify-between gap-4">
-          <h1 className="rg-display rg-tight max-w-[12ch] text-[46px] leading-[0.95] sm:text-[72px] lg:text-[112px]">
-            lega pauper milano
-          </h1>
-          {/* The league's emblem, as tall as the name beside it. */}
-          <Emblem className="h-[120px] w-auto shrink-0 text-[var(--rg-o)] sm:h-[136px] lg:h-[160px]" />
-        </div>
+        <h1 className="rg-display rg-tight mt-4 max-w-[12ch] text-[46px] leading-[0.95] sm:text-[72px] lg:text-[112px]">
+          lega pauper milano
+        </h1>
         <p className="rg-muted mt-4 text-[16px] leading-relaxed lg:text-[18px]">
           Tornei di Magic: The Gathering in formato Pauper, ogni giovedì sera alla Casa dei Giochi. Solo carte
           comuni, giocatori un po&apos; meno.
