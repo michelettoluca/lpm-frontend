@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { Emblem } from "@/app/lib/emblem";
 import { MarkerUnderline } from "./ui";
 
 const LINKS = [
@@ -11,7 +12,7 @@ const LINKS = [
   { href: "/regole", label: "regole" },
 ];
 
-/** The LPM wordmark, underlined like a nav link while you are on the home page. */
+/** The emblem in the league's red and the LPM wordmark, underlined like a nav link while you are on the home page. */
 export function HomeLink() {
   const home = usePathname() === "/";
   return (
@@ -19,10 +20,12 @@ export function HomeLink() {
       href="/"
       aria-label="LPM, Lega Pauper Milano: home"
       aria-current={home ? "page" : undefined}
-      className="rg-display rg-strong relative flex min-h-11 items-center px-2.5 text-[24px] leading-none lg:px-0 lg:text-[26px]"
+      className="rg-display rg-strong relative flex min-h-11 items-center gap-2 px-2.5 text-[24px] leading-none lg:gap-2.5 lg:px-0 lg:text-[26px]"
     >
+      <Emblem className="h-[36px] w-auto text-[var(--rg-o)] lg:h-[46px]" />
       LPM
-      <MarkerUnderline className="left-1.5 top-[calc(50%+0.55em)] h-[8px] w-[calc(100%-12px)] lg:-left-1 lg:w-[calc(100%+8px)]" />
+      {/* Under the wordmark alone, from the right: "LPM" is about 2.2em wide. */}
+      <MarkerUnderline className="right-1.5 top-[calc(50%+0.55em)] h-[8px] w-[calc(2.2em+8px)] lg:-right-1" />
     </Link>
   );
 }
