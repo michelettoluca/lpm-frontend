@@ -31,8 +31,8 @@ export default async function Home() {
       {/* ---------------- hero ---------------- */}
       {/* Its own layer, so the emblem can sit behind the text and still above the panel's paper. */}
       <section className="rg-panel relative isolate overflow-hidden">
-        {/* The league's emblem as a watermark, large on the right and running off the panel's edges. */}
-        <Emblem className="pointer-events-none absolute -top-[12%] -right-[14%] -z-10 h-[124%] w-auto text-[var(--rg-o)] opacity-[0.07] sm:-right-[4%] lg:right-[2%]" />
+        {/* The league's emblem as a watermark, large on the right: its spires whole, running off the bottom. */}
+        <Emblem className="pointer-events-none absolute top-6 -right-[14%] -z-10 h-[124%] w-auto text-[var(--rg-o)] opacity-[0.07] sm:-right-[4%] lg:top-10 lg:right-[2%]" />
         <p className="rg-eyebrow">{season ? `stagione ${season.name.toLowerCase()}` : "la lega del giovedì"}</p>
         <h1 className="rg-display rg-tight mt-4 max-w-[12ch] text-[46px] leading-[0.95] sm:text-[72px] lg:text-[112px]">
           lega pauper milano
