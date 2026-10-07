@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import { notFound } from "next/navigation";
 import { PRIZE_POINTS, getEventData, type Standing } from "@/app/lib/site";
 import { ArrowLink, ColHeads, Comune, Head, PixelStar, Section, plural, sameRomeDay, weekday } from "../../ui";
+import { Metagame } from "./Metagame";
 
 export async function generateMetadata(props: PageProps<"/events/[id]">) {
   const { id } = await props.params;
@@ -170,6 +171,8 @@ export default async function EventPage(props: PageProps<"/events/[id]">) {
           </ol>
         </Section>
       )}
+
+      {e.hasResults && e.metagame && <Metagame data={e.metagame} />}
 
       {rounds.length > 0 && (
         <section className="rg-panel">

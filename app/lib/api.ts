@@ -107,6 +107,32 @@ export type Pairing = {
   record_b: string;
 };
 
+/** One archetype at one tappa: how many brought it and how it did. */
+export type MetagameArchetype = {
+  archetype_id: number;
+  name: string;
+  /** WUBRG letters; may be empty. */
+  colors: string[];
+  players: number;
+  points: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  byes: number;
+  best_rank: number;
+  /** The most points one of its players made. */
+  best_points: number;
+};
+
+/** The decks declared at an imported tappa, by archetype, most played first. Names no players. */
+export type Metagame = {
+  /** Everyone in the standings. */
+  players: number;
+  /** Players whose deck is known. */
+  declared: number;
+  archetypes: MetagameArchetype[];
+};
+
 async function get<T>(path: string): Promise<T | null> {
   const res = await fetch(`${BASE}${path}`, { next: { revalidate: 60, tags: [PUBLIC_DATA_TAG] } });
   if (res.status === 404) return null;
@@ -150,6 +176,19 @@ export async function getPairings(id: string | number): Promise<Pairing[]> {
       typeof (p as Pairing).table === "number" &&
       typeof (p as Pairing).player_a_name === "string",
   );
+}
+
+/**
+ * The tappa's decks by archetype. Null when there are none, or when the
+ * backend does not serve them: the page goes on without the section.
+ */
+export async function getEventMetagame(id: string | number): Promise<Metagame | null> {
+  try {
+    const data = await get<Metagame>(`/events/${id}/archetypes`);
+    return data && Array.isArray(data.archetypes) ? data : null;
+  } catch {
+    return null;
+  }
 }
 
 export function getPlayer(id: string | number): Promise<Player | null> {

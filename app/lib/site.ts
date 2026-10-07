@@ -5,6 +5,7 @@
 import {
   getActiveSeason,
   getEvent,
+  getEventMetagame,
   getEvents,
   getHeadToHead,
   getLeaderboard,
@@ -14,6 +15,8 @@ import {
   type EventSummary,
   type H2HOpponent,
   type LeaderboardEntry,
+  type Metagame,
+  type MetagameArchetype,
   type Pairing,
   type PlayerEventEntry,
   type Season,
@@ -32,7 +35,7 @@ import {
   winPct,
 } from "./format";
 
-export type { EventSummary, LeaderboardEntry, Pairing, PlayerEventEntry, Season, Standing };
+export type { EventSummary, LeaderboardEntry, Metagame, MetagameArchetype, Pairing, PlayerEventEntry, Season, Standing };
 export { dateTile, formatDateMeta, splitName, tappaNumber, tappaSubtitle, tappaTitle, winPct };
 
 /** A tappa result of 9 points or more (3 wins) earns the star. */
@@ -220,10 +223,12 @@ export type EventData = {
   /** Swiss pairings per round. The public API does not serve them yet, so this is usually empty. */
   pairings: Pairing[];
   rounds: number;
+  /** Decks declared, by archetype; null when nobody's deck is known. */
+  metagame: Metagame | null;
 };
 
 export async function getEventData(id: string): Promise<EventData | null> {
-  const [data, pairings] = await Promise.all([getEvent(id), getPairings(id)]);
+  const [data, pairings, metagame] = await Promise.all([getEvent(id), getPairings(id), getEventMetagame(id)]);
   if (!data) return null;
   const { event, standings } = data;
   const roundsPlayed = standings.reduce((max, s) => Math.max(max, s.wins + s.losses + s.draws + s.byes), 0);
@@ -238,6 +243,7 @@ export async function getEventData(id: string): Promise<EventData | null> {
     standings: standings.map((s) => ({ ...s, prize: s.points >= PRIZE_POINTS })),
     pairings,
     rounds: Math.max(roundsPlayed, pairings.reduce((max, p) => Math.max(max, p.round), 0)),
+    metagame: metagame && metagame.declared > 0 ? metagame : null,
   };
 }
 
