@@ -1,4 +1,4 @@
-/* The public site: white panels on fog grey, warm ink for the facts, the LPM red
+/* The public site: white panels on cool grey, slate ink for the facts, the LPM red
    for what you can do and who is winning. Every rule is scoped to .lpm.
 
    Dark like the visitor's system, unless they pick a theme with the switch in
@@ -15,21 +15,21 @@
 }
 
 body:has(.lpm) {
-  background: light-dark(#efefef, #0b0e13);
-  color: light-dark(#1c1b1a, #e8ecf2);
+  background: light-dark(#eef1f5, #0b0e13);
+  color: light-dark(#141a24, #e8ecf2);
 }
 body:has(.lpm)::before {
   display: none;
 }
 
 .lpm {
-  /* Fog behind everything; panels sit on it. */
-  --rg-fog: light-dark(#efefef, #0b0e13);
+  /* Fog behind everything, a cool grey; panels sit on it. */
+  --rg-fog: light-dark(#eef1f5, #0b0e13);
   --rg-paper: light-dark(#ffffff, #141922);
-  /* Ink for text and data, the live site's (17:1 on white; 15:1 on the dark panels). */
-  --rg-ink: light-dark(#1c1b1a, #e8ecf2);
-  /* Warm grey for secondary text: 6.0:1 on white, 5.2:1 on fog; 7.0:1 on the dark panels. */
-  --rg-mute: light-dark(#6b625a, #9aa4b2);
+  /* Ink for text and data, a deep slate (17:1 on white; 15:1 on the dark panels). */
+  --rg-ink: light-dark(#141a24, #e8ecf2);
+  /* Slate grey for secondary text: 6.4:1 on white, 5.6:1 on fog; 7.0:1 on the dark panels. */
+  --rg-mute: light-dark(#556072, #9aa4b2);
   /* The LPM red: fills, buttons, the mascot, the leader and big type. The
      other reds derive from it. */
   --rg-o: #fa1e32;
@@ -40,17 +40,17 @@ body:has(.lpm)::before {
   --rg-act: var(--rg-o);
   --rg-act-hover: color-mix(in srgb, var(--rg-o) 86%, #000);
   /* Dividers and quiet surfaces. */
-  --rg-line: light-dark(#e6e2dd, #242b36);
-  --rg-line-strong: light-dark(#cfc9c2, #364050);
-  --rg-soft: light-dark(#f5f3f0, #1b212b);
-  --rg-soft-2: light-dark(#ebe7e2, #232b37);
+  --rg-line: light-dark(#e3e7ed, #242b36);
+  --rg-line-strong: light-dark(#c9d0da, #364050);
+  --rg-soft: light-dark(#f4f6f9, #1b212b);
+  --rg-soft-2: light-dark(#e8ecf1, #232b37);
   /* Text on an ink fill, and that fill on hover. */
   --rg-on-ink: light-dark(#fff, #0b0e13);
   --rg-ink-hover: light-dark(#000, #fff);
   /* The closing panel: on dark it sits a step above the others instead of below. */
-  --rg-dark: light-dark(#1c1b1a, #1e2633);
-  --rg-on-dark: light-dark(#f6f2ec, #e8ecf2);
-  --rg-on-dark-mute: light-dark(#b8afa6, #9aa4b2);
+  --rg-dark: light-dark(#141a24, #1e2633);
+  --rg-on-dark: light-dark(#eef2f7, #e8ecf2);
+  --rg-on-dark-mute: light-dark(#a3adbb, #9aa4b2);
   /* A faint light-to-shade wash over solid fills. It only darkens where text
      sits, so white on red keeps its contrast. */
   --rg-sheen: linear-gradient(160deg, rgb(255 255 255 / 0.08) 0%, rgb(255 255 255 / 0) 42%, rgb(0 0 0 / 0.1) 100%);
@@ -60,7 +60,7 @@ body:has(.lpm)::before {
     rgb(255 255 255 / 0) 75%
   );
   /* Dividers drawn by hand, barely: a 160px wavy stroke, tiled. */
-  --rg-line-hand: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='4'%3E%3Cpath d='M0 2 C20 1.3 42 2.7 66 2 C90 1.4 112 2.6 136 1.9 C148 1.6 156 1.9 160 2' fill='none' stroke='%23e6e2dd' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");
+  --rg-line-hand: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='4'%3E%3Cpath d='M0 2 C20 1.3 42 2.7 66 2 C90 1.4 112 2.6 136 1.9 C148 1.6 156 1.9 160 2' fill='none' stroke='%23e3e7ed' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");
   /* Link underlines, the same hand a little bolder: soft at rest, full on
      hover, in the links' red (the --rg-ul-o strokes below). */
   --rg-ul-link: var(--rg-ul-o);
@@ -69,7 +69,7 @@ body:has(.lpm)::before {
   --rg-ul-o-hover: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='6'%3E%3Cpath d='M0 3 C12 2.1 23 3.9 37 3 C50 2.2 61 3.8 72 3' fill='none' stroke='%23fa1e32' stroke-opacity='1' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E");
   --rg-ul-white: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='6'%3E%3Cpath d='M0 3 C12 2.1 23 3.9 37 3 C50 2.2 61 3.8 72 3' fill='none' stroke='%23ffffff' stroke-opacity='1' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E");
   --rg-rule-o-hand: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='6'%3E%3Cpath d='M0 3 C20 2.1 42 3.9 66 3 C90 2.2 112 3.8 136 2.9 C148 2.6 156 2.9 160 3' fill='none' stroke='%23fa1e32' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
-  --rg-line-strong-hand: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='4'%3E%3Cpath d='M0 2 C20 1.3 42 2.7 66 2 C90 1.4 112 2.6 136 1.9 C148 1.6 156 1.9 160 2' fill='none' stroke='%23cfc9c2' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");
+  --rg-line-strong-hand: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='4'%3E%3Cpath d='M0 2 C20 1.3 42 2.7 66 2 C90 1.4 112 2.6 136 1.9 C148 1.6 156 1.9 160 2' fill='none' stroke='%23c9d0da' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");
 
   /* A column as tall as the screen, so a page can stretch to the bottom. */
   display: flex;
@@ -794,7 +794,7 @@ body:has(.lpm)::before {
 .lpm .rg-mx {
   --mx-good: #1f9d55;
   --mx-bad: #e34948;
-  --mx-even: light-dark(#f0efec, #232b37);
+  --mx-even: light-dark(#eef1f5, #232b37);
 }
 /* Every cell: its row at least this tall, room for a two-line name and its colours. */
 .lpm .rg-mx td {
@@ -953,10 +953,10 @@ body:has(.lpm)::before {
   display: none;
 }
 
-/* The home page's watermark: a solid step off the panel, a neutral grey on
-   light and a slate on dark, never a see-through ink that dulls the hue. */
+/* The home page's watermark: a solid step off the panel, a pale slate on
+   light and a deep one on dark, never a see-through ink that dulls the hue. */
 .lpm .rg-watermark {
-  color: light-dark(#f2f2f2, #1c2330);
+  color: light-dark(#f1f3f6, #1c2330);
 }
 
 /* The development font picker, floating over the page. */
