@@ -20,12 +20,15 @@ export function HomeLink() {
       href="/"
       aria-label="LPM, Lega Pauper Milano: home"
       aria-current={home ? "page" : undefined}
-      className="rg-display rg-strong relative flex min-h-11 items-center gap-2 px-2.5 text-[24px] leading-none lg:gap-2.5 lg:px-0 lg:text-[26px]"
+      className="rg-display rg-strong relative flex min-h-11 items-center px-2.5 text-[24px] leading-none lg:px-0 lg:text-[26px]"
     >
-      <Crown className="h-[30px] w-auto text-[var(--rg-o)] lg:h-[36px]" />
-      LPM
+      {/* The crown stands on the wordmark's baseline. */}
+      <span className="flex items-baseline gap-2 lg:gap-2.5">
+        <Crown className="h-[1.25em] w-auto text-[var(--rg-o)]" />
+        LPM
+      </span>
       {/* Under the wordmark alone, from the right: "LPM" is about 2.2em wide. */}
-      <MarkerUnderline className="right-1.5 top-[calc(50%+0.55em)] h-[8px] w-[calc(2.2em+8px)] lg:-right-1" />
+      <MarkerUnderline className="right-1.5 top-[calc(50%+0.75em)] h-[8px] w-[calc(2.2em+8px)] lg:-right-1" />
     </Link>
   );
 }
