@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useDeferredValue, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import type { LeaderboardTappa, TappaResult } from "@/app/lib/site";
-import { UNDEFEATED_POINTS } from "@/app/lib/potential";
 import { Comune, MarkerCircle } from "../ui";
 
 type Row = {
@@ -13,8 +12,8 @@ type Row = {
   points: number;
   played: number;
   results: (TappaResult | null)[];
-  /** Points still within reach by going undefeated at every tappa left. */
-  potential: number;
+  /** Indexes into results: the tappe whose result the tappe left can still improve. */
+  improvable: number[];
 };
 
 const TOP = 8;
@@ -31,23 +30,20 @@ const norm = (s: string) =>
 
 const VIEWS = [
   { id: "base", label: "base" },
-  { id: "tappe", label: "tappe" },
-  { id: "potenziale", label: "potenziale" },
+  { id: "avanzata", label: "avanzata" },
 ] as const;
 type View = (typeof VIEWS)[number]["id"];
 const isView = (v: unknown): v is View => VIEWS.some((x) => x.id === v);
 
 /**
  * One grid per layout, so positions, totals and the extra columns line up on
- * every row. In "tappe" the player stays pinned on the left while the tappe
+ * every row. In "avanzata" the player stays pinned on the left while the tappe
  * scroll under it; --n is the number of tappa columns.
  */
 const COLS: Record<View, string> = {
   base: "grid-cols-[minmax(0,1fr)_2.6rem_2.8rem] gap-x-2 sm:grid-cols-[minmax(0,1fr)_4rem_4rem]",
-  tappe:
+  avanzata:
     "grid-cols-[minmax(9rem,1fr)_2.6rem_2.8rem_repeat(var(--n),2.4rem)] gap-x-2 sm:grid-cols-[minmax(14rem,1fr)_4rem_4rem_repeat(var(--n),2.8rem)]",
-  // On a phone the tappe count gives way to the potential (the base view has it).
-  potenziale: "grid-cols-[minmax(0,1fr)_2.8rem_3.6rem] gap-x-2 sm:grid-cols-[minmax(0,1fr)_4rem_4rem_5rem]",
 };
 /** Pinned cell: opaque, so the scrolled columns pass under it. */
 const STICK = "rg-stick sticky left-0 z-[1] flex min-w-0 items-center self-stretch";
@@ -92,19 +88,26 @@ function useView(): View {
 
 type Layout = { view: View; tappe: LeaderboardTappa[] };
 
-function ViewSwitch({ view, counted, remaining }: { view: View; counted: number | null; remaining: number }) {
+function ViewSwitch({
+  view,
+  counted,
+  remaining,
+  improving,
+}: {
+  view: View;
+  counted: number | null;
+  remaining: number;
+  /** Whether any result is marked as still to improve. */
+  improving: boolean;
+}) {
+  const left = remaining === 1 ? "nell'ultima tappa" : `nelle ${remaining} tappe che mancano`;
   const caption: Record<View, string> = {
     base: "Posizione, tappe giocate e punti.",
-    tappe:
-      counted === null
-        ? "I punti di ogni tappa."
-        : `I punti di ogni tappa: quelli barrati sono scartati, fuori dalle migliori ${counted}.`,
-    potenziale:
-      remaining === 0
-        ? "Non resta nessuna tappa da giocare: la classifica non cambia più."
-        : `Quanti punti può ancora aggiungere chi vince tutti i turni ${
-            remaining === 1 ? "dell'ultima tappa" : `delle ${remaining} tappe che mancano`
-          } (${UNDEFEATED_POINTS} a tappa), al netto degli scarti.`,
+    avanzata:
+      (counted === null
+        ? "I punti di ogni tappa, in ordine."
+        : `I punti di ogni tappa, in ordine: barrati gli scarti, fuori dalle migliori ${counted}.`) +
+      (improving ? ` Cerchiati quelli che si possono ancora migliorare ${left}, tratteggiati se la tappa è saltata.` : ""),
   };
   return (
     <div>
@@ -129,35 +132,60 @@ function Head({ view, tappe }: Layout) {
         <span className="w-[2.2rem] shrink-0 sm:w-[3rem]">pos.</span>
         nome
       </span>
-      <span className={`text-right ${view === "potenziale" ? "hidden sm:block" : ""}`}>tappe</span>
+      <span className="text-right">tappe</span>
       <span className="text-right">punti</span>
-      {view === "tappe" &&
+      {view === "avanzata" &&
         tappe.map((t, i) => (
-          <span key={t.id} title={t.title} className="text-right">
-            t{t.number ?? i + 1}
+          <span key={t.id} title={t.title} className="flex justify-end">
+            <span className="w-7 text-center">t{t.number ?? i + 1}</span>
           </span>
         ))}
-      {view === "potenziale" && <span className="text-right">ancora</span>}
     </div>
   );
 }
 
+/**
+ * Every tappa's result sits in the same round box at the right of its column,
+ * circled or not, so the numbers line up down the column.
+ */
+const BOX = "inline-flex h-7 w-7 items-center justify-center rounded-full text-[15px]";
+/**
+ * A result the tappe left can still improve: circled in a quiet grey, dashed
+ * when the tappa was missed. A hint, not news: it should not look like a warning.
+ */
+const IMPROVE = "outline-[1.5px] -outline-offset-1 outline-[var(--rg-line-strong)]";
+
+function Cell({ children }: { children: ReactNode }) {
+  return <span className="flex justify-end">{children}</span>;
+}
+
 function Results({ r, tappe }: { r: Row; tappe: LeaderboardTappa[] }) {
-  return r.results.map((res, i) =>
-    res === null ? (
-      <span key={tappe[i].id} aria-hidden="true" className="rg-muted text-right text-[15px] opacity-50">
-        –
-      </span>
-    ) : res.counted ? (
-      <span key={tappe[i].id} className="tnum text-right text-[15px]">
-        {res.points}
-      </span>
-    ) : (
-      <s key={tappe[i].id} title="scartata: fuori dalle migliori" className="rg-muted tnum text-right text-[15px] decoration-1">
-        {res.points}
-      </s>
-    ),
-  );
+  const improve = new Set(r.improvable);
+  return r.results.map((res, i) => (
+    <Cell key={tappe[i].id}>
+      {res === null ? (
+        improve.has(i) ? (
+          <span title="saltata: si può ancora recuperare" className={`${BOX} ${IMPROVE} rg-muted outline-dashed`}>
+            –
+          </span>
+        ) : (
+          <span aria-hidden="true" className={`${BOX} rg-muted opacity-50`}>
+            –
+          </span>
+        )
+      ) : !res.counted ? (
+        <s title="scartata: fuori dalle migliori" className={`${BOX} rg-muted tnum decoration-1`}>
+          {res.points}
+        </s>
+      ) : improve.has(i) ? (
+        <span title="si può ancora migliorare" className={`${BOX} ${IMPROVE} tnum outline-solid`}>
+          {res.points}
+        </span>
+      ) : (
+        <span className={`${BOX} tnum`}>{res.points}</span>
+      )}
+    </Cell>
+  ));
 }
 
 function ListRow({ r, size, view, tappe }: { r: Row; size: "md" | "sm" } & Layout) {
@@ -174,7 +202,7 @@ function ListRow({ r, size, view, tappe }: { r: Row; size: "md" | "sm" } & Layou
         </span>
         {/* With the tappe, capped on a phone so the total stays in view before any scrolling. */}
         <span
-          className={`truncate ${view === "tappe" ? "max-w-[9.5rem] sm:max-w-none" : ""} ${
+          className={`truncate ${view === "avanzata" ? "max-w-[9.5rem] sm:max-w-none" : ""} ${
             // Smaller on a phone when extra columns share the row.
             md ? `rg-display sm:text-[20px] ${view === "base" ? "text-[19px]" : "text-[17px]"}` : "text-[16px] font-semibold"
           }`}
@@ -182,19 +210,9 @@ function ListRow({ r, size, view, tappe }: { r: Row; size: "md" | "sm" } & Layou
           {r.name}
         </span>
       </span>
-      <span className={`rg-muted tnum text-right text-[15px] ${view === "potenziale" ? "hidden sm:block" : ""}`}>{r.played}</span>
+      <span className="rg-muted tnum text-right text-[15px]">{r.played}</span>
       <span className={`rg-display rg-strong tnum text-right ${md ? "text-[22px]" : "text-[18px]"}`}>{r.points}</span>
-      {view === "tappe" && <Results r={r} tappe={tappe} />}
-      {view === "potenziale" &&
-        (r.potential > 0 ? (
-          <span title={`fino a ${r.points + r.potential} punti`} className="rg-display tnum text-right text-[17px] text-[var(--rg-link)]">
-            +{r.potential}
-          </span>
-        ) : (
-          <span aria-hidden="true" className="rg-muted text-right text-[15px] opacity-50">
-            –
-          </span>
-        ))}
+      {view === "avanzata" && <Results r={r} tappe={tappe} />}
     </Link>
   );
 }
@@ -215,7 +233,7 @@ function Rows({ rows, size, ...layout }: { rows: Row[]; size: "md" | "sm" } & La
 function Table({ view, tappe, children }: Layout & { children: ReactNode }) {
   return (
     <div className="rg-scroll @container -mx-2 overflow-x-auto" style={{ "--n": Math.max(tappe.length, 1) } as CSSProperties}>
-      <div className={view === "tappe" ? "w-max min-w-full" : "w-full"}>
+      <div className={view === "avanzata" ? "w-max min-w-full" : "w-full"}>
         <Head view={view} tappe={tappe} />
         {children}
       </div>
@@ -239,7 +257,14 @@ export function Standings({
   const found = query ? rows.filter((r) => norm(r.name).includes(norm(query))) : rows;
   const view = useView();
   const layout = { view, tappe };
-  const switcher = <ViewSwitch view={view} counted={counted} remaining={remaining} />;
+  const switcher = (
+    <ViewSwitch
+      view={view}
+      counted={counted}
+      remaining={remaining}
+      improving={rows.some((r) => r.improvable.length > 0)}
+    />
+  );
 
   const [first] = rows;
   // Every player is in the table, the leader too, so all results sit together.

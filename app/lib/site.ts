@@ -40,7 +40,7 @@ import {
   tappaTitle,
   winPct,
 } from "./format";
-import { potentialGain } from "./potential";
+import { improvable } from "./potential";
 
 export type { EventSummary, LeaderboardEntry, MatchRecord, MatchupMatrix, Metagame, MetagameArchetype, Pairing, PlayerDeck, PlayerEventEntry, Season, Standing };
 export { dateTile, formatDateMeta, splitName, tappaNumber, tappaSubtitle, tappaTitle, winPct };
@@ -120,8 +120,8 @@ export type LeaderboardData = {
   tappe: LeaderboardTappa[];
   /** Per player, one entry per tappa in the same order; null where they did not play. */
   results: Record<number, (TappaResult | null)[]>;
-  /** Per player, points they can still add by going undefeated at every tappa left. */
-  potential: Record<number, number>;
+  /** Per player, the tappe (indexes into results) whose result the tappe left can still improve. */
+  improvable: Record<number, number[]>;
   /** Scheduled tappe without results yet. */
   remaining: number;
   playedEvents: number;
@@ -162,10 +162,13 @@ export async function getLeaderboardData(): Promise<LeaderboardData> {
   const counted = season ? season.counted_events : COUNTED_EVENTS;
   for (const row of Object.values(results)) markCounted(row, counted);
   const remaining = events.length - playedRaw.length;
-  const potential: Record<number, number> = {};
+  const toImprove: Record<number, number[]> = {};
   for (const [id, row] of Object.entries(results)) {
-    const points = row.flatMap((r) => (r ? [r.points] : []));
-    potential[Number(id)] = potentialGain(points, counted, remaining);
+    toImprove[Number(id)] = improvable(
+      row.map((r) => r?.points ?? null),
+      counted,
+      remaining,
+    );
   }
 
   return {
@@ -173,7 +176,7 @@ export async function getLeaderboardData(): Promise<LeaderboardData> {
     leaderboard,
     tappe: playedRaw.map((e) => ({ id: e.id, number: tappaNumber(e.name), title: tappaTitle(e.name) })),
     results,
-    potential,
+    improvable: toImprove,
     remaining,
     playedEvents: playedRaw.length,
     totalEvents: events.length,
