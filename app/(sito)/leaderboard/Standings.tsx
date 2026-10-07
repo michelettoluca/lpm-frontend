@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useDeferredValue, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import type { LeaderboardTappa, TappaResult, Verdict } from "@/app/lib/site";
-import { Comune, MarkerCircle } from "../ui";
+import { Comune, MarkerUnderline } from "../ui";
 
 type Row = {
   rank: number;
@@ -408,11 +408,11 @@ export function Standings({
               <span className="rg-display tnum text-[88px] leading-[0.78] text-[var(--rg-o)] lg:text-[120px]">1</span>
               <span className="min-w-0 pb-0.5">
                 <span className="rg-eyebrow block">in testa</span>
-                <span className="relative mt-3 inline-block px-1">
+                <span className="relative mt-3 inline-block">
                   <span className="rg-display block text-[26px] leading-[1.05] sm:text-[32px] lg:text-[46px]">{first.name}</span>
-                  <MarkerCircle className="-top-3 -left-3 h-[calc(100%+24px)] w-[calc(100%+26px)]" />
+                  <MarkerUnderline always width={3} className="-left-1 top-full mt-0.5 h-[9px] w-[calc(100%+8px)]" />
                 </span>
-                <span className="rg-muted mt-2 block text-[14px] tnum">{first.played} tappe</span>
+                <span className="rg-muted mt-3.5 block text-[14px] tnum">{first.played} tappe</span>
               </span>
               <span className="pb-0.5 text-right">
                 <span className="rg-display tnum block text-[36px] leading-none lg:text-[52px]">{first.points}</span>

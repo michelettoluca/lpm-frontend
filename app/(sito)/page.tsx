@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { COUNTED_EVENTS, dateTile, getHomeData } from "@/app/lib/site";
-import { ArrowLink, ColHeads, Comune, MarkerCircle, PixelStar, Section, plural, sameRomeDay, weekday } from "./ui";
+import { ArrowLink, ColHeads, Comune, MarkerCircle, MarkerUnderline, PixelStar, Section, plural, sameRomeDay, weekday } from "./ui";
 
 function Stat({ label, value, sub }: { label: string; value: ReactNode; sub?: ReactNode }) {
   return (
@@ -62,11 +62,11 @@ export default async function Home() {
             <span className="rg-display tnum text-[88px] leading-[0.78] text-[var(--rg-o)] lg:text-[128px]">1</span>
             <span className="min-w-0 pb-0.5">
               <span className="rg-eyebrow block">primo, per ora</span>
-              <span className="relative mt-3 inline-block px-1">
+              <span className="relative mt-3 inline-block">
                 <span className="rg-display block text-[26px] leading-[1.05] sm:text-[32px] lg:text-[48px]">{first.display_name}</span>
-                <MarkerCircle className="-top-3 -left-3 h-[calc(100%+24px)] w-[calc(100%+26px)]" />
+                <MarkerUnderline always width={3} className="-left-1 top-full mt-0.5 h-[9px] w-[calc(100%+8px)]" />
               </span>
-              <span className="rg-muted mt-2 block text-[14px] tnum">{plural(first.events_played, "tappa", "tappe")}</span>
+              <span className="rg-muted mt-3.5 block text-[14px] tnum">{plural(first.events_played, "tappa", "tappe")}</span>
             </span>
             <span className="pb-0.5 text-right">
               <span className="rg-display tnum block text-[36px] leading-none lg:text-[52px]">{first.total_points}</span>

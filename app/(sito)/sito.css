@@ -593,6 +593,11 @@ body:has(.lpm)::before {
 .lpm .rg-boil {
   filter: url(#rg-w1);
 }
+/* A long thin stroke breaks up under the wobble (gaps under letters): the
+   underline's path is drawn uneven already, so it goes without. */
+.lpm .rg-underline {
+  filter: none;
+}
 .lpm .rg-legs-b,
 .lpm .rg-wave-b {
   visibility: hidden;

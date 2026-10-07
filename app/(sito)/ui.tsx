@@ -43,16 +43,27 @@ export function MarkerCircle({ className = "" }: { className?: string }) {
 
 const UNDERLINE = "M4 6.5 C34 4.2 70 8.4 112 5.6 C146 3.6 176 5.2 196 7.2";
 
-/** A felt-tip stroke under a nav link; CSS shows it on hover and on the current page. */
-export function MarkerUnderline({ className = "" }: { className?: string }) {
+/**
+ * A felt-tip stroke under a word. Under a nav link CSS shows it on hover and on
+ * the current page; `always` keeps it in sight, as under the leader's name.
+ */
+export function MarkerUnderline({
+  className = "",
+  always = false,
+  width = 2.5,
+}: {
+  className?: string;
+  always?: boolean;
+  width?: number;
+}) {
   return (
     <svg
       aria-hidden="true"
       viewBox="0 0 200 12"
       preserveAspectRatio="none"
-      className={`rg-doodle rg-mark pointer-events-none absolute ${className}`}
+      className={`rg-doodle rg-underline ${always ? "" : "rg-mark"} pointer-events-none absolute ${className}`}
     >
-      <path d={UNDERLINE} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
+      <path d={UNDERLINE} fill="none" stroke="currentColor" strokeWidth={width} strokeLinecap="round" vectorEffect="non-scaling-stroke" />
     </svg>
   );
 }
