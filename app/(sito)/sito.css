@@ -205,6 +205,11 @@ body:has(.lpm)::before {
   border-image: var(--rg-line-hand) 4 0 0 0 / 4px 0 0 0 / 1.5px 0 0 0 round;
 }
 /* The red cut-off line (top 8, 9 points), in the same hand. */
+/* The same hand-drawn rule in grey, for the settled zones of the table. */
+.lpm .rg-rule-grey {
+  height: 4px;
+  background: var(--rg-line-strong-hand) 0 50% / 160px 4px repeat-x;
+}
 .lpm .rg-rule-o {
   height: 6px;
   background: var(--rg-rule-o-hand) 0 50% / 160px 6px repeat-x;

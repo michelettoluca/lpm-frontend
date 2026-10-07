@@ -40,8 +40,9 @@ import {
   tappaTitle,
   winPct,
 } from "./format";
-import { improvable } from "./potential";
+import { UNDEFEATED_POINTS, improvable, maxGain, verdicts, type Verdict } from "./potential";
 
+export type { Verdict } from "./potential";
 export type { EventSummary, LeaderboardEntry, MatchRecord, MatchupMatrix, Metagame, MetagameArchetype, Pairing, PlayerDeck, PlayerEventEntry, Season, Standing };
 export { dateTile, formatDateMeta, splitName, tappaNumber, tappaSubtitle, tappaTitle, winPct };
 
@@ -49,6 +50,8 @@ export { dateTile, formatDateMeta, splitName, tappaNumber, tappaSubtitle, tappaT
 export const PRIZE_POINTS = 9;
 /** Tappe that count towards the season total. */
 export const COUNTED_EVENTS = 8;
+/** The top of the table the season ends with: the line drawn under it. */
+export const TOP_ZONE = 8;
 
 export type PlayedTappa = EventSummary & {
   number: number | null;
@@ -122,6 +125,8 @@ export type LeaderboardData = {
   results: Record<number, (TappaResult | null)[]>;
   /** Per player, the tappe (indexes into results) whose result the tappe left can still improve. */
   improvable: Record<number, number[]>;
+  /** Per player, a place already settled for good; missing while still open. */
+  verdict: Record<number, Verdict>;
   /** Scheduled tappe without results yet. */
   remaining: number;
   playedEvents: number;
@@ -171,12 +176,28 @@ export async function getLeaderboardData(): Promise<LeaderboardData> {
     );
   }
 
+  // The most each could still reach; someone who has not played yet starts from nothing.
+  const ceilings = leaderboard.map((e) => ({
+    id: e.player_id,
+    total: e.total_points,
+    ceiling:
+      e.total_points +
+      maxGain(
+        (results[e.player_id] ?? []).map((r) => r?.points ?? null),
+        counted,
+        remaining,
+      ),
+  }));
+  const newcomer = Math.min(remaining, counted ?? remaining) * UNDEFEATED_POINTS;
+  const verdict: Record<number, Verdict> = Object.fromEntries(verdicts(ceilings, TOP_ZONE, newcomer, remaining));
+
   return {
     season,
     leaderboard,
     tappe: playedRaw.map((e) => ({ id: e.id, number: tappaNumber(e.name), title: tappaTitle(e.name) })),
     results,
     improvable: toImprove,
+    verdict,
     remaining,
     playedEvents: playedRaw.length,
     totalEvents: events.length,

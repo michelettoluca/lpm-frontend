@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useDeferredValue, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
-import type { LeaderboardTappa, TappaResult } from "@/app/lib/site";
+import type { LeaderboardTappa, TappaResult, Verdict } from "@/app/lib/site";
 import { Comune, MarkerCircle } from "../ui";
 
 type Row = {
@@ -14,7 +14,38 @@ type Row = {
   results: (TappaResult | null)[];
   /** Indexes into results: the tappe whose result the tappe left can still improve. */
   improvable: number[];
+  /** A place already settled for good, as sports tables mark it. */
+  verdict?: Verdict;
 };
+
+/** The settled places, small beside the name, with their meaning on hover. */
+const VERDICTS: Record<Verdict, { label: string; title: string; meaning: string; className: string }> = {
+  dentro: {
+    label: "top 8 ✓",
+    meaning: "già certo della top 8",
+    title: "Matematicamente in top 8: ci resta anche senza fare più punti.",
+    className: "bg-[var(--rg-ink)] text-[var(--rg-on-ink)]",
+  },
+  fuori: {
+    label: "fuori",
+    meaning: "non può più entrare in top 8",
+    title: "Matematicamente fuori dalla top 8: anche vincendo tutto, non può più entrare.",
+    className: "bg-[var(--rg-soft-2)] text-[var(--rg-mute)]",
+  },
+};
+
+function VerdictBadge({ verdict }: { verdict?: Verdict }) {
+  if (!verdict) return null;
+  const v = VERDICTS[verdict];
+  return (
+    <span
+      title={v.title}
+      className={`inline-flex h-5 shrink-0 items-center rounded-full px-2 align-middle font-[family-name:var(--font-rg-text)] text-[11px] font-semibold tracking-normal ${v.className}`}
+    >
+      {v.label}
+    </span>
+  );
+}
 
 const TOP = 8;
 
@@ -90,25 +121,28 @@ type Layout = { view: View; tappe: LeaderboardTappa[] };
 
 function ViewSwitch({
   view,
-  counted,
-  remaining,
+  discarded,
   improving,
+  settled,
 }: {
   view: View;
-  counted: number | null;
-  remaining: number;
+  /** Whether any result is struck out, outside the counted ones. */
+  discarded: boolean;
   /** Whether any result is marked as still to improve. */
   improving: boolean;
+  /** The settled places that appear in the table, in the legend's order. */
+  settled: Verdict[];
 }) {
-  const left = remaining === 1 ? "nell'ultima tappa" : `nelle ${remaining} tappe che mancano`;
-  const caption: Record<View, string> = {
-    base: "Posizione, tappe giocate e punti.",
-    avanzata:
-      (counted === null
-        ? "I punti di ogni tappa, in ordine."
-        : `I punti di ogni tappa, in ordine: barrati gli scarti, fuori dalle migliori ${counted}.`) +
-      (improving ? ` Cerchiati quelli che si possono ancora migliorare ${left}, tratteggiati se la tappa è saltata.` : ""),
-  };
+  const legend: { key: string; mark: ReactNode; text: string }[] = [];
+  if (view === "avanzata" && discarded) {
+    legend.push({ key: "scartata", mark: <Discarded />, text: "scartata" });
+  }
+  if (view === "avanzata" && improving) {
+    legend.push({ key: "migliora", mark: <span className={`${BOX} ${IMPROVE}`} />, text: "da migliorare" });
+  }
+  for (const v of settled) {
+    legend.push({ key: v, mark: <VerdictBadge verdict={v} />, text: VERDICTS[v].meaning });
+  }
   return (
     <div>
       <div role="group" aria-label="Vista della classifica" className="rg-seg">
@@ -118,9 +152,18 @@ function ViewSwitch({
           </button>
         ))}
       </div>
-      <p className="rg-muted mt-2 text-[14px] leading-snug" aria-live="polite">
-        {caption[view]}
-      </p>
+      {legend.length > 0 && (
+        <ul aria-label="Legenda" className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13px]">
+          {legend.map((l) => (
+            <li key={l.key} className="flex items-center gap-2">
+              <span aria-hidden="true" className="flex">
+                {l.mark}
+              </span>
+              <span className="rg-muted">{l.text}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -150,10 +193,28 @@ function Head({ view, tappe }: Layout) {
  */
 const BOX = "inline-flex h-7 w-7 items-center justify-center rounded-full text-[15px]";
 /**
- * A result the tappe left can still improve: circled in a quiet grey, dashed
- * when the tappa was missed. A hint, not news: it should not look like a warning.
+ * A result the tappe left can still improve, a missed tappa included: a quiet
+ * grey dashed circle. A hint, not news: it should not look like a warning.
  */
-const IMPROVE = "outline-[1.5px] -outline-offset-1 outline-[var(--rg-line-strong)]";
+const IMPROVE = "outline-[1.5px] -outline-offset-1 outline-dashed outline-[var(--rg-line-strong)]";
+
+/**
+ * A result outside the counted ones: greyed, with a slash across it at 45°. A
+ * horizontal strike would read like the dash of a missed tappa. Without
+ * points it is the bare slash, for the legend.
+ */
+function Discarded({ points }: { points?: number }) {
+  return (
+    <span title="scartata: fuori dalle migliori" className={`${BOX} rg-muted tnum relative`}>
+      {points}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 left-1/2 h-[1.5px] w-5 -translate-x-1/2 -translate-y-1/2 -rotate-45 rounded-full bg-current"
+      />
+      {points !== undefined && <span className="sr-only"> (scartata)</span>}
+    </span>
+  );
+}
 
 function Cell({ children }: { children: ReactNode }) {
   return <span className="flex justify-end">{children}</span>;
@@ -165,7 +226,7 @@ function Results({ r, tappe }: { r: Row; tappe: LeaderboardTappa[] }) {
     <Cell key={tappe[i].id}>
       {res === null ? (
         improve.has(i) ? (
-          <span title="saltata: si può ancora recuperare" className={`${BOX} ${IMPROVE} rg-muted outline-dashed`}>
+          <span title="saltata: si può ancora migliorare" className={`${BOX} ${IMPROVE} rg-muted`}>
             –
           </span>
         ) : (
@@ -174,11 +235,9 @@ function Results({ r, tappe }: { r: Row; tappe: LeaderboardTappa[] }) {
           </span>
         )
       ) : !res.counted ? (
-        <s title="scartata: fuori dalle migliori" className={`${BOX} rg-muted tnum decoration-1`}>
-          {res.points}
-        </s>
+        <Discarded points={res.points} />
       ) : improve.has(i) ? (
-        <span title="si può ancora migliorare" className={`${BOX} ${IMPROVE} tnum outline-solid`}>
+        <span title="si può ancora migliorare" className={`${BOX} ${IMPROVE} tnum`}>
           {res.points}
         </span>
       ) : (
@@ -209,11 +268,36 @@ function ListRow({ r, size, view, tappe }: { r: Row; size: "md" | "sm" } & Layou
         >
           {r.name}
         </span>
+        {r.verdict && (
+          <span className="ml-2 flex">
+            <VerdictBadge verdict={r.verdict} />
+          </span>
+        )}
       </span>
       <span className="rg-muted tnum text-right text-[15px]">{r.played}</span>
       <span className={`rg-display rg-strong tnum text-right ${md ? "text-[22px]" : "text-[18px]"}`}>{r.points}</span>
       {view === "avanzata" && <Results r={r} tappe={tappe} />}
     </Link>
+  );
+}
+
+/**
+ * A line across the table between two zones, labelled at the right: red for
+ * the top 8, grey for what is already settled. As wide as the visible table
+ * and pinned, so it never scrolls away.
+ */
+function ZoneLine({ label, red = false, name }: { label: string; red?: boolean; name?: string }) {
+  return (
+    <div
+      className="sticky left-0 flex w-[100cqw] items-center gap-3 px-2 py-3"
+      role="separator"
+      aria-label={name ?? label.replace(/^[↑↓] /, "")}
+    >
+      <span aria-hidden="true" className={`${red ? "rg-rule-o" : "rg-rule-grey"} flex-1`} />
+      <span aria-hidden="true" className={`rg-badge shrink-0 ${red ? "rg-badge-o" : ""}`}>
+        {label}
+      </span>
+    </div>
   );
 }
 
@@ -244,32 +328,39 @@ function Table({ view, tappe, children }: Layout & { children: ReactNode }) {
 export function Standings({
   rows,
   tappe,
-  counted,
-  remaining,
 }: {
   rows: Row[];
   tappe: LeaderboardTappa[];
-  counted: number | null;
-  remaining: number;
 }) {
   const [q, setQ] = useState("");
   const query = useDeferredValue(q.trim());
   const found = query ? rows.filter((r) => norm(r.name).includes(norm(query))) : rows;
   const view = useView();
   const layout = { view, tappe };
-  const switcher = (
-    <ViewSwitch
-      view={view}
-      counted={counted}
-      remaining={remaining}
-      improving={rows.some((r) => r.improvable.length > 0)}
-    />
-  );
 
   const [first] = rows;
   // Every player is in the table, the leader too, so all results sit together.
   const zone = rows.slice(0, TOP);
   const others = rows.slice(TOP);
+  // Settled places are drawn as lines, like the zones of a football table: one
+  // under the players already certain of the top 8, one over those already out
+  // of it. A settled player outside those runs (rare, with discards) keeps a badge.
+  let certain = 0;
+  while (certain < zone.length && zone[certain].verdict === "dentro") certain++;
+  let outFrom = others.length;
+  while (outFrom > 0 && others[outFrom - 1].verdict === "fuori") outFrom--;
+  const lined = new Set([...zone.slice(0, certain), ...others.slice(outFrom)].map((r) => r.id));
+  const unlined = (list: Row[]) =>
+    list.map((r) => (lined.has(r.id) ? { ...r, verdict: undefined } : r));
+  const badges = query ? found : unlined(rows);
+  const switcher = (
+    <ViewSwitch
+      view={view}
+      discarded={rows.some((r) => r.results.some((res) => res !== null && !res.counted))}
+      improving={rows.some((r) => r.improvable.length > 0)}
+      settled={(["dentro", "fuori"] as const).filter((v) => badges.some((r) => r.verdict === v))}
+    />
+  );
 
   return (
     <div className="min-w-0">
@@ -334,21 +425,31 @@ export function Standings({
               {switcher}
               <div className="mt-6">
                 <Table {...layout}>
-                  <Rows rows={zone} size="md" {...layout} />
+                  {certain > 0 && certain < zone.length ? (
+                    <>
+                      <Rows rows={unlined(zone.slice(0, certain))} size="md" {...layout} />
+                      <ZoneLine label="↑ già certi della top 8" />
+                      <Rows rows={unlined(zone.slice(certain))} size="md" {...layout} />
+                    </>
+                  ) : (
+                    <Rows rows={unlined(zone)} size="md" {...layout} />
+                  )}
                   {others.length > 0 && (
                     <>
-                      {/* As wide as the visible table, pinned, so the line never scrolls away. */}
-                      <div
-                        className="sticky left-0 flex w-[100cqw] items-center gap-3 px-2 py-3"
-                        role="separator"
-                        aria-label="Fine della zona top 8"
-                      >
-                        <span aria-hidden="true" className="rg-rule-o flex-1" />
-                        <span aria-hidden="true" className="rg-badge rg-badge-o shrink-0">
-                          ↑ top 8, per ora
-                        </span>
-                      </div>
-                      <Rows rows={others} size="sm" {...layout} />
+                      <ZoneLine
+                        red
+                        label={certain === TOP ? "↑ top 8 decisa" : "↑ top 8, per ora"}
+                        name="Fine della zona top 8"
+                      />
+                      {outFrom < others.length ? (
+                        <>
+                          <Rows rows={unlined(others.slice(0, outFrom))} size="sm" {...layout} />
+                          <ZoneLine label="↓ fuori dalla corsa alla top 8" />
+                          <Rows rows={unlined(others.slice(outFrom))} size="sm" {...layout} />
+                        </>
+                      ) : (
+                        <Rows rows={unlined(others)} size="sm" {...layout} />
+                      )}
                     </>
                   )}
                 </Table>
