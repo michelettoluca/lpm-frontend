@@ -409,11 +409,7 @@ export function EndCard({ walk, onGo }: { walk: Table[]; onGo: (n: number) => vo
   );
 }
 
-/**
- * A player's deck, as a form like every side panel: the chosen deck with a
- * button to remove it, the archetype search once there is none, and Salva at
- * the bottom. Nothing is saved until Salva.
- */
+/** A seat's deck in DeckDialog, saying who set it. */
 export function DeckPickerDialog({
   seat,
   archetypes,
@@ -428,6 +424,43 @@ export function DeckPickerDialog({
   onClose: () => void;
 }) {
   const current = seat.declaration;
+  return (
+    <DeckDialog
+      title={seat.name}
+      description={
+        current ? `Indicato ${current.source === "player" ? "dal giocatore" : "da un admin"}` : "Nessun mazzo indicato"
+      }
+      current={current}
+      archetypes={archetypes}
+      busy={busy}
+      onSave={onSave}
+      onClose={onClose}
+    />
+  );
+}
+
+/**
+ * A player's deck, as a form like every side panel: the chosen deck with a
+ * button to remove it, the archetype search once there is none, and Salva at
+ * the bottom. Nothing is saved until Salva.
+ */
+export function DeckDialog({
+  title,
+  description,
+  current,
+  archetypes,
+  busy,
+  onSave,
+  onClose,
+}: {
+  title: string;
+  description?: React.ReactNode;
+  current: { archetype_id: number; archetype_name: string } | null;
+  archetypes: Archetype[];
+  busy: boolean;
+  onSave: (archetype: Archetype | null) => void;
+  onClose: () => void;
+}) {
   const [draft, setDraft] = useState<Archetype | null>(() =>
     current
       ? (archetypes.find((a) => a.id === current.archetype_id) ?? {
@@ -439,14 +472,7 @@ export function DeckPickerDialog({
   );
   const changed = (draft?.id ?? null) !== (current?.archetype_id ?? null);
   return (
-    <Dialog
-      title={seat.name}
-      description={
-        current ? `Indicato ${current.source === "player" ? "dal giocatore" : "da un admin"}` : "Nessun mazzo indicato"
-      }
-      busy={busy}
-      onClose={onClose}
-    >
+    <Dialog title={title} description={description} busy={busy} onClose={onClose}>
       <form
         className={DIALOG_FORM}
         onSubmit={(event) => {

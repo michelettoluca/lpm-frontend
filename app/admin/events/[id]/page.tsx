@@ -21,6 +21,7 @@ import {
   PageHeader,
 } from "../../dashboardUi";
 import { EventStatus, isPast } from "../../eventDisplay";
+import { EventDecks } from "./EventDecks";
 
 type Modal = "edit" | "delete" | "reset";
 
@@ -184,6 +185,12 @@ export default function EventDetailPage() {
           </dl>
         </section>
       </div>
+
+      {event.has_results && (
+        <div className="mt-8">
+          <EventDecks eventId={event.id} eventName={event.name} />
+        </div>
+      )}
 
       {modal === "edit" && (
         <EventDialog
