@@ -8,19 +8,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticRoutes: MetadataRoute.Sitemap = [
     { url: BASE_URL, changeFrequency: "daily", priority: 1 },
-    { url: `${BASE_URL}/leaderboard`, changeFrequency: "daily", priority: 0.9 },
-    { url: `${BASE_URL}/rules`, changeFrequency: "monthly", priority: 0.7 },
+    { url: `${BASE_URL}/classifica`, changeFrequency: "daily", priority: 0.9 },
+    { url: `${BASE_URL}/regole`, changeFrequency: "monthly", priority: 0.7 },
   ];
 
   const eventRoutes: MetadataRoute.Sitemap = events.map((event) => ({
-    url: `${BASE_URL}/events/${event.id}`,
+    url: `${BASE_URL}/tappe/${event.id}`,
     lastModified: event.played_at,
     changeFrequency: "weekly",
     priority: 0.6,
   }));
 
   const playerRoutes: MetadataRoute.Sitemap = entries.map((entry) => ({
-    url: `${BASE_URL}/players/${entry.player_id}`,
+    url: `${BASE_URL}/giocatori/${entry.player_id}`,
     changeFrequency: "weekly",
     priority: 0.5,
   }));

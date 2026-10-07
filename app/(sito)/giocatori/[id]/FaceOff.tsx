@@ -80,7 +80,7 @@ export function FaceOff({ me, others, rows }: { me: string; others: { id: number
         <div className="rg-pop mt-10" aria-live="polite">
           <p className="rg-display text-[26px] leading-tight lg:text-[32px]">
             {me} <span className="rg-muted font-[family-name:var(--font-rg-text)] text-[16px] font-semibold">contro</span>{" "}
-            <Link href={`/players/${pick.id}`} className="rg-ul">
+            <Link href={`/giocatori/${pick.id}`} className="rg-ul">
               {pick.name}
             </Link>
           </p>

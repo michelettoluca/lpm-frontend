@@ -6,9 +6,9 @@ import { useEffect, useState } from "react";
 import { MarkerUnderline } from "./ui";
 
 const LINKS = [
-  { href: "/leaderboard", label: "classifica" },
+  { href: "/classifica", label: "classifica" },
   { href: "/statistiche", label: "statistiche" },
-  { href: "/rules", label: "regole" },
+  { href: "/regole", label: "regole" },
 ];
 
 /** The LPM wordmark, underlined like a nav link while you are on the home page. */

@@ -250,7 +250,7 @@ function Results({ r, tappe }: { r: Row; tappe: LeaderboardTappa[] }) {
 function ListRow({ r, size, view, tappe }: { r: Row; size: "md" | "sm" } & Layout) {
   const md = size === "md";
   return (
-    <Link href={`/players/${r.id}`} className={`rg-row grid items-center px-2 ${md ? "min-h-14" : "min-h-12"} ${COLS[view]}`}>
+    <Link href={`/giocatori/${r.id}`} className={`rg-row grid items-center px-2 ${md ? "min-h-14" : "min-h-12"} ${COLS[view]}`}>
       <span className={STICK}>
         <span
           className={`tnum w-[2.2rem] shrink-0 sm:w-[3rem] ${
@@ -402,7 +402,7 @@ export function Standings({
         <>
           {first && (
             <Link
-              href={`/players/${first.id}`}
+              href={`/giocatori/${first.id}`}
               className="rg-row -mx-2 mt-8 grid grid-cols-[auto_1fr_auto] items-end gap-x-4 px-2 py-3"
             >
               <span className="rg-display tnum text-[88px] leading-[0.78] text-[var(--rg-o)] lg:text-[120px]">1</span>

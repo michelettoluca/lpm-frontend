@@ -137,7 +137,7 @@ export default function EventDetailPage() {
               Se l&apos;import è sbagliato, reimposta i risultati e carica di nuovo i file: la tappa resta.
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
-              <Link href={`/events/${event.id}`} target="_blank" rel="noopener" className={BUTTON_PRIMARY}>
+              <Link href={`/tappe/${event.id}`} target="_blank" rel="noopener" className={BUTTON_PRIMARY}>
                 Vedi la tappa sul sito ↗
               </Link>
               <button type="button" className={BUTTON_DANGER} onClick={() => open("reset")}>
@@ -159,7 +159,7 @@ export default function EventDetailPage() {
                   <>
                     Risultati importati (torneo melee <span className="tn">{result.melee_tournament_id}</span>).{" "}
                     <Link
-                      href={`/events/${result.event_id}`}
+                      href={`/tappe/${result.event_id}`}
                       target="_blank"
                       rel="noopener"
                       className="text-accent underline-offset-2 hover:underline"

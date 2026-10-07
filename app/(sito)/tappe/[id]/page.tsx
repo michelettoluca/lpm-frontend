@@ -6,7 +6,7 @@ import { ArrowLink, ColHeads, Comune, Head, PixelStar, Section, plural, sameRome
 import { Matrix } from "../../Matrix";
 import { Metagame } from "./Metagame";
 
-export async function generateMetadata(props: PageProps<"/events/[id]">) {
+export async function generateMetadata(props: PageProps<"/tappe/[id]">) {
   const { id } = await props.params;
   const e = await getEventData(id);
   return { title: e ? `${e.title} · Lega Pauper Milano` : "Tappa · Lega Pauper Milano" };
@@ -16,7 +16,7 @@ const rec = (s: Standing) => `${s.wins + s.byes}-${s.losses}-${s.draws}`;
 
 const COLS = "grid-cols-[2.2rem_1fr_3rem_2.6rem] gap-2 sm:grid-cols-[3rem_1fr_4.5rem_4rem]";
 
-export default async function EventPage(props: PageProps<"/events/[id]">) {
+export default async function EventPage(props: PageProps<"/tappe/[id]">) {
   const { id } = await props.params;
   const e = await getEventData(id);
   if (!e) notFound();
@@ -74,7 +74,7 @@ export default async function EventPage(props: PageProps<"/events/[id]">) {
               <Link href="/mazzo" className="rg-btn rg-btn-fill">
                 cosa giochi stasera?
               </Link>
-              <ArrowLink href="/rules" className="text-[20px]">
+              <ArrowLink href="/regole" className="text-[20px]">
                 come funziona la serata
               </ArrowLink>
             </div>
@@ -95,7 +95,7 @@ export default async function EventPage(props: PageProps<"/events/[id]">) {
             {first && (
               <li>
                 <Link
-                  href={`/players/${first.player_id}`}
+                  href={`/giocatori/${first.player_id}`}
                   className="rg-row -mx-2 grid grid-cols-[auto_1fr_auto] items-end gap-x-4 px-2 py-3"
                 >
                   <span className="rg-display tnum text-[88px] leading-[0.78] text-[var(--rg-o)] lg:text-[112px]">1</span>
@@ -117,7 +117,7 @@ export default async function EventPage(props: PageProps<"/events/[id]">) {
             {podium.map((s) => (
               <li key={s.player_id} className="rg-hr mt-2">
                 <Link
-                  href={`/players/${s.player_id}`}
+                  href={`/giocatori/${s.player_id}`}
                   className="rg-row -mx-2 grid grid-cols-[2.2rem_1fr_auto] items-center gap-x-2 px-2 py-4 sm:grid-cols-[3rem_1fr_auto]"
                 >
                   <span className="rg-display tnum text-[52px] leading-[0.85] lg:text-[60px]">{s.rank}</span>
@@ -145,7 +145,7 @@ export default async function EventPage(props: PageProps<"/events/[id]">) {
                   <Fragment key={s.player_id}>
                     <li className={i ? "rg-hr" : ""}>
                       <Link
-                        href={`/players/${s.player_id}`}
+                        href={`/giocatori/${s.player_id}`}
                         className={`rg-row -mx-2 grid min-h-12 items-center px-2 ${COLS}`}
                       >
                         <span className="rg-muted tnum text-[15px] font-semibold">{s.rank}</span>

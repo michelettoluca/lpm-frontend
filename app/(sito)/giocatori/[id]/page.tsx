@@ -9,7 +9,7 @@ import { ColHeads, Head, MarkerCircle, PixelStar, Section, plural } from "../../
 import { FaceOff } from "./FaceOff";
 
 
-export async function generateMetadata(props: PageProps<"/players/[id]">) {
+export async function generateMetadata(props: PageProps<"/giocatori/[id]">) {
   const { id } = await props.params;
   const p = await getPlayerData(id);
   return { title: p ? `${p.name} · Lega Pauper Milano` : "Giocatore · Lega Pauper Milano" };
@@ -26,7 +26,7 @@ function Big({ label, children }: { label: string; children: ReactNode }) {
 
 const TCOLS = "grid-cols-[3rem_1fr_auto] gap-3 sm:grid-cols-[4rem_1fr_auto]";
 
-export default async function PlayerPage(props: PageProps<"/players/[id]">) {
+export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
   const { id } = await props.params;
   const { stagione } = await props.searchParams;
   const [p, d] = await Promise.all([getPlayerData(id), getPlayerDecksData(id, stagione)]);
@@ -39,7 +39,7 @@ export default async function PlayerPage(props: PageProps<"/players/[id]">) {
     <div className="rg-stack">
       {/* ---------------- hero ---------------- */}
       <section className="rg-panel">
-        <Link href="/leaderboard" className="rg-textlink -ml-1 inline-flex min-h-11 items-center px-1 text-[15px]">
+        <Link href="/classifica" className="rg-textlink -ml-1 inline-flex min-h-11 items-center px-1 text-[15px]">
           ← la classifica
         </Link>
         {p.season && <p className="rg-eyebrow mt-4">stagione {p.season.name.toLowerCase()}</p>}
@@ -101,7 +101,7 @@ export default async function PlayerPage(props: PageProps<"/players/[id]">) {
                 return (
                   <li key={t.event.id} className={i ? "rg-hr" : ""}>
                     <Link
-                      href={`/events/${t.event.id}`}
+                      href={`/tappe/${t.event.id}`}
                       className={`rg-row -mx-2 grid items-center px-2 py-3.5 ${TCOLS} ${t.dropped ? "rg-muted" : ""}`}
                     >
                       <span className="rg-display tnum text-[36px] leading-none">{t.number ?? "·"}</span>
@@ -137,7 +137,7 @@ export default async function PlayerPage(props: PageProps<"/players/[id]">) {
             aside={`Gli archetipi giocati da ${p.first} ${within}.`}
           />
           <div className="mt-6">
-            <SeasonPicker choice={d.choice} href={`/players/${p.id}`} />
+            <SeasonPicker choice={d.choice} href={`/giocatori/${p.id}`} />
           </div>
           {d.decks.length === 0 ? (
             <p className="rg-muted mt-6 text-[16px]">Nessun mazzo conosciuto {within}.</p>

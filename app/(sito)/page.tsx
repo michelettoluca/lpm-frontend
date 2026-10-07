@@ -56,7 +56,7 @@ export default async function Home() {
           aside={<>La classifica dopo {plural(played.length, "tappa", "tappe")}.</>}
         >
           <Link
-            href={`/players/${first.player_id}`}
+            href={`/giocatori/${first.player_id}`}
             className="rg-row group -mx-2 grid grid-cols-[auto_1fr_auto] items-end gap-x-4 px-2 py-2"
           >
             <span className="rg-display tnum text-[88px] leading-[0.78] text-[var(--rg-o)] lg:text-[128px]">1</span>
@@ -81,7 +81,7 @@ export default async function Home() {
           <ol>
             {chasers.map((e, i) => (
               <li key={e.player_id} className={i ? "rg-hr" : ""}>
-                <Link href={`/players/${e.player_id}`} className={`rg-row -mx-2 grid min-h-13 items-center px-2 ${ROWS}`}>
+                <Link href={`/giocatori/${e.player_id}`} className={`rg-row -mx-2 grid min-h-13 items-center px-2 ${ROWS}`}>
                   <span className="rg-muted tnum text-[16px] font-semibold">{i + 2}</span>
                   <span className="rg-display truncate text-[19px]">{e.display_name}</span>
                   <span className="rg-muted tnum text-right text-[15px]">{e.events_played}</span>
@@ -90,7 +90,7 @@ export default async function Home() {
               </li>
             ))}
           </ol>
-          <ArrowLink href="/leaderboard" className="rg-hr-strong mt-1 w-full pt-2 text-[20px]">
+          <ArrowLink href="/classifica" className="rg-hr-strong mt-1 w-full pt-2 text-[20px]">
             tutti e {leaderboard.length}
           </ArrowLink>
         </Section>
@@ -119,7 +119,7 @@ export default async function Home() {
                   const [w, ...rest] = t.podium;
                   return (
                     <li key={t.id} className={i ? "rg-hr" : ""}>
-                      <Link href={`/events/${t.id}`} className="rg-row -mx-2 grid grid-cols-[3.4rem_1fr] gap-3 px-2 py-4">
+                      <Link href={`/tappe/${t.id}`} className="rg-row -mx-2 grid grid-cols-[3.4rem_1fr] gap-3 px-2 py-4">
                         <span className="rg-display tnum text-[44px] leading-[0.85]">{t.number ?? "·"}</span>
                         <span className="min-w-0">
                           <span className="rg-muted block text-[14px] font-semibold">
@@ -155,7 +155,7 @@ export default async function Home() {
                   return (
                     <li key={t.id} className={i ? "rg-hr" : ""}>
                       <Link
-                        href={`/events/${t.id}`}
+                        href={`/tappe/${t.id}`}
                         className="rg-row -mx-2 grid min-h-16 grid-cols-[3.4rem_1fr_auto] items-center gap-3 px-2 py-3"
                       >
                         <span className="rg-display rg-outline tnum text-[40px] leading-none">{t.number ?? "·"}</span>
@@ -189,7 +189,7 @@ export default async function Home() {
             <Link href="/mazzo" className="rg-btn rg-btn-ink">
               cosa giochi stasera?
             </Link>
-            <ArrowLink href="/rules" className="text-[20px]">
+            <ArrowLink href="/regole" className="text-[20px]">
               il regolamento, in breve
             </ArrowLink>
           </div>

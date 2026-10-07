@@ -29,7 +29,7 @@ export function Footer() {
             <a className="rg-textlink inline-flex min-h-11 items-center" href={RULES.discord} target="_blank" rel="noopener noreferrer">
               discord della lega
             </a>
-            <Link className="rg-textlink inline-flex min-h-11 items-center" href="/rules">
+            <Link className="rg-textlink inline-flex min-h-11 items-center" href="/regole">
               come funziona
             </Link>
           </p>
