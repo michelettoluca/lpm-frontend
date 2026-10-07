@@ -40,6 +40,7 @@ import {
   tappaTitle,
   winPct,
 } from "./format";
+import { potentialGain } from "./potential";
 
 export type { EventSummary, LeaderboardEntry, MatchRecord, MatchupMatrix, Metagame, MetagameArchetype, Pairing, PlayerDeck, PlayerEventEntry, Season, Standing };
 export { dateTile, formatDateMeta, splitName, tappaNumber, tappaSubtitle, tappaTitle, winPct };
@@ -106,12 +107,40 @@ export async function getHomeData(): Promise<HomeData> {
   };
 }
 
+/** A completed tappa, as a column of the leaderboard. */
+export type LeaderboardTappa = { id: number; number: number | null; title: string };
+
+/** A player's points at one tappa; counted is false outside their best counted_events. */
+export type TappaResult = { points: number; counted: boolean };
+
 export type LeaderboardData = {
   season: Season | null;
   leaderboard: LeaderboardEntry[];
+  /** Completed tappe, oldest first. */
+  tappe: LeaderboardTappa[];
+  /** Per player, one entry per tappa in the same order; null where they did not play. */
+  results: Record<number, (TappaResult | null)[]>;
+  /** Per player, points they can still add by going undefeated at every tappa left. */
+  potential: Record<number, number>;
+  /** Scheduled tappe without results yet. */
+  remaining: number;
   playedEvents: number;
   totalEvents: number;
 };
+
+/**
+ * Marks which results make up each season total, the way the backend ranks
+ * them: best points first, ties keeping the earlier tappa.
+ */
+function markCounted(results: (TappaResult | null)[], counted: number | null) {
+  const best = results
+    .map((r, i) => ({ r, i }))
+    .filter((x): x is { r: TappaResult; i: number } => x.r !== null)
+    .sort((a, b) => b.r.points - a.r.points || a.i - b.i);
+  best.forEach((x, k) => {
+    x.r.counted = counted === null || k < counted;
+  });
+}
 
 export async function getLeaderboardData(): Promise<LeaderboardData> {
   const [leaderboard, events, season] = await Promise.all([
@@ -119,10 +148,34 @@ export async function getLeaderboardData(): Promise<LeaderboardData> {
     getEvents(),
     getActiveSeason(),
   ]);
+  const playedRaw = events.filter(isCompleted).sort((a, b) => time(a) - time(b));
+  const details = await Promise.all(playedRaw.map((e) => getEvent(e.id)));
+
+  const results: Record<number, (TappaResult | null)[]> = {};
+  for (const entry of leaderboard) results[entry.player_id] = playedRaw.map(() => null);
+  details.forEach((d, i) => {
+    for (const s of d?.standings ?? []) {
+      const row = results[s.player_id];
+      if (row) row[i] = { points: s.points, counted: true };
+    }
+  });
+  const counted = season ? season.counted_events : COUNTED_EVENTS;
+  for (const row of Object.values(results)) markCounted(row, counted);
+  const remaining = events.length - playedRaw.length;
+  const potential: Record<number, number> = {};
+  for (const [id, row] of Object.entries(results)) {
+    const points = row.flatMap((r) => (r ? [r.points] : []));
+    potential[Number(id)] = potentialGain(points, counted, remaining);
+  }
+
   return {
     season,
     leaderboard,
-    playedEvents: events.filter(isCompleted).length,
+    tappe: playedRaw.map((e) => ({ id: e.id, number: tappaNumber(e.name), title: tappaTitle(e.name) })),
+    results,
+    potential,
+    remaining,
+    playedEvents: playedRaw.length,
     totalEvents: events.length,
   };
 }

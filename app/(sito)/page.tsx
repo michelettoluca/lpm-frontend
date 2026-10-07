@@ -15,14 +15,15 @@ function Stat({ label, value, sub }: { label: string; value: ReactNode; sub?: Re
   );
 }
 
-const ROWS = "grid-cols-[2.4rem_1fr_auto] gap-3 sm:grid-cols-[3rem_1fr_auto]";
+const ROWS = "grid-cols-[2.4rem_1fr_2.6rem_2.8rem] gap-2 sm:grid-cols-[3rem_1fr_4.5rem_4.5rem] sm:gap-3";
 
 export default async function Home() {
   const { season, leaderboard, played, upcoming, totalEvents } = await getHomeData();
   const counted = season?.counted_events ?? COUNTED_EVENTS;
   const avg = played.length ? Math.round(played.reduce((s, t) => s + t.players, 0) / played.length) : 0;
-  const [first, second, third] = leaderboard;
-  const chasers = leaderboard.slice(3, 8);
+  const [first] = leaderboard;
+  // Second to eighth share one list: only the leader stands out.
+  const chasers = leaderboard.slice(1, 8);
 
   return (
     <div className="rg-stack">
@@ -73,37 +74,17 @@ export default async function Home() {
             </span>
           </Link>
 
-          <ul className="mt-6">
-            {[second, third].filter(Boolean).map((e, i) => (
-              <li key={e.player_id} className="rg-hr">
-                <Link
-                  href={`/players/${e.player_id}`}
-                  className="rg-row -mx-2 grid grid-cols-[2.4rem_1fr_auto] items-center gap-x-3 px-2 py-4 sm:grid-cols-[3rem_1fr_auto]"
-                >
-                  <span className="rg-display tnum text-[52px] leading-[0.85] lg:text-[64px]">{i + 2}</span>
-                  <span className="min-w-0">
-                    <span className="rg-display block text-[22px] leading-[1.1] lg:text-[30px]">{e.display_name}</span>
-                    <span className="rg-muted mt-0.5 block text-[14px] tnum">{plural(e.events_played, "tappa", "tappe")}</span>
-                  </span>
-                  <span className="text-right">
-                    <span className="rg-display tnum block text-[28px] leading-none lg:text-[36px]">{e.total_points}</span>
-                    <span className="rg-muted block text-[13px] font-semibold">punti</span>
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-
           <ColHeads
             className={`${ROWS} mt-6`}
-            cols={[{ label: "pos." }, { label: "nome" }, { label: "punti", right: true }]}
+            cols={[{ label: "pos." }, { label: "nome" }, { label: "tappe", right: true }, { label: "punti", right: true }]}
           />
           <ol>
             {chasers.map((e, i) => (
               <li key={e.player_id} className={i ? "rg-hr" : ""}>
                 <Link href={`/players/${e.player_id}`} className={`rg-row -mx-2 grid min-h-13 items-center px-2 ${ROWS}`}>
-                  <span className="rg-muted tnum text-[16px] font-semibold">{i + 4}</span>
+                  <span className="rg-muted tnum text-[16px] font-semibold">{i + 2}</span>
                   <span className="rg-display truncate text-[19px]">{e.display_name}</span>
+                  <span className="rg-muted tnum text-right text-[15px]">{e.events_played}</span>
                   <span className="rg-display rg-strong tnum text-right text-[19px]">{e.total_points}</span>
                 </Link>
               </li>

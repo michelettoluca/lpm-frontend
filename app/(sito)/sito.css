@@ -30,6 +30,9 @@ body:has(.lpm)::before {
   --rg-line-strong: #cfc9c2;
   --rg-soft: #f5f3f0;
   --rg-soft-2: #ebe7e2;
+  /* Text on an ink fill, and that fill on hover. */
+  --rg-on-ink: #fff;
+  --rg-ink-hover: #000;
   /* The closing panel. */
   --rg-dark: #1c1b1a;
   --rg-on-dark: #f6f2ec;
@@ -272,6 +275,7 @@ body:has(.lpm)::before {
 }
 .lpm .rg-pill[aria-current="page"] {
   background-color: var(--rg-ink);
+  color: var(--rg-on-ink);
 }
 
 .lpm .rg-arrowlink {
@@ -337,10 +341,10 @@ body:has(.lpm)::before {
 .lpm .rg-btn-ink {
   background-color: var(--rg-ink);
   background-image: var(--rg-sheen);
-  color: #fff;
+  color: var(--rg-on-ink);
 }
 .lpm .rg-btn-ink:hover {
-  background-color: #000;
+  background-color: var(--rg-ink-hover);
 }
 .lpm .rg-btn-line {
   background: transparent;
@@ -391,6 +395,41 @@ body:has(.lpm)::before {
 .lpm .rg-row:hover {
   background: var(--rg-soft);
 }
+/* A table wider than the screen fades out on the right while there is more to
+   scroll to, so the hidden columns announce themselves. Browsers without
+   scroll-driven animations simply show no fade. */
+@property --rg-fade {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@keyframes rg-fade {
+  from {
+    --rg-fade: 40px;
+  }
+  95% {
+    --rg-fade: 40px;
+  }
+  to {
+    --rg-fade: 0px;
+  }
+}
+@supports (animation-timeline: scroll()) {
+  .lpm .rg-scroll {
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--rg-fade)), transparent);
+    animation: rg-fade linear both;
+    animation-timeline: scroll(self inline);
+  }
+}
+/* A pinned cell in a scrolling table: it covers what scrolls under it, and
+   takes the row's wash on hover. */
+.lpm .rg-stick {
+  background: var(--rg-paper);
+  transition: background-color 0.12s ease;
+}
+.lpm .rg-row:hover .rg-stick {
+  background: var(--rg-soft);
+}
 
 /* Small status badge. */
 .lpm .rg-badge {
@@ -415,6 +454,34 @@ body:has(.lpm)::before {
 .lpm .rg-outline {
   color: transparent;
   -webkit-text-stroke: 1.25px var(--rg-mute);
+}
+
+/* Segmented switch: one choice out of a few, the current one filled with ink
+   like the current page in the menu. */
+.lpm .rg-seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--rg-soft);
+  box-shadow: inset 0 0 0 1px var(--rg-line);
+}
+.lpm .rg-seg button {
+  min-height: 38px;
+  padding: 0 16px;
+  border-radius: 999px;
+  color: var(--rg-mute);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.lpm .rg-seg button:hover {
+  color: var(--rg-ink);
+}
+.lpm .rg-seg button[aria-pressed="true"] {
+  background-color: var(--rg-ink);
+  color: var(--rg-on-ink);
 }
 
 /* Small outlined choice, still 44px tall. */

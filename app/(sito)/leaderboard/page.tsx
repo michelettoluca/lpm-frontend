@@ -5,7 +5,7 @@ import { Standings } from "./Standings";
 export const metadata = { title: "Classifica · Lega Pauper Milano" };
 
 export default async function LeaderboardPage() {
-  const { season, leaderboard, playedEvents, totalEvents } = await getLeaderboardData();
+  const { season, leaderboard, tappe, results, potential, remaining, playedEvents, totalEvents } = await getLeaderboardData();
   const counted = season?.counted_events ?? 8;
 
   return (
@@ -31,7 +31,12 @@ export default async function LeaderboardPage() {
           name: e.display_name,
           points: e.total_points,
           played: e.events_played,
+          results: results[e.player_id] ?? [],
+          potential: potential[e.player_id] ?? 0,
         }))}
+        tappe={tappe}
+        counted={season ? season.counted_events : counted}
+        remaining={remaining}
       />
     </div>
   );
