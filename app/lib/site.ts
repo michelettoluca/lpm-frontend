@@ -9,15 +9,21 @@ import {
   getEvents,
   getHeadToHead,
   getLeaderboard,
+  getMatchups,
   getPairings,
   getPlayer,
+  getPlayerDecks,
   getPlayerEvents,
+  getSeasons,
   type EventSummary,
   type H2HOpponent,
   type LeaderboardEntry,
+  type MatchRecord,
+  type MatchupMatrix,
   type Metagame,
   type MetagameArchetype,
   type Pairing,
+  type PlayerDeck,
   type PlayerEventEntry,
   type Season,
   type Standing,
@@ -35,7 +41,7 @@ import {
   winPct,
 } from "./format";
 
-export type { EventSummary, LeaderboardEntry, Metagame, MetagameArchetype, Pairing, PlayerEventEntry, Season, Standing };
+export type { EventSummary, LeaderboardEntry, MatchRecord, MatchupMatrix, Metagame, MetagameArchetype, Pairing, PlayerDeck, PlayerEventEntry, Season, Standing };
 export { dateTile, formatDateMeta, splitName, tappaNumber, tappaSubtitle, tappaTitle, winPct };
 
 /** A tappa result of 9 points or more (3 wins) earns the star. */
@@ -225,10 +231,17 @@ export type EventData = {
   rounds: number;
   /** Decks declared, by archetype; null when nobody's deck is known. */
   metagame: Metagame | null;
+  /** The night's matchups; null when no match between two known decks. */
+  matchups: MatchupMatrix | null;
 };
 
 export async function getEventData(id: string): Promise<EventData | null> {
-  const [data, pairings, metagame] = await Promise.all([getEvent(id), getPairings(id), getEventMetagame(id)]);
+  const [data, pairings, metagame, matchups] = await Promise.all([
+    getEvent(id),
+    getPairings(id),
+    getEventMetagame(id),
+    getMatchups({ event: Number(id) }),
+  ]);
   if (!data) return null;
   const { event, standings } = data;
   const roundsPlayed = standings.reduce((max, s) => Math.max(max, s.wins + s.losses + s.draws + s.byes), 0);
@@ -244,7 +257,61 @@ export async function getEventData(id: string): Promise<EventData | null> {
     pairings,
     rounds: Math.max(roundsPlayed, pairings.reduce((max, p) => Math.max(max, p.round), 0)),
     metagame: metagame && metagame.declared > 0 ? metagame : null,
+    matchups: matchups && matchups.cells.length > 0 ? matchups : null,
   };
+}
+
+/** The seasons the statistics can show, and which is shown: one season, or "tutte". */
+export type SeasonChoice = {
+  /** Every season, most recent first. */
+  seasons: Season[];
+  selected: number | "tutte";
+  /** Season ids for the API; empty means every season. */
+  ids: number[];
+};
+
+/**
+ * Reads `?stagione=` (a season id or "tutte"). Without one, or with one that
+ * does not exist, it is the active season, else the most recent.
+ */
+export async function chooseSeason(param: string | string[] | undefined): Promise<SeasonChoice> {
+  const [all, active] = await Promise.all([getSeasons(), getActiveSeason()]);
+  const seasons = [...all].sort((a, b) => b.started_at.localeCompare(a.started_at));
+  const wanted = Array.isArray(param) ? param[0] : param;
+  if (wanted === "tutte") return { seasons, selected: "tutte", ids: [] };
+  const chosen = seasons.find((s) => String(s.id) === wanted) ?? active ?? seasons[0];
+  return chosen ? { seasons, selected: chosen.id, ids: [chosen.id] } : { seasons, selected: "tutte", ids: [] };
+}
+
+export type StatsData = { choice: SeasonChoice; matrix: MatchupMatrix | null };
+
+/** The league's matchup matrix for the chosen season. */
+export async function getStatsData(param: string | string[] | undefined): Promise<StatsData> {
+  const choice = await chooseSeason(param);
+  return { choice, matrix: await getMatchups({ seasons: choice.ids }) };
+}
+
+export type PlayerDecksData = {
+  choice: SeasonChoice;
+  /** The archetypes the player brought, most brought first. */
+  decks: PlayerDeck[];
+  /** The player's side of their matches, by their deck and the opponent's. */
+  matrix: MatchupMatrix | null;
+  /** Every archetype in the league over the same seasons, for the matrix's columns. */
+  league: MatchupMatrix | null;
+  /** Whether the player has a known deck in any season, to offer the others when this one has none. */
+  anyDeck: boolean;
+};
+
+export async function getPlayerDecksData(id: string, param: string | string[] | undefined): Promise<PlayerDecksData> {
+  const choice = await chooseSeason(param);
+  const [decks, matrix, league, ever] = await Promise.all([
+    getPlayerDecks(id, choice.ids),
+    getMatchups({ seasons: choice.ids, player: Number(id) }),
+    getMatchups({ seasons: choice.ids }),
+    choice.ids.length > 0 ? getPlayerDecks(id, []) : null,
+  ]);
+  return { choice, decks, matrix, league, anyDeck: decks.length > 0 || (ever ?? []).length > 0 };
 }
 
 export async function getSeason(): Promise<Season | null> {

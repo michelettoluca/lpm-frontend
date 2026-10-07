@@ -6,6 +6,7 @@ import { MarkerUnderline } from "./ui";
 
 const LINKS = [
   { href: "/leaderboard", label: "classifica" },
+  { href: "/statistiche", label: "statistiche" },
   { href: "/rules", label: "regole" },
 ];
 

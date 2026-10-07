@@ -3,6 +3,7 @@ import { Fragment } from "react";
 import { notFound } from "next/navigation";
 import { PRIZE_POINTS, getEventData, type Standing } from "@/app/lib/site";
 import { ArrowLink, ColHeads, Comune, Head, PixelStar, Section, plural, sameRomeDay, weekday } from "../../ui";
+import { Matrix } from "../../Matrix";
 import { Metagame } from "./Metagame";
 
 export async function generateMetadata(props: PageProps<"/events/[id]">) {
@@ -173,6 +174,25 @@ export default async function EventPage(props: PageProps<"/events/[id]">) {
       )}
 
       {e.hasResults && e.metagame && <Metagame data={e.metagame} />}
+
+      {e.hasResults && e.matchups && (
+        <section className="rg-panel">
+          <Head
+            label="matchup"
+            title="chi ha battuto chi"
+            aside="La matrice dei risultati della serata, archetipo contro archetipo."
+          />
+          <div className="mt-6">
+            <Matrix
+              rows={e.matchups.archetypes}
+              columns={e.matchups.archetypes}
+              cells={e.matchups.cells}
+              mirror
+              label={`Matchup della ${e.title}`}
+            />
+          </div>
+        </section>
+      )}
 
       {rounds.length > 0 && (
         <section className="rg-panel">

@@ -1,29 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
-import { dateTile, getPlayerData } from "@/app/lib/site";
-import { ColHeads, MarkerCircle, PixelStar, Section, plural } from "../../ui";
+import { dateTile, getPlayerData, getPlayerDecksData } from "@/app/lib/site";
+import { ArchetypeBars } from "../../ArchetypeBars";
+import { Matrix } from "../../Matrix";
+import { SeasonPicker } from "../../SeasonPicker";
+import { ColHeads, Head, MarkerCircle, PixelStar, Section, plural } from "../../ui";
 import { FaceOff } from "./FaceOff";
 
-const num = (n: number, digits = 1) => n.toLocaleString("it-IT", { maximumFractionDigits: digits });
-const pct = (part: number, whole: number) => (whole === 0 ? "–" : `${Math.round((part / whole) * 100)}%`);
 
 export async function generateMetadata(props: PageProps<"/players/[id]">) {
   const { id } = await props.params;
   const p = await getPlayerData(id);
   return { title: p ? `${p.name} · Lega Pauper Milano` : "Giocatore · Lega Pauper Milano" };
-}
-
-function Fact({ value, label, sub }: { value: ReactNode; label: string; sub?: ReactNode }) {
-  return (
-    <div className="rg-hr pt-3">
-      <dt className="rg-muted text-[14px] font-semibold">{label}</dt>
-      <dd className="mt-1 flex flex-wrap items-baseline gap-x-2">
-        <span className="rg-display rg-tight tnum text-[36px] leading-none lg:text-[44px]">{value}</span>
-        {sub && <span className="rg-muted tnum text-[14px]">{sub}</span>}
-      </dd>
-    </div>
-  );
 }
 
 function Big({ label, children }: { label: string; children: ReactNode }) {
@@ -39,18 +28,12 @@ const TCOLS = "grid-cols-[3rem_1fr_auto] gap-3 sm:grid-cols-[4rem_1fr_auto]";
 
 export default async function PlayerPage(props: PageProps<"/players/[id]">) {
   const { id } = await props.params;
-  const p = await getPlayerData(id);
+  const { stagione } = await props.searchParams;
+  const [p, d] = await Promise.all([getPlayerData(id), getPlayerDecksData(id, stagione)]);
   if (!p) notFound();
+  const deckSeason = d.choice.seasons.find((x) => x.id === d.choice.selected);
+  const within = deckSeason ? `nella ${deckSeason.name}` : "in tutte le stagioni";
 
-  const s = p.stats;
-  const games = s ? s.gamesWon + s.gamesLost + s.gamesDrawn : 0;
-  const rivals = s
-    ? [
-        s.nemesis && { label: "la bestia nera", r: s.nemesis, note: `ha battuto ${p.first} ${s.nemesis.count} volte` },
-        s.victim && { label: "la vittima preferita", r: s.victim, note: `${p.first} l'ha battuto ${s.victim.count} volte` },
-        s.mostFaced && { label: "il più affrontato", r: s.mostFaced, note: `${s.mostFaced.count} partite insieme` },
-      ].filter((x) => !!x)
-    : [];
 
   return (
     <div className="rg-stack">
@@ -145,43 +128,51 @@ export default async function PlayerPage(props: PageProps<"/players/[id]">) {
         )}
       </Section>
 
-      {/* ---------------- numeri ---------------- */}
-      {s && (
-        <Section label="statistiche" title="i numeri" aside="Su tutte le tappe giocate, anche quelle scartate.">
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-7 xl:grid-cols-4">
-            <Fact label="miglior piazzamento" value={`${s.bestRank}°`} sub={s.bestRankTimes > 1 ? `×${s.bestRankTimes}` : undefined} />
-            <Fact label="piazzamento medio" value={`${num(s.avgRank)}°`} />
-            <Fact label="volte in top 8" value={s.topCut} sub={`su ${s.events}`} />
-            <Fact label="punti per tappa" value={num(s.avgPoints)} sub={`${s.totalPoints} in tutto`} />
-            <Fact label="game vinti" value={pct(s.gamesWon, games)} sub={`${s.gamesWon}-${s.gamesLost}-${s.gamesDrawn}`} />
-            <Fact label="vittorie 2-0" value={pct(s.cleanWins, s.matchWins)} sub={`${s.cleanWins} su ${s.matchWins}`} />
-            <Fact label="serie migliore" value={s.longestStreak} sub="match di fila" />
-            <Fact label="forza avversari" value={pct(s.avgOmw, 1)} sub={`${s.opponents} avversari`} />
-          </dl>
+      {/* ---------------- mazzi ---------------- */}
+      {d.anyDeck && (
+        <section className="rg-panel">
+          <Head
+            label="mazzi"
+            title="cosa ha giocato"
+            aside={`Gli archetipi giocati da ${p.first} ${within}.`}
+          />
+          <div className="mt-6">
+            <SeasonPicker choice={d.choice} href={`/players/${p.id}`} />
+          </div>
+          {d.decks.length === 0 ? (
+            <p className="rg-muted mt-6 text-[16px]">Nessun mazzo conosciuto {within}.</p>
+          ) : (
+            <>
+              <div className="mt-8">
+                <ArchetypeBars
+                  countLabel="tappe"
+                  rows={d.decks.map((x) => ({
+                    id: x.id,
+                    name: x.name,
+                    colors: x.colors,
+                    count: x.decks,
+                    said: `${x.name}: ${plural(x.decks, "tappa", "tappe")}`,
+                  }))}
+                />
+              </div>
 
-          {rivals.length > 0 && (
-            <div className="mt-12">
-              <h3 className="rg-eyebrow">gli avversari</h3>
-              <ul className="rg-hr-strong mt-2">
-                {rivals.map(({ label, r, note }, i) => (
-                  <li key={label} className={i ? "rg-hr" : ""}>
-                    <Link href={`/players/${r.id}`} className="rg-row -mx-2 grid grid-cols-[1fr_auto] items-end gap-x-4 px-2 py-4">
-                      <span className="min-w-0">
-                        <span className="rg-muted block text-[14px] font-semibold">{label}</span>
-                        <span className="rg-display mt-0.5 block text-[24px] leading-tight lg:text-[30px]">{r.name}</span>
-                        <span className="rg-muted block text-[14px]">{note}</span>
-                      </span>
-                      <span className="text-right">
-                        <span className="rg-display rg-strong tnum block text-[24px] leading-none">{r.record}</span>
-                        <span className="rg-muted block text-[12px] font-semibold">v-p-p</span>
-                      </span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+              {d.matrix && d.matrix.cells.length > 0 && (
+                <div className="mt-12">
+                  <h3 className="rg-eyebrow">matrice dei risultati</h3>
+                  <div className="mt-4">
+                    <Matrix
+                      rows={d.matrix.archetypes}
+                      columns={d.league?.archetypes ?? d.matrix.archetypes}
+                      cells={d.matrix.cells}
+                      mirror={false}
+                      label={`Matchup di ${p.name}`}
+                    />
+                  </div>
+                </div>
+              )}
+            </>
           )}
-        </Section>
+        </section>
       )}
 
       {/* ---------------- testa a testa ---------------- */}

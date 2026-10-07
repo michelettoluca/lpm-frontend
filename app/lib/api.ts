@@ -118,6 +118,7 @@ export type MetagameArchetype = {
   wins: number;
   losses: number;
   draws: number;
+  /** Apart from wins: a deck's record leaves them out. */
   byes: number;
   best_rank: number;
   /** The most points one of its players made. */
@@ -132,6 +133,35 @@ export type Metagame = {
   declared: number;
   archetypes: MetagameArchetype[];
 };
+
+/** Matches and games won, lost and drawn. Byes and intentional draws are never counted. */
+export type MatchRecord = {
+  matches: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  games_won: number;
+  games_lost: number;
+  games_drawn: number;
+};
+
+/**
+ * An archetype in a matrix, most played first: decks is how many times it was
+ * brought under the filter, matches how many matches it played.
+ */
+export type StatsArchetype = { id: number; name: string; colors: string[]; decks: number; matches: number };
+
+/**
+ * How one archetype did against another. Each match counts once per side; on
+ * the diagonal a mirror match counts once in matches, with equal wins and losses.
+ */
+export type MatchupCell = MatchRecord & { archetype_id: number; opponent_archetype_id: number };
+
+/** A matchup matrix: rows most brought first, cells only where the two decks met. */
+export type MatchupMatrix = { archetypes: StatsArchetype[]; cells: MatchupCell[] };
+
+/** An archetype a player brought, and how it went. */
+export type PlayerDeck = Omit<StatsArchetype, "matches"> & MatchRecord & { points: number; best_points: number };
 
 async function get<T>(path: string): Promise<T | null> {
   const res = await fetch(`${BASE}${path}`, { next: { revalidate: 60, tags: [PUBLIC_DATA_TAG] } });
@@ -188,6 +218,38 @@ export async function getEventMetagame(id: string | number): Promise<Metagame | 
     return data && Array.isArray(data.archetypes) ? data : null;
   } catch {
     return null;
+  }
+}
+
+/** Ids for `?season=`, or nothing for every season. */
+const seasonQuery = (seasons: number[]) => seasons.map((id) => `season=${id}`);
+
+/**
+ * A matchup matrix over the seasons given (every season when empty), one
+ * tappa, or one player's side. Null when the backend does not serve it.
+ */
+export async function getMatchups(filter: { seasons?: number[]; event?: number; player?: number }): Promise<MatchupMatrix | null> {
+  const query = [
+    ...seasonQuery(filter.seasons ?? []),
+    ...(filter.event ? [`event=${filter.event}`] : []),
+    ...(filter.player ? [`player=${filter.player}`] : []),
+  ].join("&");
+  try {
+    const data = await get<MatchupMatrix>(`/stats/matchups${query ? `?${query}` : ""}`);
+    return data && Array.isArray(data.archetypes) && Array.isArray(data.cells) ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The archetypes a player brought in the seasons given (every season when empty). Empty when unknown. */
+export async function getPlayerDecks(id: string | number, seasons: number[]): Promise<PlayerDeck[]> {
+  const query = seasonQuery(seasons).join("&");
+  try {
+    const data = await get<PlayerDeck[]>(`/players/${id}/decks${query ? `?${query}` : ""}`);
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
   }
 }
 
