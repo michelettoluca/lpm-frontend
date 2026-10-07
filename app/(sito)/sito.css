@@ -33,9 +33,9 @@ body:has(.lpm)::before {
   /* The LPM red: fills, buttons, the mascot, the leader and big type. The
      other reds derive from it. */
   --rg-o: #fa1e32;
-  /* Red for small link text: the same red, darkened to stay above 4.5:1; on
-     dark, lightened instead (#fc6270, about 6:1). */
-  --rg-link: light-dark(color-mix(in srgb, var(--rg-o) 76%, #000), color-mix(in srgb, var(--rg-o) 70%, #fff));
+  /* Links in the same red, so the site has one: 4.0:1 on white and 4.4:1 on
+     the dark panels, enough for their bold, larger type. */
+  --rg-link: var(--rg-o);
   /* Fill behind white button text: the red itself, kept vivid (large text). */
   --rg-act: var(--rg-o);
   --rg-act-hover: color-mix(in srgb, var(--rg-o) 86%, #000);
@@ -62,10 +62,9 @@ body:has(.lpm)::before {
   /* Dividers drawn by hand, barely: a 160px wavy stroke, tiled. */
   --rg-line-hand: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='4'%3E%3Cpath d='M0 2 C20 1.3 42 2.7 66 2 C90 1.4 112 2.6 136 1.9 C148 1.6 156 1.9 160 2' fill='none' stroke='%23e6e2dd' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");
   /* Link underlines, the same hand a little bolder: soft at rest, full on
-     hover. Data URIs can't read variables, so the reds are spelled out
-     (#be1726 is --rg-link). */
-  --rg-ul-link: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='6'%3E%3Cpath d='M0 3 C12 2.1 23 3.9 37 3 C50 2.2 61 3.8 72 3' fill='none' stroke='%23be1726' stroke-opacity='0.45' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E");
-  --rg-ul-link-hover: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='6'%3E%3Cpath d='M0 3 C12 2.1 23 3.9 37 3 C50 2.2 61 3.8 72 3' fill='none' stroke='%23be1726' stroke-opacity='1' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E");
+     hover, in the links' red (the --rg-ul-o strokes below). */
+  --rg-ul-link: var(--rg-ul-o);
+  --rg-ul-link-hover: var(--rg-ul-o-hover);
   --rg-ul-o: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='6'%3E%3Cpath d='M0 3 C12 2.1 23 3.9 37 3 C50 2.2 61 3.8 72 3' fill='none' stroke='%23fa1e32' stroke-opacity='0.5' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E");
   --rg-ul-o-hover: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='6'%3E%3Cpath d='M0 3 C12 2.1 23 3.9 37 3 C50 2.2 61 3.8 72 3' fill='none' stroke='%23fa1e32' stroke-opacity='1' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E");
   --rg-ul-white: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='6'%3E%3Cpath d='M0 3 C12 2.1 23 3.9 37 3 C50 2.2 61 3.8 72 3' fill='none' stroke='%23ffffff' stroke-opacity='1' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E");
@@ -273,13 +272,6 @@ body:has(.lpm)::before {
 .lpm .rg-ul:hover {
   background-image: var(--rg-ul-link-hover);
 }
-.lpm .rg-panel-dark .rg-textlink {
-  color: var(--rg-o);
-  background-image: var(--rg-ul-o);
-}
-.lpm .rg-panel-dark .rg-textlink:hover {
-  background-image: var(--rg-ul-o-hover);
-}
 
 .lpm .rg-nav {
   position: relative;
@@ -307,9 +299,6 @@ body:has(.lpm)::before {
 .lpm .rg-panel-o .rg-arrowlink {
   color: #fff;
 }
-.lpm .rg-panel-dark .rg-arrowlink {
-  color: var(--rg-o);
-}
 .lpm .rg-arrowlink svg {
   transition: transform 0.2s ease;
 }
@@ -327,9 +316,6 @@ body:has(.lpm)::before {
 }
 .lpm .rg-panel-o .rg-arrowlink:hover > span {
   background-image: var(--rg-ul-white);
-}
-.lpm .rg-panel-dark .rg-arrowlink:hover > span {
-  background-image: var(--rg-ul-o-hover);
 }
 
 /* Buttons for the table flow. */
@@ -920,23 +906,19 @@ body:has(.lpm)::before {
 }
 
 /*
- * The hand-drawn strokes are images with their colours spelled out, so the
- * dark theme draws them again in its own greys and red (#fc6270 is the dark
- * --rg-link). Once for a dark system, once for a visitor who picked dark.
+ * The hand-drawn grey strokes are images with their colours spelled out, so
+ * the dark theme draws them again in its own greys. Once for a dark system,
+ * once for a visitor who picked dark.
  */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .lpm {
     --rg-line-hand: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='4'%3E%3Cpath d='M0 2 C20 1.3 42 2.7 66 2 C90 1.4 112 2.6 136 1.9 C148 1.6 156 1.9 160 2' fill='none' stroke='%23242b36' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");
     --rg-line-strong-hand: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='4'%3E%3Cpath d='M0 2 C20 1.3 42 2.7 66 2 C90 1.4 112 2.6 136 1.9 C148 1.6 156 1.9 160 2' fill='none' stroke='%23364050' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");
-    --rg-ul-link: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='6'%3E%3Cpath d='M0 3 C12 2.1 23 3.9 37 3 C50 2.2 61 3.8 72 3' fill='none' stroke='%23fc6270' stroke-opacity='0.45' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E");
-    --rg-ul-link-hover: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='6'%3E%3Cpath d='M0 3 C12 2.1 23 3.9 37 3 C50 2.2 61 3.8 72 3' fill='none' stroke='%23fc6270' stroke-opacity='1' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E");
   }
 }
 :root[data-theme="dark"] .lpm {
   --rg-line-hand: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='4'%3E%3Cpath d='M0 2 C20 1.3 42 2.7 66 2 C90 1.4 112 2.6 136 1.9 C148 1.6 156 1.9 160 2' fill='none' stroke='%23242b36' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");
   --rg-line-strong-hand: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='4'%3E%3Cpath d='M0 2 C20 1.3 42 2.7 66 2 C90 1.4 112 2.6 136 1.9 C148 1.6 156 1.9 160 2' fill='none' stroke='%23364050' stroke-width='1.3' stroke-linecap='round'/%3E%3C/svg%3E");
-  --rg-ul-link: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='6'%3E%3Cpath d='M0 3 C12 2.1 23 3.9 37 3 C50 2.2 61 3.8 72 3' fill='none' stroke='%23fc6270' stroke-opacity='0.45' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E");
-  --rg-ul-link-hover: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='6'%3E%3Cpath d='M0 3 C12 2.1 23 3.9 37 3 C50 2.2 61 3.8 72 3' fill='none' stroke='%23fc6270' stroke-opacity='1' stroke-width='1.7' stroke-linecap='round'/%3E%3C/svg%3E");
 }
 
 /* The theme switch at the bottom of the page: it shows where it takes you,
