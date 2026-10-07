@@ -26,7 +26,8 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       <a href="#rg-main" className="rg-skip">
         salta al contenuto
       </a>
-      <header className="rg-wrap flex flex-wrap items-center justify-between gap-x-6 gap-y-1 pt-3 pb-3 lg:pt-6 lg:pb-5">
+      {/* Its own layer above the page: the phone menu opens just under it, its backdrop behind the header's links. */}
+      <header className="rg-wrap relative z-30 flex items-center justify-between gap-x-6 pt-3 pb-3 lg:pt-6 lg:pb-5">
         <HomeLink />
         <Nav />
       </header>
