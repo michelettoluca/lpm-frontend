@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { MatchRecord, MatchupMatrix } from "@/app/lib/site";
 import { archetypeLabel } from "@/app/lib/decks";
 import { Mana } from "./ui";
@@ -5,19 +6,8 @@ import { Mana } from "./ui";
 type Archetype = MatchupMatrix["archetypes"][number];
 type Cell = MatchupMatrix["cells"][number];
 
-/** Favourable and unfavourable poles of the scale, and its neutral middle. */
-const GOOD = "#1f9d55";
-const BAD = "#e34948";
-const EVEN = "#f0efec";
 /** The rules between the names in the first column. */
 const LINE = "border-[var(--rg-line)]";
-/**
- * A cell's content fills its cell, however tall the row grows; the column
- * headings set the widths, the same for all.
- */
-const BOX = "absolute inset-0";
-/** Every cell: its row at least this tall, room for a two-line name and its colours. */
-const CELL = "relative h-16 p-0 sm:h-[5.25rem]";
 /** The names' column and every other one, tighter on phones. */
 const WIDTHS = "[--name:6rem] [--col:4rem] sm:[--name:11rem] sm:[--col:6.5rem]";
 /** A column's heading: it sets the width, and snaps to the left edge, past the names. */
@@ -41,61 +31,36 @@ function sum(records: MatchRecord[]): MatchRecord {
   return out;
 }
 
-/** The cell's fill: green when favourable, red when not, paler the closer to even. */
-function fill(rate: number) {
-  const strength = Math.min(1, Math.abs(rate - 0.5) * 2);
-  return `color-mix(in oklab, ${rate >= 0.5 ? GOOD : BAD} ${Math.round(strength * 58)}%, ${EVEN})`;
-}
-
-/** A shade darker than a cell's fill, for its edge. */
-const shade = (background: string) => `color-mix(in oklab, ${background}, #000 12%)`;
-
-/** Which outer sides a cell closes: the last column its right, the last row its bottom. */
-type Sides = { right: boolean; bottom: boolean };
-
-/**
- * A cell's edge in its own colour. Every cell draws only its left and top,
- * so two neighbours share one line; the last column and row close the outside.
- */
-function edges(color: string, { right, bottom }: Sides) {
-  return [
-    `inset 1px 1px 0 0 ${color}`,
-    right && `inset -1px 0 0 0 ${color}`,
-    bottom && `inset 0 -1px 0 0 ${color}`,
-  ]
-    .filter(Boolean)
-    .join(", ");
-}
-
 const percent = (x: number) => Math.round(x * 100);
 const record = (r: MatchRecord) => `${r.wins}-${r.losses}-${r.draws}`;
 const describe = (r: MatchRecord) => `${record(r)} nei match, ${percent(r.wins / played(r))}% di vittorie`;
 
-/** A rate as the cell shows it: won-lost-drawn above, the rate large, the count below. */
-function Rate({ r, sides, bold = false }: { r: MatchRecord; sides: Sides; bold?: boolean }) {
-  const background = fill(r.wins / played(r));
+/**
+ * A rate as the cell shows it: won-lost-drawn above, the rate large, the
+ * count below. Green when favourable, red when not, paler the closer to even;
+ * the looks are in sito.css (rg-mx), a cell only says how far from even it is.
+ */
+function Rate({ r }: { r: MatchRecord }) {
+  const rate = r.wins / played(r);
+  const strength = Math.min(1, Math.abs(rate - 0.5) * 2);
   return (
     <span
       aria-hidden="true"
-      style={{ background, boxShadow: edges(shade(background), sides) }}
-      className={`tnum flex flex-col items-center justify-center text-[var(--rg-ink)] ${BOX}`}
+      className={rate >= 0.5 ? undefined : "rg-mx-bad"}
+      style={{ "--mx-s": `${Math.round(strength * 58)}%` } as CSSProperties}
     >
-      <span className="text-[10px] opacity-70 sm:text-[11px]">{record(r)}</span>
-      <span className={`my-0.5 text-[17px] leading-none sm:my-1 sm:text-[22px] ${bold ? "font-extrabold" : "font-bold"}`}>
-        {percent(r.wins / played(r))}
-        <span className="text-[11px] sm:text-[13px]">%</span>
+      <span className="rg-mx-rec">{record(r)}</span>
+      <span className="rg-mx-rate">
+        {percent(rate)}
+        <span>%</span>
       </span>
-      <span className="text-[10px] opacity-75 sm:text-[11px]">{played(r)} match</span>
+      <span className="rg-mx-n">{played(r)} match</span>
     </span>
   );
 }
 
-const Empty = ({ sides }: { sides: Sides }) => (
-  <span
-    aria-hidden="true"
-    style={{ boxShadow: edges("var(--rg-line)", sides) }}
-    className={`rg-muted flex items-center justify-center ${BOX}`}
-  >
+const Empty = () => (
+  <span aria-hidden="true" className="rg-mx-empty">
     –
   </span>
 );
@@ -125,14 +90,13 @@ export function Matrix({
   label: string;
 }) {
   const byPair = new Map(cells.map((c) => [`${c.archetype_id}-${c.opponent_archetype_id}`, c]));
-  // No gap between data cells: each draws its own edge.
-  const td = CELL;
 
   return (
-    <div>
+    <div className="rg-mx">
       {/* On phones the matrix runs to the panel's edges and scrolling stops on a whole column. */}
       <div className="-mx-5 snap-x snap-proximity overflow-x-auto pb-2 sm:mx-0">
         <table
+          // No gap between data cells: each draws its own edge.
           className={`table-fixed border-separate border-spacing-0 text-[13px] ${WIDTHS}`}
           // A fixed layout needs the table's width: the names, the total and the matchups.
           style={{ width: `calc(var(--name) + ${columns.length + 1} * var(--col))` }}
@@ -181,35 +145,25 @@ export function Matrix({
                   >
                     {/* Against the numbers, so the eye goes straight from the name to its row. The rule
                         above it lines up with the cells' top edges; the last one closes below too. */}
-                    <span className={`line-clamp-2 block [overflow-wrap:anywhere] ${NAME}`}>{archetypeLabel(r.name)}</span>
+                    <span className={`line-clamp-2 block [overflow-wrap:anywhere] ${NAME}`}>
+                      {archetypeLabel(r.name)}
+                    </span>
                     <span className="mt-1.5 flex h-3.5 justify-end">
                       <Mana colors={r.colors} size={14} />
                     </span>
                   </th>
                   {/* The total, first. */}
-                  <td
-                    className={td}
-                    aria-label={played(total) ? `in totale: ${describe(total)}` : "in totale: nessun match"}
-                  >
-                    {played(total) ? (
-                      <Rate r={total} sides={{ right: columns.length === 0, bottom }} bold />
-                    ) : (
-                      <Empty sides={{ right: columns.length === 0, bottom }} />
-                    )}
+                  <td aria-label={played(total) ? `in totale: ${describe(total)}` : "in totale: nessun match"}>
+                    {played(total) ? <Rate r={total} /> : <Empty />}
                   </td>
-                  {columns.map((c, ci) => {
+                  {columns.map((c) => {
                     const cell = byPair.get(`${r.id}-${c.id}`);
-                    const sides = { right: ci === columns.length - 1, bottom };
                     if (mirror && cell && r.id === c.id) {
                       return (
-                        <td key={c.id} className={td} aria-label={`${cell.matches} mirror`}>
-                          <span
-                            aria-hidden="true"
-                            style={{ boxShadow: edges(shade("var(--rg-soft-2)"), sides) }}
-                            className={`rg-muted tnum flex flex-col items-center justify-center bg-[var(--rg-soft-2)] ${BOX}`}
-                          >
-                            <span className="text-[17px] font-bold leading-none sm:text-[22px]">{cell.matches}</span>
-                            <span className="mt-1 text-[10px] sm:text-[11px]">mirror</span>
+                        <td key={c.id} aria-label={`${cell.matches} mirror`}>
+                          <span aria-hidden="true" className="rg-mx-mirror">
+                            <span className="rg-mx-rate">{cell.matches}</span>
+                            <span className="rg-mx-n">mirror</span>
                           </span>
                         </td>
                       );
@@ -217,10 +171,13 @@ export function Matrix({
                     return (
                       <td
                         key={c.id}
-                        className={td}
-                        aria-label={cell && played(cell) ? `contro ${archetypeLabel(c.name)}: ${describe(cell)}` : `contro ${archetypeLabel(c.name)}: mai`}
+                        aria-label={
+                          cell && played(cell)
+                            ? `contro ${archetypeLabel(c.name)}: ${describe(cell)}`
+                            : `contro ${archetypeLabel(c.name)}: mai`
+                        }
                       >
-                        {cell && played(cell) ? <Rate r={cell} sides={sides} /> : <Empty sides={sides} />}
+                        {cell && played(cell) ? <Rate r={cell} /> : <Empty />}
                       </td>
                     );
                   })}
@@ -234,11 +191,7 @@ export function Matrix({
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
         <span className="flex items-center gap-2">
           <span className="rg-muted">sfavorevole</span>
-          <span
-            aria-hidden="true"
-            className="block h-2.5 w-28 rounded-full"
-            style={{ background: `linear-gradient(90deg, ${fill(0)}, ${EVEN}, ${fill(1)})` }}
-          />
+          <span aria-hidden="true" className="rg-mx-scale block h-2.5 w-28 rounded-full" />
           <span className="rg-muted">favorevole</span>
         </span>
         {mirror && <span className="rg-muted">Sulla diagonale i mirror.</span>}

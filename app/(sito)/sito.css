@@ -782,3 +782,121 @@ body:has(.lpm)::before {
     transition-property: opacity, visibility;
   }
 }
+
+/*
+ * The matchup matrix. It runs to thousands of cells, so their looks live
+ * here rather than on every cell: each one only says how favourable it is.
+ */
+.lpm .rg-mx {
+  --mx-good: #1f9d55;
+  --mx-bad: #e34948;
+  --mx-even: #f0efec;
+}
+/* Every cell: its row at least this tall, room for a two-line name and its colours. */
+.lpm .rg-mx td {
+  position: relative;
+  height: 4rem;
+  padding: 0;
+}
+/*
+ * A cell's content fills its cell, however tall the row grows. Its fill runs
+ * from even towards the pole by --mx-s; its edge is a shade darker, left and
+ * top only, so two neighbours share one line.
+ */
+.lpm .rg-mx td > span {
+  --mx-bg: color-mix(in oklab, var(--mx-good) var(--mx-s, 0%), var(--mx-even));
+  --mx-edge: color-mix(in oklab, var(--mx-bg), #000 12%);
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--mx-bg);
+  box-shadow: inset 1px 1px 0 0 var(--mx-edge);
+  color: var(--rg-ink);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+/* The last column and row close the outside. */
+.lpm .rg-mx td:last-child > span {
+  box-shadow:
+    inset 1px 1px 0 0 var(--mx-edge),
+    inset -1px 0 0 0 var(--mx-edge);
+}
+.lpm .rg-mx tr:last-child > td > span {
+  box-shadow:
+    inset 1px 1px 0 0 var(--mx-edge),
+    inset 0 -1px 0 0 var(--mx-edge);
+}
+.lpm .rg-mx tr:last-child > td:last-child > span {
+  box-shadow:
+    inset 1px 1px 0 0 var(--mx-edge),
+    inset -1px 0 0 0 var(--mx-edge),
+    inset 0 -1px 0 0 var(--mx-edge);
+}
+.lpm .rg-mx td > .rg-mx-bad {
+  --mx-bg: color-mix(in oklab, var(--mx-bad) var(--mx-s, 0%), var(--mx-even));
+}
+.lpm .rg-mx td > .rg-mx-mirror {
+  --mx-bg: var(--rg-soft-2);
+  color: var(--rg-mute);
+}
+/* Where the two never met: no fill, the grey of the other rules. */
+.lpm .rg-mx td > .rg-mx-empty {
+  --mx-bg: transparent;
+  --mx-edge: var(--rg-line);
+  color: var(--rg-mute);
+}
+/* Won-lost-drawn above, the rate large, the count below. */
+.lpm .rg-mx-rec {
+  font-size: 10px;
+  opacity: 0.7;
+}
+.lpm .rg-mx-rate {
+  margin: 0.125rem 0;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+}
+.lpm .rg-mx-rate > span {
+  font-size: 11px;
+}
+.lpm .rg-mx-n {
+  font-size: 10px;
+  opacity: 0.75;
+}
+/* The total, in the first column, stands out. */
+.lpm .rg-mx td:first-of-type .rg-mx-rate {
+  font-weight: 800;
+}
+.lpm .rg-mx-mirror .rg-mx-rate {
+  margin: 0;
+}
+.lpm .rg-mx-mirror .rg-mx-n {
+  margin-top: 0.25rem;
+  opacity: 1;
+}
+.lpm .rg-mx-scale {
+  background: linear-gradient(
+    90deg,
+    color-mix(in oklab, var(--mx-bad) 58%, var(--mx-even)),
+    var(--mx-even),
+    color-mix(in oklab, var(--mx-good) 58%, var(--mx-even))
+  );
+}
+@media (min-width: 40rem) {
+  .lpm .rg-mx td {
+    height: 5.25rem;
+  }
+  .lpm .rg-mx-rec,
+  .lpm .rg-mx-n {
+    font-size: 11px;
+  }
+  .lpm .rg-mx-rate {
+    margin: 0.25rem 0;
+    font-size: 22px;
+  }
+  .lpm .rg-mx-rate > span {
+    font-size: 13px;
+  }
+}
