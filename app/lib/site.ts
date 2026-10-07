@@ -362,9 +362,9 @@ export async function chooseSeason(param: string | string[] | undefined): Promis
 
 export type StatsData = { choice: SeasonChoice; matrix: MatchupMatrix | null };
 
-/** The league's matchup matrix for the chosen season. */
-export async function getStatsData(param: string | string[] | undefined): Promise<StatsData> {
-  const choice = await chooseSeason(param);
+/** The league's matchup matrix for the current season, the one the backend marks active. */
+export async function getStatsData(): Promise<StatsData> {
+  const choice = await chooseSeason(undefined);
   return { choice, matrix: await getMatchups({ seasons: choice.ids }) };
 }
 

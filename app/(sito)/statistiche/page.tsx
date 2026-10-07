@@ -1,13 +1,15 @@
 import { getStatsData } from "@/app/lib/site";
 import { Matrix } from "../Matrix";
-import { SeasonPicker } from "../SeasonPicker";
 import { Comune, Head } from "../ui";
 
 export const metadata = { title: "Statistiche · Lega Pauper Milano" };
 
-export default async function StatsPage(props: PageProps<"/statistiche">) {
-  const { stagione } = await props.searchParams;
-  const { choice, matrix } = await getStatsData(stagione);
+/**
+ * The current season only, with no choice in the address: the page is the
+ * same for everyone, so it is rendered once and served from the cache.
+ */
+export default async function StatsPage() {
+  const { choice, matrix } = await getStatsData();
   const season = choice.seasons.find((s) => s.id === choice.selected);
   const scope = season ? season.name : "tutte le stagioni";
   const of = season ? `della ${season.name}` : "di tutte le stagioni";
@@ -23,9 +25,6 @@ export default async function StatsPage(props: PageProps<"/statistiche">) {
           title="la matrice della lega"
           aside={`La matrice dei risultati ${of}, archetipo contro archetipo.`}
         />
-        <div className="mt-6">
-          <SeasonPicker choice={choice} href="/statistiche" />
-        </div>
         <div className="mt-6">
           {matrix && matrix.cells.length > 0 ? (
             <Matrix
