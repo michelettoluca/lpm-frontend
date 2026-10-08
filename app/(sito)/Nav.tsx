@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { CrownBadge } from "@/app/lib/emblem";
+import { useEffect, useRef, useState } from "react";
+import { Crown } from "@/app/lib/emblem";
 import { MarkerUnderline } from "./ui";
 
 const LINKS = [
@@ -12,20 +12,41 @@ const LINKS = [
   { href: "/regole", label: "regole" },
 ];
 
-/** The crown's badge and the LPM wordmark, underlined like a nav link while you are on the home page. */
+/** A little hop of the crown, for a click; nothing for those who asked for less motion. */
+function hop(crown: SVGSVGElement | null) {
+  if (!crown || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  crown.animate(
+    [
+      { transform: "translateY(0) rotate(16deg)" },
+      { transform: "translateY(-0.32em) rotate(-10deg)", offset: 0.4 },
+      { transform: "translateY(0) rotate(22deg)", offset: 0.75 },
+      { transform: "translateY(0) rotate(16deg)" },
+    ],
+    { duration: 520, easing: "ease-out" },
+  );
+}
+
+/**
+ * The LPM wordmark with the crown resting askew on the M; the crown perks up
+ * under the pointer and hops on a click. Underlined like a nav link while you
+ * are on the home page.
+ */
 export function HomeLink() {
   const home = usePathname() === "/";
+  const crown = useRef<SVGSVGElement>(null);
   return (
     <Link
       href="/"
       aria-label="LPM, Lega Pauper Milano: home"
       aria-current={home ? "page" : undefined}
-      className="rg-display rg-strong relative flex min-h-11 items-center gap-2.5 px-2.5 text-[24px] leading-none lg:px-0 lg:text-[26px]"
+      onClick={() => hop(crown.current)}
+      className="rg-home rg-display rg-strong relative flex min-h-11 items-center px-2.5 text-[24px] leading-none lg:px-0 lg:text-[26px]"
     >
-      <CrownBadge className="h-[1.45em] w-[1.45em] rounded-[10px]" />
-      LPM
-      {/* Under the wordmark alone, from the right: "LPM" is about 2.2em wide. */}
-      <MarkerUnderline className="right-1.5 top-[calc(50%+0.55em)] h-[8px] w-[calc(2.2em+8px)] lg:-right-1" />
+      <span className="relative">
+        LPM
+        <Crown ref={crown} className="rg-home-crown absolute -top-[0.6em] -right-[0.22em] h-[0.78em] w-auto" />
+      </span>
+      <MarkerUnderline className="left-1.5 top-[calc(50%+0.55em)] h-[8px] w-[calc(100%-12px)] lg:-left-1 lg:w-[calc(100%+8px)]" />
     </Link>
   );
 }
