@@ -2,9 +2,9 @@
 
 import { useEffect, useId, useState } from "react";
 import type { AdminError, AdminListEntry } from "@/app/lib/adminTypes";
-import { useAdmin } from "../AdminShell";
-import { ErrorPanel, FieldError } from "../ErrorPanel";
-import { CONTROL, CONTROL_INVALID, Field } from "../fields";
+import { useAdmin } from "../../AdminShell";
+import { ErrorPanel, FieldError } from "../../ErrorPanel";
+import { CONTROL, CONTROL_INVALID, Field } from "../../fields";
 import {
   Badge,
   BUTTON_DANGER,
@@ -25,7 +25,7 @@ import {
   TD,
   TH,
   usePage,
-} from "../dashboardUi";
+} from "../../dashboardUi";
 
 export default function AdminsPage() {
   const { me, call } = useAdmin();
@@ -56,7 +56,7 @@ export default function AdminsPage() {
 
   if (!me.is_super) {
     return (
-      <PageHeader title="Amministratori" meta="Solo il super amministratore può gestire gli amministratori." />
+      <PageHeader section title="Amministratori" meta="Solo il super amministratore può gestire gli amministratori." />
     );
   }
 
@@ -101,6 +101,7 @@ export default function AdminsPage() {
   return (
     <>
       <PageHeader
+        section
         title="Amministratori"
         meta="Chi è in questa lista accede alla dashboard con un codice inviato alla sua email."
         actions={
@@ -144,7 +145,7 @@ export default function AdminsPage() {
                       {a.id === me.id && <Badge>Tu</Badge>}
                     </span>
                     {/* On a phone the role sits under the email instead of in its own column. */}
-                    <span className="block text-[12px] text-ink/50 sm:hidden">{a.is_super ? "Super admin" : "Admin"}</span>
+                    <span className="block text-[13px] text-ink/50 sm:hidden">{a.is_super ? "Super admin" : "Admin"}</span>
                   </td>
                   <td className={`${TD} hidden whitespace-nowrap text-ink/65 sm:table-cell`}>
                     {a.is_super ? "Super admin" : "Admin"}
@@ -209,9 +210,9 @@ export default function AdminsPage() {
             {selected.is_super ? (
               <p>Il super amministratore non può essere rimosso.</p>
             ) : (
-              <section className="rounded-lg border border-accent/30 px-3 py-3">
-                <h3 className="text-[13px] font-medium text-ink">Zona pericolosa</h3>
-                <p className="mt-0.5 text-[12px] text-ink/50">
+              <section className="rounded-xl border border-accent/30 px-3 py-3">
+                <h3 className="text-[15px] font-medium text-ink">Zona pericolosa</h3>
+                <p className="mt-0.5 text-[13px] text-ink/50">
                   Non potrà più accedere alla dashboard e la sua sessione verrà chiusa subito.
                 </p>
                 <button

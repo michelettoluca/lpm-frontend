@@ -2,55 +2,52 @@
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { AdminError, ManagedEvent } from "@/app/lib/adminTypes";
 import { tappaTitle } from "@/app/lib/format";
 import { useAdmin } from "../../AdminShell";
 import { ConfirmResetDialog } from "../../ConfirmResetDialog";
 import { ErrorPanel } from "../../ErrorPanel";
 import { EventDialog } from "../../EventDialog";
-import { ImportPanel } from "../../ImportPanel";
 import {
   BUTTON,
-  BUTTON_DANGER,
-  BUTTON_PRIMARY,
   ConfirmDialog,
   displayDate,
   displayTime,
+  MoreMenu,
   notify,
   PageHeader,
 } from "../../dashboardUi";
-import { EventStatus, isPast } from "../../eventDisplay";
+import { EventStatus } from "../../eventDisplay";
 import { EventDecks } from "./EventDecks";
+import { MeleeTournament } from "./MeleeTournament";
 
 type Modal = "edit" | "delete" | "reset";
-
-function Detail({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline justify-between gap-4 border-b border-ink/8 py-2.5 last:border-b-0">
-      <dt className="lbl shrink-0">{label}</dt>
-      <dd className="tn min-w-0 text-right text-[13px] break-words">{children}</dd>
-    </div>
-  );
-}
 
 export default function EventDetailPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
-  const { seasons, events, setEvents, call } = useAdmin();
+  const { seasons, events, setEvents, call, selectSeason } = useAdmin();
   const [modal, setModal] = useState<Modal | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AdminError | null>(null);
 
   const event = events.find((e) => String(e.id) === params.id);
   const season = event && seasons.find((s) => s.id === event.season_id);
+  const seasonId = event?.season_id;
+
+  // A tappa of another season moves the sidebar to that season.
+  useEffect(() => {
+    if (seasonId) selectSeason(seasonId);
+  }, [seasonId, selectSeason]);
+
 
   if (!event) {
     return (
       <PageHeader
         back={
-          <Link href="/admin/seasons" className="text-[13px] font-medium text-ink/50 hover:text-ink">
-            ← Stagioni
+          <Link href="/admin/events" className="text-[15px] font-medium text-ink/50 hover:text-ink">
+            ← Tappe
           </Link>
         }
         title="Tappa non trovata"
@@ -77,9 +74,9 @@ export default function EventDetailPage() {
       setError(res.error);
       return;
     }
-    const { id, season_id } = event!;
+    const { id } = event!;
     setEvents((prev) => prev.filter((e) => e.id !== id));
-    router.replace(`/admin/seasons/${season_id}`);
+    router.replace("/admin/events");
   }
 
   async function resetResults() {
@@ -92,32 +89,43 @@ export default function EventDetailPage() {
       return;
     }
     setEvents((prev) => prev.map((e) => (e.id === res.data.id ? res.data : e)));
-    notify("Risultati rimossi. Carica di nuovo i file per reimportare la tappa.");
+    notify("Risultati rimossi. La tappa tiene il suo torneo Melee: importala di nuovo quando vuoi.");
   }
 
   return (
     <>
       <PageHeader
         back={
-          <Link href={`/admin/seasons/${event.season_id}`} className="text-[13px] font-medium text-ink/50 hover:text-ink">
-            ← {season?.name ?? "Stagione"}
+          <Link href="/admin/events" className="text-[15px] font-medium text-ink/50 hover:text-ink">
+            ← Tappe · {season?.name ?? "Stagione"}
           </Link>
         }
         title={tappaTitle(event.name)}
         badge={<EventStatus event={event} />}
         meta={
           <span className="tn">
-            {displayDate(event.played_at)} · ore {displayTime(event.played_at)}
+            {displayDate(event.played_at)} · ore {displayTime(event.played_at)} · {event.format || "formato non indicato"}
+            <span className="text-ink/35"> · id {event.id}</span>
           </span>
         }
         actions={
           <>
+            {event.has_results && (
+              <Link href={`/tappe/${event.id}`} target="_blank" rel="noopener" className={BUTTON}>
+                Sul sito ↗
+              </Link>
+            )}
             <button type="button" className={BUTTON} onClick={() => open("edit")}>
               Modifica
             </button>
-            <button type="button" className={BUTTON_DANGER} onClick={() => open("delete")}>
-              Elimina
-            </button>
+            <MoreMenu
+              actions={[
+                ...(event.has_results
+                  ? [{ label: "Reimposta risultati", danger: true, onSelect: () => open("reset") }]
+                  : []),
+                { label: "Elimina tappa", danger: true, onSelect: () => open("delete") },
+              ]}
+            />
           </>
         }
       />
@@ -128,68 +136,10 @@ export default function EventDetailPage() {
         </div>
       )}
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
-        {event.has_results ? (
-          <section className="card p-4">
-            <h2 className="text-[15px] font-semibold">Risultati importati</h2>
-            <p className="mt-1 max-w-xl text-[13px] leading-relaxed text-ink/55">
-              Classifica, turni e match della tappa sono pubblicati sul sito e contano per la classifica di stagione.
-              Se l&apos;import è sbagliato, reimposta i risultati e carica di nuovo i file: la tappa resta.
-            </p>
-            <div className="mt-5 flex flex-wrap gap-2">
-              <Link href={`/tappe/${event.id}`} target="_blank" rel="noopener" className={BUTTON_PRIMARY}>
-                Vedi la tappa sul sito ↗
-              </Link>
-              <button type="button" className={BUTTON_DANGER} onClick={() => open("reset")}>
-                Reimposta risultati
-              </button>
-            </div>
-          </section>
-        ) : (
-          <div>
-            {!isPast(event) && (
-              <p className="mb-3 text-[13px] text-ink/50">
-                La tappa è in programma: importa i risultati quando il torneo su melee.gg è concluso.
-              </p>
-            )}
-            <ImportPanel
-              event={event}
-              onImported={(result) => {
-                notify(
-                  <>
-                    Risultati importati (torneo melee <span className="tn">{result.melee_tournament_id}</span>).{" "}
-                    <Link
-                      href={`/tappe/${result.event_id}`}
-                      target="_blank"
-                      rel="noopener"
-                      className="text-accent underline-offset-2 hover:underline"
-                    >
-                      Vai alla tappa ↗
-                    </Link>
-                  </>,
-                );
-              }}
-            />
-          </div>
-        )}
-
-        <section className="card px-4 py-3">
-          <dl>
-            <Detail label="Nome">{event.name}</Detail>
-            <Detail label="Stagione">{season?.name ?? `id ${event.season_id}`}</Detail>
-            <Detail label="Data">
-              {displayDate(event.played_at)} · {displayTime(event.played_at)}
-            </Detail>
-            <Detail label="Formato">{event.format || "—"}</Detail>
-            <Detail label="Id">{event.id}</Detail>
-          </dl>
-        </section>
-      </div>
-
-      {event.has_results && (
-        <div className="mt-8">
-          <EventDecks eventId={event.id} eventName={event.name} />
-        </div>
+      {event.has_results ? (
+        <EventDecks eventId={event.id} eventName={event.name} />
+      ) : (
+        <MeleeTournament key={event.melee_tournament_id ?? 0} event={event} />
       )}
 
       {modal === "edit" && (
@@ -216,7 +166,7 @@ export default function EventDetailPage() {
       >
         <p>
           Verranno eliminati classifica, turni e match della tappa, e la classifica di stagione verrà ricalcolata
-          senza di essa. La tappa resta con nome, data e stagione: potrai importare di nuovo i file subito dopo.
+          senza di essa. La tappa resta con nome, data, stagione e torneo Melee: potrai importarla di nuovo subito dopo.
         </p>
         <p>I giocatori restano. L&apos;operazione non è reversibile.</p>
       </ConfirmResetDialog>

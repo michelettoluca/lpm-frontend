@@ -3,18 +3,18 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ErrorPanel } from "../ErrorPanel";
-import { BUTTON, BUTTON_PRIMARY, ConfirmDialog, EmptyState, PageHeader, Segmented, Switch } from "../dashboardUi";
+import { BUTTON, BUTTON_PRIMARY, PageHeader, Segmented } from "../dashboardUi";
 import {
   DeckPickerDialog,
   exportCsv,
   PlayersTable,
   Stat,
-  TournamentSelect,
+  TappaSelect,
   useDeclarations,
   type Seat,
 } from "./shared";
 
-type Modal = { kind: "pick"; seat: Seat } | { kind: "close" };
+type Modal = { kind: "pick"; seat: Seat };
 
 /**
  * The decks of the tournament in progress, in the dashboard: the tournament
@@ -24,12 +24,12 @@ type Modal = { kind: "pick"; seat: Seat } | { kind: "close" };
  * table happens on its own page, opened from "Inserisci ai tavoli".
  */
 export default function DeclarationsPage() {
-  const { view, archetypes, error, busy, walk, setDeck, openTournament, closeDeclarations, setFindBy } =
+  const { view, archetypes, error, busy, walk, setDeck, openTappa, closeDeclarations, setFindBy } =
     useDeclarations();
   const [modal, setModal] = useState<Modal | null>(null);
 
   if (!view) {
-    return error ? <ErrorPanel error={error} /> : <p className="py-16 text-center text-[13px] text-ink/50">Caricamento…</p>;
+    return error ? <ErrorPanel error={error} /> : <p className="py-16 text-center text-[15px] text-ink/50">Caricamento…</p>;
   }
 
   const t = view.tournament;
@@ -40,8 +40,8 @@ export default function DeclarationsPage() {
   return (
     <div>
       <PageHeader
-        title="Archetipi"
-        meta="Il mazzo di ogni giocatore del torneo, per il meta di Lega Pauper Italia."
+        title="Torneo in corso"
+        meta="Il mazzo di ogni giocatore del torneo di stasera: i giocatori lo indicano da /mazzo, tu completi i mancanti."
         actions={
           t && (
             <>
@@ -64,65 +64,70 @@ export default function DeclarationsPage() {
         </div>
       )}
 
-      <TournamentSelect current={t} busy={busy} onSelect={openTournament} />
-
-      {!t ? (
-        <section className="card">
-          <EmptyState>Inserisci qui sopra l&apos;ID del torneo Melee per vedere i giocatori e i loro mazzi.</EmptyState>
-        </section>
-      ) : (
-        <>
-          <section className="card mb-5 flex flex-wrap items-center gap-x-8 gap-y-3 px-4 py-3">
-            <Stat label="Turno">
-              {view.round && view.round.number > 0 ? view.round.number : "—"}
-              {view.round && view.round.number > 0 && !view.round.published && (
-                <span className="ml-1.5 text-[12px] font-normal text-ink/50">non pubblicato</span>
-              )}
-            </Stat>
-            <Stat label="Con mazzo">
-              <span className="tn">
-                {declaredCount}/{active.length}
-              </span>
-              <span className="ml-2 inline-block h-1.5 w-20 overflow-hidden rounded-full bg-ink/10 align-middle">
-                <span
-                  className="block h-full rounded-full bg-accent"
-                  style={{ width: active.length ? `${(declaredCount / active.length) * 100}%` : 0 }}
+      <TappaSelect current={t} busy={busy} onSelect={openTappa}>
+        {t && (
+          <>
+            <div className="mt-5 flex flex-wrap gap-x-10 gap-y-3 border-t border-ink/8 pt-5">
+              <Stat label="Turno">
+                {view.round && view.round.number > 0 ? view.round.number : "—"}
+                {view.round && view.round.number > 0 && !view.round.published && (
+                  <span className="ml-1.5 text-[13px] font-normal text-ink/50">non pubblicato</span>
+                )}
+              </Stat>
+              <Stat label="Con mazzo">
+                <span className="tn">
+                  {declaredCount}/{active.length}
+                </span>
+                <span className="ml-2 inline-block h-1.5 w-24 overflow-hidden rounded-full bg-ink/10 align-middle">
+                  <span
+                    className="block h-full rounded-full bg-accent"
+                    style={{ width: active.length ? `${(declaredCount / active.length) * 100}%` : 0 }}
+                  />
+                </span>
+              </Stat>
+            </div>
+            <div className="mt-5 divide-y divide-ink/8 border-t border-ink/8">
+              {/* The descriptions cover both choices, so switching doesn't move the page. */}
+              <Setting
+                title="Raccolta mazzi"
+                description="Attiva, sul sito compare il pulsante «il mio mazzo» e i giocatori indicano il proprio. Disattivata, il pulsante sparisce e i mazzi li modifichi solo tu."
+              >
+                <Segmented
+                  value={t.open ? "on" : "off"}
+                  options={[
+                    { value: "on", label: "Attiva" },
+                    { value: "off", label: "Disattiva" },
+                  ]}
+                  // A tournament opened before tappe had their Melee id can only be turned off.
+                  disabled={busy || (!t.open && !t.event_id)}
+                  label="Raccolta mazzi"
+                  onChange={(v) => (v === "off" ? closeDeclarations() : t.event_id ? openTappa(t.event_id, true) : Promise.resolve(false))}
                 />
-              </span>
-            </Stat>
-            <div className="flex flex-wrap items-center gap-x-8 gap-y-3 sm:ml-auto">
-              <div className="flex items-center gap-3">
-                <p className="text-[13px] font-medium">Tipo di ricerca</p>
+              </Setting>
+              <Setting
+                title="Modalità di inserimento"
+                description="Come i giocatori si trovano su /mazzo: dal numero del loro tavolo, o cercando il proprio nome tra gli iscritti."
+              >
                 <Segmented
                   value={findBy}
                   options={[
-                    { value: "name", label: "Nome" },
-                    { value: "table", label: "Tavolo" },
+                    { value: "table", label: "Per tavolo" },
+                    { value: "name", label: "Per nome" },
                   ]}
                   disabled={busy}
-                  label="Tipo di ricerca"
-                  onChange={(by) => void setFindBy(by)}
+                  label="Modalità di inserimento"
+                  onChange={setFindBy}
                 />
-              </div>
-              <div className="flex items-center gap-3">
-                <Switch
-                  checked={t.open}
-                  disabled={busy}
-                  label="Aperte ai giocatori"
-                  onChange={() => (t.open ? setModal({ kind: "close" }) : void openTournament(t.id, true))}
-                />
-                <div>
-                  <p className="text-[13px] font-medium">{t.open ? "Aperte ai giocatori" : "Chiuse ai giocatori"}</p>
-                  <p className="text-[12px] text-ink/50">
-                    {t.open ? "Indicano il mazzo da legapaupermilano.it/mazzo" : "Solo gli admin possono modificare"}
-                  </p>
-                </div>
-              </div>
+              </Setting>
             </div>
-          </section>
+          </>
+        )}
+      </TappaSelect>
 
+      {t && (
+        <>
           {walk.length === 0 && view.round && view.round.number > 0 && !view.round.published && (
-            <p className="mb-3 text-[12px] text-ink/50">
+            <p className="mb-3 text-[13px] text-ink/50">
               Gli abbinamenti del turno {view.round.number} non sono ancora pubblicati: i tavoli compaiono appena escono.
             </p>
           )}
@@ -144,20 +149,19 @@ export default function DeclarationsPage() {
         />
       )}
 
-      {modal?.kind === "close" && (
-        <ConfirmDialog
-          title="Chiudere la raccolta dei mazzi?"
-          confirmLabel="Chiudi"
-          busy={busy}
-          onCancel={() => setModal(null)}
-          onConfirm={async () => {
-            if (await closeDeclarations()) setModal(null);
-          }}
-        >
-          I giocatori non potranno più indicare o cancellare il proprio mazzo da /mazzo. Tu potrai ancora modificarli
-          tutti, e riaprire quando vuoi.
-        </ConfirmDialog>
-      )}
+    </div>
+  );
+}
+
+/** One setting of the tournament: what it is and does on the left, the control on the right. */
+function Setting({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+  return (
+    <div className="flex flex-col gap-3 py-4 last:pb-0 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
+      <div className="min-w-0 max-w-xl flex-1">
+        <p className="text-[16px] font-semibold">{title}</p>
+        <p className="mt-0.5 text-[14px] leading-relaxed text-ink/55">{description}</p>
+      </div>
+      {children}
     </div>
   );
 }

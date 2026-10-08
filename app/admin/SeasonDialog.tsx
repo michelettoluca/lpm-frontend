@@ -111,7 +111,7 @@ export function SeasonDialog({
               {fieldError("ended_at") && <FieldError message={fieldError("ended_at")!} />}
             </Field>
           </div>
-          <p className="-mt-2 text-[12px] text-ink/45">
+          <p className="-mt-2 text-[13px] text-ink/45">
             {isNew ? "Inizio vuoto = oggi. " : ""}Lascia vuota la fine finché la stagione è in corso.
           </p>
           <Field label="Tappe valide" htmlFor={ids.counted}>
@@ -127,7 +127,7 @@ export function SeasonDialog({
                 onChange={(event) => setDraft({ ...draft, countedEvents: event.target.value })}
                 disabled={pending}
               />
-              <span className="text-[13px] text-ink/55">
+              <span className="text-[15px] text-ink/55">
                 {draft.countedEvents === ""
                   ? "Contano tutte le tappe."
                   : "Migliori risultati di ogni giocatore che contano in classifica."}

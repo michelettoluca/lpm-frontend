@@ -59,17 +59,10 @@ export function DangerZone() {
   const summary = result ? describe(result.deleted) : "";
 
   return (
-    <details className="group mt-16 border-t border-ink/10 pt-6">
-      <summary className="flex cursor-pointer list-none items-center gap-2 text-[13px] font-semibold  text-ink/45 hover:text-ink [&::-webkit-details-marker]:hidden">
-        <span className="transition-transform group-open:rotate-90" aria-hidden>
-          ›
-        </span>
-        Strumenti avanzati
-      </summary>
-
-      <div className="mt-5 max-w-xl rounded-lg border border-accent/40 bg-surface p-5">
-        <h2 className="font-medium text-accent">Svuota il database</h2>
-        <p className="mt-1.5 text-[13px] leading-[1.5] text-ink/55">
+    <div>
+      <div className="max-w-xl rounded-2xl border border-accent/40 bg-surface p-5">
+        <h2 className="text-[19px] font-semibold text-accent">Svuota il database</h2>
+        <p className="mt-1.5 text-[15px] leading-[1.5] text-ink/55">
           Cancella tutti gli eventi, i match, le classifiche e i giocatori. Serve solo per ripartire da zero: per
           rifare un singolo torneo basta eliminare il suo evento e importarlo di nuovo.
         </p>
@@ -84,8 +77,8 @@ export function DangerZone() {
             className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--color-accent)]"
           />
           <span>
-            <span className="block text-[13px] font-medium">Cancella anche le stagioni</span>
-            <span className="mt-0.5 block text-[12px] leading-[1.4] text-ink/55">
+            <span className="block text-[15px] font-medium">Cancella anche le stagioni</span>
+            <span className="mt-0.5 block text-[13px] leading-[1.4] text-ink/55">
               Dopo dovrai crearne una nuova e renderla attiva. Senza questa opzione le stagioni restano.
             </span>
           </span>
@@ -102,14 +95,14 @@ export function DangerZone() {
       </div>
 
       {result && (
-        <div className="panel-in mt-4 max-w-xl rounded-lg border border-accent bg-tint p-4">
-          <div className="text-[13px] font-semibold  text-accent">
+        <div className="panel-in mt-4 max-w-xl rounded-xl border border-accent bg-tint p-4">
+          <div className="text-[15px] font-semibold  text-accent">
             Database svuotato
           </div>
-          <p className="mt-2 text-[13px] leading-[1.5] text-ink/80">
+          <p className="mt-2 text-[15px] leading-[1.5] text-ink/80">
             {summary ? `Eliminati ${summary}.` : "Non c'era niente da cancellare."}
           </p>
-          <p className="mt-1.5 text-[12px] leading-[1.45] text-ink/55">
+          <p className="mt-1.5 text-[13px] leading-[1.45] text-ink/55">
             {result.seasons_cleared
               ? "Anche le stagioni sono state cancellate: creane una nuova e rendila attiva."
               : "Le stagioni sono state mantenute."}
@@ -140,6 +133,6 @@ export function DangerZone() {
             : "Le stagioni verranno mantenute."}
         </p>
       </ConfirmResetDialog>
-    </details>
+    </div>
   );
 }

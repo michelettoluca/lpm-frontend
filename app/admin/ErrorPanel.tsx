@@ -12,12 +12,12 @@ function Panel({
   return (
     <div
       role="alert"
-      className="mt-4 rounded-lg border border-accent bg-tint p-4"
+      className="mt-4 rounded-xl border border-accent bg-tint p-4"
     >
-      <div className="text-[13px] font-semibold  text-accent">
+      <div className="text-[15px] font-semibold  text-accent">
         {title}
       </div>
-      <div className="mt-2 space-y-2 text-[13px] leading-[1.5] text-ink/80">
+      <div className="mt-2 space-y-2 text-[15px] leading-[1.5] text-ink/80">
         {children}
       </div>
     </div>
@@ -27,7 +27,7 @@ function Panel({
 /** The raw API message, kept verbatim for anything the copy above paraphrases. */
 function Raw({ message }: { message: string }) {
   return (
-    <p className="text-[12px] leading-[1.45] text-ink/55">{message}</p>
+    <p className="text-[13px] leading-[1.45] text-ink/55">{message}</p>
   );
 }
 
@@ -79,10 +79,7 @@ export function ErrorPanel({
     case "conflict":
       return (
         <Panel title="Conflitto con i dati esistenti">
-          <p>
-            Il torneo è già stato importato oppure l&apos;evento selezionato ha
-            già dei risultati. Aggiorna l&apos;elenco e verifica l&apos;evento scelto.
-          </p>
+          <p>{conflictText(error.message)}</p>
           <Raw message={error.message} />
         </Panel>
       );
@@ -96,10 +93,9 @@ export function ErrorPanel({
               melee.gg, quindi ha annullato l&apos;import. <strong>Non è stato scritto nulla</strong>.
             </p>
             <p>
-              Controlla che tutti i risultati siano stati inseriti su melee.gg e riprova. Se il problema resta, importa i
-              due CSV del torneo.
+              Controlla che tutti i risultati siano stati inseriti su melee.gg e riprova.
             </p>
-            <pre className="tn max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-md border border-ink/15 bg-surface p-3 font-mono text-[12px] leading-[1.5] text-ink/80">
+            <pre className="tn max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-ink/15 bg-surface p-3 font-mono text-[13px] leading-[1.5] text-ink/80">
               {error.message}
             </pre>
           </Panel>
@@ -118,7 +114,7 @@ export function ErrorPanel({
             momenti diversi del torneo. Riscaricali entrambi da melee.gg e
             riprova.
           </p>
-          <pre className="tn max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-md border border-ink/15 bg-surface p-3 font-mono text-[12px] leading-[1.5] text-ink/80">
+          <pre className="tn max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-ink/15 bg-surface p-3 font-mono text-[13px] leading-[1.5] text-ink/80">
             {error.message}
           </pre>
         </Panel>
@@ -139,7 +135,7 @@ export function ErrorPanel({
     default:
       return (
         <Panel title="Operazione non riuscita">
-          <pre className="whitespace-pre-wrap break-words font-mono text-[12px] leading-[1.5] text-ink/80">
+          <pre className="whitespace-pre-wrap break-words font-mono text-[13px] leading-[1.5] text-ink/80">
             {error.message}
           </pre>
         </Panel>
@@ -150,6 +146,17 @@ export function ErrorPanel({
 /** Inline, field-level version of a 400 message. */
 export function FieldError({ message }: { message: string }) {
   return (
-    <p className="mt-1.5 text-[12px] font-semibold text-accent">{message}</p>
+    <p className="mt-1.5 text-[13px] font-semibold text-accent">{message}</p>
   );
+}
+
+/** The conflicts the backend names, in plain words; anything else gets the general one. */
+function conflictText(message: string) {
+  if (message.includes("another event already has this melee tournament"))
+    return "Questo torneo Melee è già associato a un'altra tappa. Controlla l'ID o toglilo dall'altra tappa.";
+  if (message.includes("imported from another melee tournament"))
+    return "I risultati della tappa vengono da un altro torneo Melee: reimpostali prima di cambiarlo.";
+  if (message.includes("played as another melee tournament"))
+    return "La tappa è associata a un altro torneo Melee: si importano solo i suoi risultati.";
+  return "Il torneo è già stato importato oppure la tappa ha già dei risultati. Aggiorna la pagina e controlla la tappa.";
 }

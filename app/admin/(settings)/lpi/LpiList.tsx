@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { AdminError } from "@/app/lib/adminTypes";
 import { ManaCost, useArchetypeSearch } from "@/app/components/ArchetypePicker";
 import { archetypeLabel, colorsOf, type Archetype } from "@/app/lib/decks";
-import { useAdmin } from "../AdminShell";
-import { ErrorPanel } from "../ErrorPanel";
+import { useAdmin } from "../../AdminShell";
+import { ErrorPanel } from "../../ErrorPanel";
 import {
   Badge,
   BUTTON_PRIMARY,
@@ -23,8 +23,8 @@ import {
   TD,
   TH,
   usePage,
-} from "../dashboardUi";
-import { CONTROL } from "../fields";
+} from "../../dashboardUi";
+import { CONTROL } from "../../fields";
 
 type ListedArchetype = Archetype & { hidden: boolean };
 
@@ -86,7 +86,7 @@ export function LpiList() {
 
   return (
     <div>
-      <p className="mb-4 max-w-[640px] text-[13px] leading-relaxed text-ink/55">
+      <p className="mb-4 max-w-[640px] text-[15px] leading-relaxed text-ink/55">
         {list && (
           <span className="font-medium text-ink/75">
             {list.length} mazzi da Lega Pauper Italia, {hidden} {hidden === 1 ? "nascosto" : "nascosti"} ai giocatori.{" "}
@@ -196,10 +196,10 @@ function ArchetypeForm({
               ["ID Lega Pauper Italia", <span key="i" className="tn">{archetype.id}</span>],
             ]}
           />
-          <div className="flex items-start justify-between gap-4 rounded-lg border border-ink/10 px-3 py-3">
+          <div className="flex items-start justify-between gap-4 rounded-xl border border-ink/10 px-3 py-3">
             <div>
-              <p className="text-[13px] font-medium text-ink">Visibile ai giocatori</p>
-              <p className="mt-0.5 text-[12px] text-ink/50">
+              <p className="text-[15px] font-medium text-ink">Visibile ai giocatori</p>
+              <p className="mt-0.5 text-[13px] text-ink/50">
                 Spento, il mazzo sparisce dalla ricerca dei giocatori e dai suggerimenti. Da Archetipi puoi comunque
                 assegnarlo.
               </p>

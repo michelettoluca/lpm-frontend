@@ -1,4 +1,5 @@
 import { Figtree } from "next/font/google";
+import { deckCollectionOpen } from "@/app/lib/api";
 import { HomeLink, Nav } from "./Nav";
 import { Footer } from "./Footer";
 import { WobbleDefs } from "./ui";
@@ -12,7 +13,8 @@ const text = Figtree({
 });
 
 /** The public site: header, page, and the closing panel. The admin has its own layout. */
-export default function SiteLayout({ children }: { children: React.ReactNode }) {
+export default async function SiteLayout({ children }: { children: React.ReactNode }) {
+  const decks = await deckCollectionOpen();
   return (
     <div className={`lpm ${text.variable}`}>
       <WobbleDefs />
@@ -22,7 +24,7 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       {/* Its own layer above the page: the phone menu opens just under it, its backdrop behind the header's links. */}
       <header className="rg-wrap relative z-30 flex items-center justify-between gap-x-6 pt-3 pb-3 lg:pt-6 lg:pb-5">
         <HomeLink />
-        <Nav />
+        <Nav decks={decks} />
       </header>
 
       <main id="rg-main" className="rg-wrap flex flex-1 flex-col">

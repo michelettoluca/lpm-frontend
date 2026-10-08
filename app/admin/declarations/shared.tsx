@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AdminError } from "@/app/lib/adminTypes";
 import { ArchetypePicker, ManaCost } from "@/app/components/ArchetypePicker";
@@ -13,13 +14,15 @@ import {
   Dialog,
   DIALOG_FORM,
   DialogFooter,
+  displayDate,
   EmptyState,
   notify,
   Pagination,
   usePage,
 } from "../dashboardUi";
-import { CONTROL, CONTROL_INVALID } from "../fields";
-import { tappaSubtitle, tappaTitle } from "@/app/lib/format";
+import { CONTROL } from "../fields";
+import { tappaTitle } from "@/app/lib/format";
+import { meleeTournamentUrl } from "@/app/lib/melee";
 
 // What the Archetipi pages share: the tournament's data and the actions on
 // it, and the pieces both the dashboard and the table walk show.
@@ -52,7 +55,15 @@ export type FindBy = "table" | "name";
 export type View = {
   /** Missing from an API that predates the choice, which went by table. */
   find_by?: FindBy;
-  tournament: { id: number; name: string; opened_at: string; closed_at: string | null; open: boolean } | null;
+  tournament: {
+    id: number;
+    name: string;
+    opened_at: string;
+    closed_at: string | null;
+    open: boolean;
+    /** The tappa played as this tournament. */
+    event_id: number | null;
+  } | null;
   round: { number: number; published: boolean; tables: Table[]; byes: Seat[] } | null;
   players: Player[];
 };
@@ -91,7 +102,7 @@ const REFRESH_MS = 20_000;
  * seconds while the page is visible, with the actions both pages need.
  */
 export function useDeclarations() {
-  const { call } = useAdmin();
+  const { call, setLive } = useAdmin();
   const [view, setView] = useState<View | null>(null);
   const [archetypes, setArchetypes] = useState<Archetype[]>([]);
   const [error, setError] = useState<AdminError | null>(null);
@@ -105,8 +116,10 @@ export function useDeclarations() {
     }
     setError(null);
     setView(res.data);
+    // Keep the sidebar's live mark in step with what this page shows.
+    setLive(res.data.tournament);
     return res.data;
-  }, [call]);
+  }, [call, setLive]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial load
@@ -148,19 +161,20 @@ export function useDeclarations() {
     return true;
   }
 
-  async function openTournament(id: number, reopening = false) {
+  /** Make tappa eventId the tournament in progress, or reopen it to players. */
+  async function openTappa(eventId: number, reopening = false) {
     setBusy(true);
-    const res = await call("/api/admin/declarations/open", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tournament_id: id }),
-    });
+    const ok = await startTappa(call, eventId);
     setBusy(false);
-    if (!res.ok) {
-      setError(res.error);
+    if (!ok.ok) {
+      setError(ok.error);
       return false;
     }
-    notify(reopening ? "I giocatori possono di nuovo indicare il mazzo." : "Raccolta dei mazzi aperta per il torneo scelto.");
+    notify(
+      reopening
+        ? "Raccolta attiva: sul sito è tornato il pulsante «il mio mazzo»."
+        : "Tappa in corso, raccolta attiva: sul sito c'è il pulsante «il mio mazzo».",
+    );
     await load();
     return true;
   }
@@ -173,7 +187,7 @@ export function useDeclarations() {
       setError(res.error);
       return false;
     }
-    notify("Raccolta chiusa ai giocatori. Tu puoi ancora modificare i mazzi.");
+    notify("Raccolta disattivata: il pulsante «il mio mazzo» non è più sul sito. Tu puoi ancora modificare i mazzi.");
     await load();
     return true;
   }
@@ -199,7 +213,7 @@ export function useDeclarations() {
     return true;
   }
 
-  return { call, view, archetypes, error, busy, walk, setDeck, openTournament, closeDeclarations, setFindBy };
+  return { call, view, archetypes, error, busy, walk, setDeck, openTappa, closeDeclarations, setFindBy };
 }
 
 /**
@@ -255,8 +269,8 @@ export function withDeclaration(view: View, teamId: number, declaration: Declara
 export function Stat({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-[12px] text-ink/50">{label}</p>
-      <p className="mt-0.5 text-[15px] font-semibold">{children}</p>
+      <p className="text-[13px] text-ink/50">{label}</p>
+      <p className="mt-0.5 text-[17px] font-semibold">{children}</p>
     </div>
   );
 }
@@ -289,7 +303,7 @@ export function TableStrip({
             onClick={() => onGo(w.number)}
             aria-label={`${tableTitle(w.number)}: ${FILL_LABEL[fillOf(w)]}`}
             aria-current={w.number === at ? "true" : undefined}
-            className={`tn h-8 w-10 shrink-0 rounded border text-[12px] font-medium transition ${FILL_SKIN[fillOf(w)]} ${
+            className={`tn h-10 w-10 shrink-0 rounded-md border text-[13px] font-medium transition ${FILL_SKIN[fillOf(w)]} ${
               w.number === at ? "ring-2 ring-ink/70 ring-offset-1 ring-offset-page" : "hover:brightness-95"
             }`}
           >
@@ -298,7 +312,7 @@ export function TableStrip({
         ))}
       </div>
       {legend && (
-        <div className="mt-2 flex flex-wrap gap-4 text-[12px] text-ink/50">
+        <div className="mt-2 flex flex-wrap gap-4 text-[13px] text-ink/50">
           <Legend fill="full">Completo</Legend>
           <Legend fill="partial">Manca un mazzo</Legend>
           <Legend fill="empty">Nessun mazzo</Legend>
@@ -333,8 +347,8 @@ export function TableCard({
   return (
     <section className="card overflow-hidden">
       <div className="flex items-baseline justify-between border-b border-ink/8 px-4 py-2.5">
-        <h2 className="text-[15px] font-semibold">{tableTitle(table.number)}</h2>
-        <span className="tn text-[12px] text-ink/45">{position}</span>
+        <h2 className="text-[17px] font-semibold">{tableTitle(table.number)}</h2>
+        <span className="tn text-[13px] text-ink/45">{position}</span>
       </div>
       {/* On a phone the two players stack, each with the full width for a long name and deck. */}
       <div
@@ -355,17 +369,17 @@ export function TableCard({
               className="flex min-h-[64px] items-center justify-between gap-3 p-4 text-left transition-colors hover:bg-ink/[0.02] sm:min-h-[120px] sm:flex-col sm:items-stretch"
             >
               <span className="min-w-0">
-                <span className="block text-[14px] font-medium break-words">{seat.name}</span>
-                {seat.username && <span className="block truncate text-[12px] text-ink/45">{seat.username}</span>}
+                <span className="block text-[16px] font-medium break-words">{seat.name}</span>
+                {seat.username && <span className="block truncate text-[13px] text-ink/45">{seat.username}</span>}
               </span>
               {d ? (
                 <span className="min-w-0 text-right sm:text-left">
-                  <span className="flex flex-wrap items-center justify-end gap-1.5 text-[13px] font-medium sm:justify-start">
+                  <span className="flex flex-wrap items-center justify-end gap-1.5 text-[15px] font-medium sm:justify-start">
                     <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#22c55e]" aria-hidden />
                     {archetypeLabel(d.archetype_name)}
                     {archetype && <ManaCost archetype={archetype} small />}
                   </span>
-                  <span className="mt-0.5 block text-[12px] text-ink/45">
+                  <span className="mt-0.5 block text-[13px] text-ink/45">
                     {d.source === "player" ? "Dal giocatore" : "Da admin"} · Cambia
                   </span>
                 </span>
@@ -385,10 +399,10 @@ export function EndCard({ walk, onGo }: { walk: Table[]; onGo: (n: number) => vo
   const missing = walk.filter((t) => fillOf(t) !== "full");
   return (
     <section className="card px-4 py-8 text-center">
-      <p className="text-[15px] font-semibold">{missing.length === 0 ? "Tutti i tavoli sono completi" : "Fine dei tavoli"}</p>
+      <p className="text-[17px] font-semibold">{missing.length === 0 ? "Tutti i tavoli sono completi" : "Fine dei tavoli"}</p>
       {missing.length > 0 && (
         <>
-          <p className="mt-1 text-[13px] text-ink/55">
+          <p className="mt-1 text-[15px] text-ink/55">
             {missing.length === 1 ? "Manca ancora un tavolo:" : `Mancano ancora ${missing.length} tavoli:`}
           </p>
           <div className="mt-3 flex flex-wrap justify-center gap-1">
@@ -397,7 +411,7 @@ export function EndCard({ walk, onGo }: { walk: Table[]; onGo: (n: number) => vo
                 key={t.number}
                 type="button"
                 onClick={() => onGo(t.number)}
-                className={`tn h-7 min-w-8 rounded border px-1.5 text-[12px] font-medium ${FILL_SKIN[fillOf(t)]}`}
+                className={`tn h-8 min-w-8 rounded-md border px-1.5 text-[13px] font-medium ${FILL_SKIN[fillOf(t)]}`}
               >
                 {t.number === BYE ? "Bye" : t.number}
               </button>
@@ -483,8 +497,8 @@ export function DeckDialog({
         <div className="flex min-h-0 flex-1 flex-col px-5 py-4">
           <p className="lbl mb-1.5">Mazzo</p>
           {draft ? (
-            <div className="flex h-10 items-center justify-between gap-3 rounded-md border border-ink/15 bg-surface pr-1 pl-3">
-              <span className="flex min-w-0 items-center gap-2 text-[13px] font-medium">
+            <div className="flex h-12 items-center justify-between gap-3 rounded-lg border border-ink/15 bg-surface pr-1 pl-3">
+              <span className="flex min-w-0 items-center gap-2 text-[15px] font-medium">
                 <span className="truncate">{archetypeLabel(draft.name)}</span>
                 <ManaCost archetype={draft} small />
               </span>
@@ -523,7 +537,7 @@ export function PlayersTable({ players, onPick }: { players: Player[]; onPick: (
       />
       <div className="card overflow-hidden">
         {/* On a phone the player takes what room there is and the deck sits on the right. */}
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,auto)] gap-3 border-b border-ink/8 bg-ink/[0.015] px-3 py-2 text-[12px] text-ink/50 sm:grid-cols-[1.2fr_1fr_100px] sm:gap-4 sm:px-4">
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,auto)] gap-3 border-b border-ink/8 bg-ink/[0.015] px-3 py-2 text-[13px] text-ink/50 sm:grid-cols-[1.2fr_1fr_100px] sm:gap-4 sm:px-4">
           <span>Giocatore</span>
           <span className="text-right sm:text-left">Mazzo</span>
           <span className="hidden sm:block">Fonte</span>
@@ -537,16 +551,16 @@ export function PlayersTable({ players, onPick }: { players: Player[]; onPick: (
                 className="grid min-h-10 w-full grid-cols-[minmax(0,1fr)_minmax(0,auto)] items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-ink/[0.02] sm:grid-cols-[1.2fr_1fr_100px] sm:gap-4 sm:px-4"
               >
                 <span className="min-w-0">
-                  <span className={`flex items-center gap-2 text-[13px] font-medium ${p.dropped ? "text-ink/40" : ""}`}>
+                  <span className={`flex items-center gap-2 text-[15px] font-medium ${p.dropped ? "text-ink/40" : ""}`}>
                     <span className="truncate">{p.name}</span>
                     {p.dropped && <Badge>Ritirato</Badge>}
                   </span>
-                  {p.username && <span className="block truncate text-[12px] text-ink/45">{p.username}</span>}
+                  {p.username && <span className="block truncate text-[13px] text-ink/45">{p.username}</span>}
                 </span>
-                <span className={`max-w-[45vw] truncate text-right text-[13px] sm:max-w-none sm:text-left ${p.declaration ? "" : "text-ink/35"}`}>
+                <span className={`max-w-[45vw] truncate text-right text-[15px] sm:max-w-none sm:text-left ${p.declaration ? "" : "text-ink/35"}`}>
                   {p.declaration ? archetypeLabel(p.declaration.archetype_name) : "—"}
                 </span>
-                <span className="hidden text-[12px] text-ink/50 sm:block">
+                <span className="hidden text-[13px] text-ink/50 sm:block">
                   {p.declaration ? (p.declaration.source === "player" ? "Giocatore" : "Admin") : ""}
                 </span>
               </button>
@@ -565,76 +579,117 @@ export function PlayersTable({ players, onPick }: { players: Player[]; onPick: (
 }
 
 /**
- * The tournament declarations are collected for, set by its Melee id: nothing
- * is picked by date, since Melee's dates can't be trusted to tell the tappe
- * apart. The id or the tournament's melee.gg link both work. Setting another
- * one opens declarations there; the current one's are kept.
+ * Make a tappa the tournament in progress: declarations open on its Melee
+ * tournament. Only a tappa with one can be, which the backend checks too.
  */
-export function TournamentSelect({
+export function startTappa(call: ReturnType<typeof useAdmin>["call"], eventId: number) {
+  return call<View["tournament"]>("/api/admin/declarations/open", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ event_id: eventId }),
+  });
+}
+
+/**
+ * Which tappa is in progress, and the switch to another. Only tappe with
+ * their Melee tournament and no results yet can be picked: the pairings, the
+ * roster and the decks' way into the results all go through it.
+ */
+export function TappaSelect({
   current,
   busy,
   onSelect,
+  children,
 }: {
   current: View["tournament"];
   busy: boolean;
-  onSelect: (id: number) => Promise<boolean>;
+  onSelect: (eventId: number) => Promise<boolean>;
+  /** The tournament's state and settings, under the tappa. */
+  children?: React.ReactNode;
 }) {
-  const [text, setText] = useState("");
-  const id = meleeTournamentId(text);
-  const invalid = text.trim() !== "" && id === null;
-  const same = id !== null && id === current?.id;
-
-  async function submit(event: React.FormEvent) {
-    event.preventDefault();
-    if (id === null || same) return;
-    if (await onSelect(id)) setText("");
-  }
+  const { events, season } = useAdmin();
+  const tappa = current?.event_id ? events.find((e) => e.id === current.event_id) : undefined;
+  // The active season's tappe that could be played tonight, nearest first.
+  const [now] = useState(() => Date.now());
+  const candidates = events
+    .filter((e) => e.season_id === season?.id && e.melee_tournament_id && !e.has_results && e.id !== tappa?.id)
+    .sort((a, b) => Math.abs(Date.parse(a.played_at) - now) - Math.abs(Date.parse(b.played_at) - now));
+  const missing = events.filter((e) => e.season_id === season?.id && !e.melee_tournament_id && !e.has_results).length;
+  const [picked, setPicked] = useState<string>("");
+  const choice = picked || (candidates[0] ? String(candidates[0].id) : "");
 
   return (
-    <div className="mb-4">
-      <p className="lbl mb-1.5">Torneo</p>
-      {current && (
-        <p className="mb-2 flex max-w-xl items-baseline gap-2 text-[13px]">
-          <span className="min-w-0 truncate font-medium">{tappaTitle(current.name)}</span>
-          {tappaTitle(current.name) !== current.name && (
-            <span className="min-w-0 truncate text-[12px] text-ink/45">{tappaSubtitle(current.name)}</span>
+    <section className="card mb-6 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
+        <div className="min-w-0">
+          <p className="lbl">Tappa in corso</p>
+          {current ? (
+            <p className="mt-1 flex flex-wrap items-baseline gap-x-2 text-[17px]">
+              {tappa ? (
+                <Link href={`/admin/events/${tappa.id}`} className="font-semibold hover:text-accent">
+                  {tappaTitle(tappa.name)}
+                </Link>
+              ) : (
+                <span className="font-semibold">{tappaTitle(current.name)}</span>
+              )}
+              <a
+                href={meleeTournamentUrl(current.id)}
+                target="_blank"
+                rel="noopener"
+                className="tn text-[14px] text-ink/45 hover:text-ink"
+              >
+                Melee {current.id} ↗
+              </a>
+            </p>
+          ) : (
+            <p className="mt-1 text-[16px] text-ink/60">Nessuna: scegline una per aprire la raccolta dei mazzi.</p>
           )}
-          <span className="tn ml-auto shrink-0 text-[12px] text-ink/45">ID {current.id}</span>
+        </div>
+        {candidates.length > 0 && (
+          <form
+            className="flex flex-wrap items-center gap-2"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              if (choice && (await onSelect(Number(choice)))) setPicked("");
+            }}
+          >
+            <select
+              aria-label="Tappa da mettere in corso"
+              value={choice}
+              onChange={(e) => setPicked(e.target.value)}
+              disabled={busy}
+              className={`${CONTROL} w-auto max-w-72`}
+            >
+              {candidates.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {tappaTitle(e.name)} · {displayDate(e.played_at)}
+                </option>
+              ))}
+            </select>
+            <button type="submit" className={current ? BUTTON : BUTTON_PRIMARY} disabled={busy || !choice}>
+              {current ? "Cambia tappa" : "Metti in corso"}
+            </button>
+          </form>
+        )}
+      </div>
+      {candidates.length === 0 && !current && (
+        <p className="mt-3 text-[15px] text-ink/60">
+          Nessuna tappa della stagione ha il suo ID Melee.{" "}
+          <Link href="/admin/events" className="font-semibold text-accent hover:underline">
+            Aggiungilo dalla tappa
+          </Link>{" "}
+          e torna qui.
         </p>
       )}
-      <form onSubmit={submit} className="flex max-w-xl gap-2">
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          disabled={busy}
-          inputMode="url"
-          aria-label="ID o link del torneo Melee"
-          aria-invalid={invalid}
-          placeholder={current ? "Cambia torneo: ID o link Melee" : "ID o link del torneo Melee, es. 475829"}
-          className={`${CONTROL} ${invalid ? CONTROL_INVALID : ""}`}
-        />
-        <button type="submit" className={BUTTON_PRIMARY} disabled={busy || id === null || same}>
-          Apri
-        </button>
-      </form>
-      <p className={`mt-2 text-[12px] ${invalid ? "text-accent" : "text-ink/50"}`}>
-        {invalid
-          ? "Serve il numero del torneo o il suo link melee.gg/Tournament/View/…"
-          : same
-            ? "È già il torneo scelto."
-            : "Lo trovi nel link del torneo su melee.gg, dopo /Tournament/View/."}
-      </p>
-    </div>
+      {missing > 0 && !current && candidates.length > 0 && (
+        <p className="mt-3 text-[13px] text-ink/50">
+          {missing === 1 ? "Una tappa non ha" : `${missing} tappe non hanno`} ancora l&apos;ID Melee e non si può
+          mettere in corso.
+        </p>
+      )}
+      {children}
+    </section>
   );
-}
-
-/** "475829" or "https://melee.gg/Tournament/View/475829" → 475829; anything else → null. */
-export function meleeTournamentId(text: string): number | null {
-  const t = text.trim();
-  const m = /^(\d+)$/.exec(t) ?? /\/Tournament\/View\/(\d+)/i.exec(t);
-  if (!m) return null;
-  const id = Number(m[1]);
-  return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
 /** Every registered player with their archetype; missing ones are Non Disponibile. */

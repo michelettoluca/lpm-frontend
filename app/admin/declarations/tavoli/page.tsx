@@ -50,11 +50,11 @@ export default function TableWalkPage() {
 
   return (
     <div className="mx-auto flex h-[100dvh] w-full max-w-[960px] flex-col">
-      <header className="flex h-12 shrink-0 items-center justify-between gap-3 border-b border-ink/10 px-4">
-        <Link href="/admin/declarations" className="shrink-0 text-[13px] text-ink/60 hover:text-ink">
-          ← Archetipi
+      <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-ink/10 px-4">
+        <Link href="/admin/declarations" className="shrink-0 text-[15px] text-ink/60 hover:text-ink">
+          ← Torneo in corso
         </Link>
-        <p className="min-w-0 truncate text-[13px] text-ink/60">
+        <p className="min-w-0 truncate text-[15px] text-ink/60">
           {view?.round && view.round.number > 0 && <span className="font-medium text-ink">Turno {view.round.number}</span>}
           {t && (
             <span className="tn">
@@ -74,7 +74,7 @@ export default function TableWalkPage() {
       {!ready ? (
         <div className="px-4 pt-4">
           {!view ? (
-            !error && <p className="py-16 text-center text-[13px] text-ink/50">Caricamento…</p>
+            !error && <p className="py-16 text-center text-[15px] text-ink/50">Caricamento…</p>
           ) : (
             <section className="card">
               <EmptyState>
@@ -96,8 +96,8 @@ export default function TableWalkPage() {
           {table ? (
             <>
               <div className="flex shrink-0 items-baseline justify-between px-4 pt-4 pb-2">
-                <h1 className="text-[20px] font-semibold">{tableTitle(table.number)}</h1>
-                <span className="tn text-[12px] text-ink/45">
+                <h1 className="text-[26px] font-semibold">{tableTitle(table.number)}</h1>
+                <span className="tn text-[13px] text-ink/45">
                   {index + 1} di {walk.length}
                 </span>
               </div>
@@ -114,10 +114,10 @@ export default function TableWalkPage() {
           )}
 
           <footer className="flex shrink-0 gap-2 border-t border-ink/10 px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
-            <button type="button" className={`${BUTTON} h-11 px-4`} onClick={previous} disabled={index <= 0}>
+            <button type="button" className={`${BUTTON} h-12 px-4`} onClick={previous} disabled={index <= 0}>
               ← Precedente
             </button>
-            <button type="button" className={`${BUTTON_PRIMARY} h-11 flex-1`} onClick={next} disabled={!table}>
+            <button type="button" className={`${BUTTON_PRIMARY} h-12 flex-1`} onClick={next} disabled={!table}>
               {table && fillOf(table) === "full" ? "Avanti →" : "Salta →"}
             </button>
           </footer>
@@ -151,22 +151,22 @@ function SeatBox({ seat, archetypes, onPick }: { seat: Seat; archetypes: Archety
       }`}
     >
       <span className="min-w-0">
-        <span className="block text-[20px] leading-tight font-semibold break-words">{seat.name}</span>
-        {seat.username && <span className="mt-1 block truncate text-[13px] text-ink/45">{seat.username}</span>}
+        <span className="block text-[26px] leading-tight font-semibold break-words">{seat.name}</span>
+        {seat.username && <span className="mt-1 block truncate text-[15px] text-ink/45">{seat.username}</span>}
       </span>
       {d ? (
         <span className="min-w-0">
-          <span className="flex flex-wrap items-center gap-2 text-[17px] font-medium">
+          <span className="flex flex-wrap items-center gap-2 text-[19px] font-medium">
             <span className="h-2 w-2 shrink-0 rounded-full bg-[#22c55e]" aria-hidden />
             {archetypeLabel(d.archetype_name)}
             {archetype && <ManaCost archetype={archetype} />}
           </span>
-          <span className="mt-1 block text-[13px] text-ink/45">
+          <span className="mt-1 block text-[15px] text-ink/45">
             {d.source === "player" ? "Indicato dal giocatore" : "Inserito da admin"} · Cambia
           </span>
         </span>
       ) : (
-        <span className={`${BUTTON} h-11 w-full text-[14px]`}>Scegli mazzo</span>
+        <span className={`${BUTTON} h-12 w-full text-[16px]`}>Scegli mazzo</span>
       )}
     </button>
   );

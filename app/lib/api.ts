@@ -177,6 +177,20 @@ async function get<T>(path: string): Promise<T | null> {
   return res.json();
 }
 
+/**
+ * Whether players can indicate their deck right now: an admin has turned the
+ * collection on for the tappa in progress. The site only shows «il mio mazzo»
+ * then. A backend that can't tell counts as off, rather than taking the page
+ * down with it.
+ */
+export async function deckCollectionOpen(): Promise<boolean> {
+  try {
+    return (await get<unknown>("/declarations/current")) !== null;
+  } catch {
+    return false;
+  }
+}
+
 export async function getSeasons(): Promise<Season[]> {
   return (await get<Season[]>(`/seasons`)) ?? [];
 }
