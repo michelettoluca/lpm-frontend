@@ -1,40 +1,23 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useAdmin } from "../AdminShell";
 import { DangerZone } from "../DangerZone";
 import { SeasonDialog } from "../SeasonDialog";
 import { BUTTON_PRIMARY, Callout, EmptyState, notify, PageHeader, Pagination, usePage } from "../dashboardUi";
-import { countedLabel, seasonPeriod, seasonStatus } from "../seasonDisplay";
+import { countedLabel, Progress, seasonPeriod, seasonStatus } from "../seasonDisplay";
 
-/**
- * Tappe with results out of the season's total. The tick marks the point where
- * every player could have a full set of counted results; it only shows when
- * some tappe will be dropped.
- */
-function Progress({ done, total, counted }: { done: number; total: number; counted: number | null }) {
-  const tick = counted != null && counted < total ? (counted / total) * 100 : null;
-  return (
-    <div className="relative h-1.5 w-24" aria-hidden>
-      <div className="h-full overflow-hidden rounded-full bg-ink/8">
-        <div className="bg-accent h-full rounded-full" style={{ width: total ? `${(done / total) * 100}%` : 0 }} />
-      </div>
-      {tick !== null && (
-        <div
-          className="absolute -top-[3px] h-3 w-0.5 -translate-x-1/2 rounded-full bg-ink"
-          style={{ left: `${tick}%` }}
-          title={`Tappe valide: ${counted}`}
-        />
-      )}
-    </div>
-  );
-}
-
-const ROW = "grid items-center gap-x-6 gap-y-2 px-4 py-2.5 sm:grid-cols-[minmax(0,1fr)_180px_110px_16px]";
+const ROW = "grid items-center gap-x-6 gap-y-2 px-4 py-4 sm:px-5 sm:grid-cols-[minmax(0,1fr)_180px_110px_16px]";
 
 export default function SeasonsPage() {
-  const { seasons, events, setSeasons } = useAdmin();
+  const { seasons, events, setSeasons, selectSeason } = useAdmin();
+  const router = useRouter();
+
+  function openSeason(id: number) {
+    selectSeason(id);
+    router.push("/admin");
+  }
   const [creating, setCreating] = useState(false);
 
   const hasActive = seasons.some((season) => season.is_active);
@@ -44,7 +27,7 @@ export default function SeasonsPage() {
     <>
       <PageHeader
         title="Stagioni"
-        meta="Apri una stagione per gestirne le tappe e importare i risultati."
+        meta="Scegline una per vederla nella panoramica. Quella attiva è la stagione che mostra il sito pubblico."
         actions={
           <button type="button" className={BUTTON_PRIMARY} onClick={() => setCreating(true)}>
             Nuova stagione
@@ -75,16 +58,16 @@ export default function SeasonsPage() {
               const done = own.filter((event) => event.has_results).length;
               return (
                 <li key={season.id} className="border-b border-ink/8 last:border-b-0">
-                  <Link href={`/admin/seasons/${season.id}`} className={`row-link ${ROW}`}>
+                  <button type="button" onClick={() => openSeason(season.id)} className={`row-link w-full text-left ${ROW}`}>
                     <div className="min-w-0">
-                      <p className="truncate font-medium">{season.name}</p>
-                      <p className="tn mt-0.5 text-[13px] text-ink/50">
+                      <p className="truncate text-[16px] font-semibold">{season.name}</p>
+                      <p className="tn mt-0.5 text-[14px] text-ink/55">
                         {seasonPeriod(season)} · {countedLabel(season).toLowerCase()}
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
                       <Progress done={done} total={own.length} counted={season.counted_events} />
-                      <span className="tn text-[13px] text-ink/60">
+                      <span className="tn text-[15px] text-ink/60">
                         {done}/{own.length}
                       </span>
                     </div>
@@ -92,7 +75,7 @@ export default function SeasonsPage() {
                     <span className="hidden text-lg text-ink/30 sm:block" aria-hidden>
                       ›
                     </span>
-                  </Link>
+                  </button>
                 </li>
               );
             })}
@@ -113,9 +96,9 @@ export default function SeasonsPage() {
             notify(
               <>
                 Stagione “{season.name}” creata.{" "}
-                <Link href={`/admin/seasons/${season.id}`} className="text-accent underline-offset-2 hover:underline">
+                <button type="button" onClick={() => openSeason(season.id)} className="text-accent underline-offset-2 hover:underline">
                   Aprila per aggiungere le tappe →
-                </Link>
+                </button>
               </>,
             );
           }}

@@ -105,7 +105,7 @@ export function EventDecks({ eventId, eventName }: { eventId: number; eventName:
   }
 
   if (error) return <ErrorPanel error={error} />;
-  if (!results) return <p className="py-6 text-[13px] text-ink/50">Carico i mazzi…</p>;
+  if (!results) return <p className="py-6 text-[15px] text-ink/50">Carico i mazzi…</p>;
 
   const fromMelee = results.tournament_id !== null;
   const withDeck = results.rows.filter((r) => r.deck).length;
@@ -132,7 +132,7 @@ export function EventDecks({ eventId, eventName }: { eventId: number; eventName:
           )
         }
       />
-      <p className="mb-3 text-[12px] text-ink/50">
+      <p className="mb-3 text-[13px] text-ink/50">
         {fromMelee
           ? "All'import ogni giocatore riceve il mazzo indicato durante la serata. Sincronizza copia quelli arrivati dopo, senza toccare le correzioni. Tocca una riga per cambiare il mazzo."
           : "La tappa non viene da un torneo Melee: i mazzi si inseriscono a mano. Tocca una riga per scegliere il mazzo."}
@@ -176,7 +176,7 @@ export function EventDecks({ eventId, eventName }: { eventId: number; eventName:
                         <span className="text-ink/35">—</span>
                       )}
                       {differs && (
-                        <span className="block truncate text-[12px] text-ink/45">indicato: {archetypeLabel(r.collected!.archetype_name)}</span>
+                        <span className="block truncate text-[13px] text-ink/45">indicato: {archetypeLabel(r.collected!.archetype_name)}</span>
                       )}
                     </td>
                   </tr>
@@ -191,7 +191,7 @@ export function EventDecks({ eventId, eventName }: { eventId: number; eventName:
       {fromMelee && results.rows.some((r) => r.deck?.source === "admin" && r.collected) && (
         <button
           type="button"
-          className={`${BUTTON_GHOST} mt-2 -ml-2 text-[12px]`}
+          className={`${BUTTON_GHOST} mt-2 -ml-2 text-[13px]`}
           disabled={busy}
           onClick={() => setConfirmOverwrite(true)}
         >
@@ -200,13 +200,13 @@ export function EventDecks({ eventId, eventName }: { eventId: number; eventName:
       )}
 
       {results.unmatched.length > 0 && (
-        <details className="mt-3 text-[13px]">
+        <details className="mt-3 text-[15px]">
           <summary className="cursor-pointer text-ink/60 hover:text-ink">
             {results.unmatched.length === 1
               ? "1 mazzo indicato non corrisponde a nessun giocatore in classifica"
               : `${results.unmatched.length} mazzi indicati non corrispondono a nessun giocatore in classifica`}
           </summary>
-          <p className="mt-2 text-[12px] text-ink/50">
+          <p className="mt-2 text-[13px] text-ink/50">
             Di solito sono giocatori ritirati prima del primo turno. Se invece manca qualcuno che ha giocato, il suo
             account Melee non è collegato al giocatore della classifica: scegli il suo mazzo a mano.
           </p>

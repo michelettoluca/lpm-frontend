@@ -12,12 +12,12 @@ function Panel({
   return (
     <div
       role="alert"
-      className="mt-4 rounded-lg border border-accent bg-tint p-4"
+      className="mt-4 rounded-xl border border-accent bg-tint p-4"
     >
-      <div className="text-[13px] font-semibold  text-accent">
+      <div className="text-[15px] font-semibold  text-accent">
         {title}
       </div>
-      <div className="mt-2 space-y-2 text-[13px] leading-[1.5] text-ink/80">
+      <div className="mt-2 space-y-2 text-[15px] leading-[1.5] text-ink/80">
         {children}
       </div>
     </div>
@@ -27,7 +27,7 @@ function Panel({
 /** The raw API message, kept verbatim for anything the copy above paraphrases. */
 function Raw({ message }: { message: string }) {
   return (
-    <p className="text-[12px] leading-[1.45] text-ink/55">{message}</p>
+    <p className="text-[13px] leading-[1.45] text-ink/55">{message}</p>
   );
 }
 
@@ -99,7 +99,7 @@ export function ErrorPanel({
               Controlla che tutti i risultati siano stati inseriti su melee.gg e riprova. Se il problema resta, importa i
               due CSV del torneo.
             </p>
-            <pre className="tn max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-md border border-ink/15 bg-surface p-3 font-mono text-[12px] leading-[1.5] text-ink/80">
+            <pre className="tn max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-ink/15 bg-surface p-3 font-mono text-[13px] leading-[1.5] text-ink/80">
               {error.message}
             </pre>
           </Panel>
@@ -118,7 +118,7 @@ export function ErrorPanel({
             momenti diversi del torneo. Riscaricali entrambi da melee.gg e
             riprova.
           </p>
-          <pre className="tn max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-md border border-ink/15 bg-surface p-3 font-mono text-[12px] leading-[1.5] text-ink/80">
+          <pre className="tn max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-ink/15 bg-surface p-3 font-mono text-[13px] leading-[1.5] text-ink/80">
             {error.message}
           </pre>
         </Panel>
@@ -139,7 +139,7 @@ export function ErrorPanel({
     default:
       return (
         <Panel title="Operazione non riuscita">
-          <pre className="whitespace-pre-wrap break-words font-mono text-[12px] leading-[1.5] text-ink/80">
+          <pre className="whitespace-pre-wrap break-words font-mono text-[13px] leading-[1.5] text-ink/80">
             {error.message}
           </pre>
         </Panel>
@@ -150,6 +150,6 @@ export function ErrorPanel({
 /** Inline, field-level version of a 400 message. */
 export function FieldError({ message }: { message: string }) {
   return (
-    <p className="mt-1.5 text-[12px] font-semibold text-accent">{message}</p>
+    <p className="mt-1.5 text-[13px] font-semibold text-accent">{message}</p>
   );
 }

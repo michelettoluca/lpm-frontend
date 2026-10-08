@@ -242,15 +242,15 @@ export function ImportPanel({
 
   return (
     <div className="card p-4">
-      <h2 className="text-[15px] font-semibold">Importa risultati</h2>
+      <h2 className="text-[17px] font-semibold">Importa risultati</h2>
 
-      <p className="mt-1 max-w-xl text-[13px] leading-relaxed text-ink/55">
+      <p className="mt-1 max-w-xl text-[15px] leading-relaxed text-ink/55">
         Scegli il torneo su melee.gg: il backend scarica classifica e match e li confronta fra loro prima di salvarli.
         Il torneo deve essere concluso.
       </p>
 
       {tournaments === null && listError === null && (
-        <p className="mt-5 text-[13px] text-ink/45">Cerco i tornei su melee.gg…</p>
+        <p className="mt-5 text-[15px] text-ink/45">Cerco i tornei su melee.gg…</p>
       )}
       {listError && listError.kind !== "disabled" && (
         <div className="mt-5">
@@ -258,12 +258,12 @@ export function ImportPanel({
         </div>
       )}
       {tournaments !== null && tournaments.length === 0 && (
-        <p className="mt-5 text-[13px] text-ink/55">
+        <p className="mt-5 text-[15px] text-ink/55">
           Nessun torneo su melee.gg nei tre giorni prima e dopo la tappa. Se c&apos;è, incolla il suo link qui sotto.
         </p>
       )}
       {tournaments !== null && tournaments.length > 0 && (
-        <ul className="mt-5 divide-y divide-ink/8 rounded-lg border border-ink/10">
+        <ul className="mt-5 divide-y divide-ink/8 rounded-xl border border-ink/10">
           {tournaments.map((t) => (
             <li key={t.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5 pr-2.5 pl-4">
               <div className="min-w-0 flex-1 basis-56">
@@ -275,7 +275,7 @@ export function ImportPanel({
                 >
                   {t.name || `Torneo ${t.id}`}
                 </a>
-                <p className="tn mt-0.5 text-[13px] text-ink/50">
+                <p className="tn mt-0.5 text-[15px] text-ink/50">
                   {t.same_day ? "Stesso giorno della tappa" : "Nei giorni vicini"}
                   {t.last_pair_date &&
                     ` · ultimo turno ${formatDateMeta(t.last_pair_date)} ${displayTime(t.last_pair_date)}`}
@@ -336,14 +336,14 @@ export function ImportPanel({
         {apiError && !tournamentFieldError && apiError.kind !== "disabled" && <ErrorPanel error={apiError} source="api" />}
       </form>
 
-      <div className="mt-6 flex items-center gap-3 text-[12px] font-semibold  text-ink/40">
+      <div className="mt-6 flex items-center gap-3 text-[13px] font-semibold  text-ink/40">
         <span className="h-px flex-1 bg-ink/10" />
         oppure carica i CSV
         <span className="h-px flex-1 bg-ink/10" />
       </div>
 
       <form onSubmit={runImport}>
-        <p className="mt-4 max-w-xl text-[13px] leading-relaxed text-ink/55">
+        <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink/55">
           Carica i due CSV scaricati dalla pagina del torneo su melee.gg, standings e matches. Il backend li confronta
           fra loro e rifiuta l&apos;import se non tornano.
         </p>
@@ -360,14 +360,14 @@ export function ImportPanel({
             setDragging(false);
             if (pending === null) void add(e.dataTransfer.files);
           }}
-          className={`mt-5 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border border-dashed px-4 py-7 text-center transition-colors ${
+          className={`mt-5 flex cursor-pointer flex-col items-center justify-center gap-1 rounded-xl border border-dashed px-4 py-7 text-center transition-colors ${
             dragging ? "bg-tint-grad border-accent" : "border-ink/20 bg-surface/50 hover:border-ink/40 hover:bg-surface"
           } ${pending ? "pointer-events-none opacity-60" : ""}`}
         >
-          <span className="text-[13px] font-medium">
+          <span className="text-[15px] font-medium">
             Trascina qui i file <span className="text-accent">oppure sceglili</span>
           </span>
-          <span className="text-[12px] text-ink/50">Puoi selezionarli insieme: li riconosciamo dal contenuto.</span>
+          <span className="text-[13px] text-ink/50">Puoi selezionarli insieme: li riconosciamo dal contenuto.</span>
           <input
             id={inputId}
             type="file"
@@ -382,13 +382,13 @@ export function ImportPanel({
           />
         </label>
 
-        <ul className="mt-3 divide-y divide-ink/8 rounded-lg border border-ink/10">
+        <ul className="mt-3 divide-y divide-ink/8 rounded-xl border border-ink/10">
           {(["standings", "matches"] as const).map((kind) => {
             const file = files[kind]?.file;
             return (
               <li key={kind} className="flex min-h-12 items-center gap-3 py-1.5 pr-1.5 pl-4">
                 <span
-                  className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] font-medium ${
+                  className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[12px] font-medium ${
                     file ? "bg-accent text-white" : "border border-ink/20"
                   }`}
                   aria-hidden
@@ -396,7 +396,7 @@ export function ImportPanel({
                   {file ? "✓" : ""}
                 </span>
                 <span className="lbl w-20 shrink-0">{LABELS[kind]}</span>
-                <span className={`min-w-0 flex-1 truncate text-[13px] ${file ? "" : "text-ink/40"}`}>
+                <span className={`min-w-0 flex-1 truncate text-[15px] ${file ? "" : "text-ink/40"}`}>
                   {file ? file.name : "Manca"}
                 </span>
                 {file && (
@@ -428,7 +428,7 @@ export function ImportPanel({
             {pending === "csv" ? "Import in corso…" : "Importa CSV"}
           </button>
           {!ready && !pending && (
-            <span className="text-[13px] text-ink/45">
+            <span className="text-[15px] text-ink/45">
               {files.standings || files.matches ? "Manca ancora un file." : "Aggiungi entrambi i file."}
             </span>
           )}

@@ -216,39 +216,74 @@ body::before {
   }
 }
 
-/* Dark dashboard look for the admin panel: flat panels, thin borders and
-   small radii instead of the public site's glowing cards. Swapping the color
-   variables turns every ink/surface utility light-on-dark; the leaderboard
-   keeps its own style. */
+/* The admin panel in the public site's dark theme: slate greys, the LPM red,
+   Figtree for the text and Archivo for headings and big numbers. Panels are
+   paper on fog like the site's, with softer corners. Swapping the color
+   variables turns every ink/surface utility light-on-dark. */
 .admin {
-  --color-ink: #e6e6e8;
-  --color-tint: rgba(255, 45, 26, 0.12);
-  --color-canvas: #0b0b0c;
-  --color-page: #111113;
-  --color-surface: #19191c;
-  --grad-tint: linear-gradient(150deg, rgba(255, 45, 26, 0.1) 0%, rgba(255, 45, 26, 0.16) 100%);
+  --color-ink: #e8ecf2;
+  --color-accent: #fa1e32;
+  --color-tint: rgba(250, 30, 50, 0.12);
+  /* Fog behind everything, then the paper of panels, inputs and menus. */
+  --color-canvas: #0b0e13;
+  --color-page: #0b0e13;
+  --color-surface: #141922;
+  --grad-tint: linear-gradient(150deg, rgba(250, 30, 50, 0.1) 0%, rgba(250, 30, 50, 0.16) 100%);
   color-scheme: dark;
-  font-size: 13px;
+  font-family: var(--font-rg-text), system-ui, sans-serif;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+.admin h1,
+.admin h2 {
+  font-family: var(--font-archivo), system-ui, sans-serif;
+}
+.admin ::selection {
+  background: var(--color-accent);
+  color: #fff;
 }
 .admin .card,
 .admin .surface {
   background: var(--color-surface);
-  border: 1px solid color-mix(in srgb, var(--color-ink) 9%, transparent);
-  border-radius: 8px;
+  border: 1px solid #1f2630;
+  border-radius: 16px;
   box-shadow: none;
 }
 .admin .lbl {
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
-  color: color-mix(in srgb, var(--color-ink) 55%, transparent);
+  color: #9aa4b2;
+}
+.admin .row-link:hover {
+  background-color: #1b212b;
+  background-image: none;
 }
 /* The public site's dot grid is 900px tall: in the admin it would only add a
    phantom scroll behind the panel, and the page edge should stay dark. */
 body:has(.admin) {
-  background-color: #0b0b0c;
+  background-color: #0b0e13;
 }
 body:has(.admin)::before {
   display: none;
+}
+
+/* The sidebar's mark for a tournament collecting decks: a slow pulse. */
+@keyframes live-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(250, 30, 50, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(250, 30, 50, 0);
+  }
+}
+.live-dot {
+  animation: live-dot 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-dot {
+    animation: none;
+  }
 }

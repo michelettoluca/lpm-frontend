@@ -29,7 +29,7 @@ export default function DeclarationsPage() {
   const [modal, setModal] = useState<Modal | null>(null);
 
   if (!view) {
-    return error ? <ErrorPanel error={error} /> : <p className="py-16 text-center text-[13px] text-ink/50">Caricamento…</p>;
+    return error ? <ErrorPanel error={error} /> : <p className="py-16 text-center text-[15px] text-ink/50">Caricamento…</p>;
   }
 
   const t = view.tournament;
@@ -40,8 +40,8 @@ export default function DeclarationsPage() {
   return (
     <div>
       <PageHeader
-        title="Archetipi"
-        meta="Il mazzo di ogni giocatore del torneo, per il meta di Lega Pauper Italia."
+        title="Torneo in corso"
+        meta="Il mazzo di ogni giocatore del torneo di stasera: i giocatori lo indicano da /mazzo, tu completi i mancanti."
         actions={
           t && (
             <>
@@ -76,7 +76,7 @@ export default function DeclarationsPage() {
             <Stat label="Turno">
               {view.round && view.round.number > 0 ? view.round.number : "—"}
               {view.round && view.round.number > 0 && !view.round.published && (
-                <span className="ml-1.5 text-[12px] font-normal text-ink/50">non pubblicato</span>
+                <span className="ml-1.5 text-[13px] font-normal text-ink/50">non pubblicato</span>
               )}
             </Stat>
             <Stat label="Con mazzo">
@@ -92,7 +92,7 @@ export default function DeclarationsPage() {
             </Stat>
             <div className="flex flex-wrap items-center gap-x-8 gap-y-3 sm:ml-auto">
               <div className="flex items-center gap-3">
-                <p className="text-[13px] font-medium">Tipo di ricerca</p>
+                <p className="text-[15px] font-medium">Tipo di ricerca</p>
                 <Segmented
                   value={findBy}
                   options={[
@@ -112,8 +112,8 @@ export default function DeclarationsPage() {
                   onChange={() => (t.open ? setModal({ kind: "close" }) : void openTournament(t.id, true))}
                 />
                 <div>
-                  <p className="text-[13px] font-medium">{t.open ? "Aperte ai giocatori" : "Chiuse ai giocatori"}</p>
-                  <p className="text-[12px] text-ink/50">
+                  <p className="text-[15px] font-medium">{t.open ? "Aperte ai giocatori" : "Chiuse ai giocatori"}</p>
+                  <p className="text-[13px] text-ink/50">
                     {t.open ? "Indicano il mazzo da legapaupermilano.it/mazzo" : "Solo gli admin possono modificare"}
                   </p>
                 </div>
@@ -122,7 +122,7 @@ export default function DeclarationsPage() {
           </section>
 
           {walk.length === 0 && view.round && view.round.number > 0 && !view.round.published && (
-            <p className="mb-3 text-[12px] text-ink/50">
+            <p className="mb-3 text-[13px] text-ink/50">
               Gli abbinamenti del turno {view.round.number} non sono ancora pubblicati: i tavoli compaiono appena escono.
             </p>
           )}
