@@ -115,7 +115,7 @@ export function EventDecks({ eventId, eventName }: { eventId: number; eventName:
   return (
     <section>
       <SectionHeader
-        title="Mazzi"
+        title="Classifica e mazzi"
         aside={results.rows.length > 0 ? `${withDeck}/${results.rows.length} con mazzo` : undefined}
         action={
           results.rows.length > 0 && (

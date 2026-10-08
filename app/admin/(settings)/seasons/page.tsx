@@ -2,11 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { useAdmin } from "../AdminShell";
-import { DangerZone } from "../DangerZone";
-import { SeasonDialog } from "../SeasonDialog";
-import { BUTTON_PRIMARY, Callout, EmptyState, notify, PageHeader, Pagination, usePage } from "../dashboardUi";
-import { countedLabel, Progress, seasonPeriod, seasonStatus } from "../seasonDisplay";
+import { useAdmin } from "../../AdminShell";
+import { SeasonDialog } from "../../SeasonDialog";
+import { BUTTON_PRIMARY, Callout, EmptyState, notify, PageHeader, Pagination, usePage } from "../../dashboardUi";
+import { countedLabel, Progress, seasonPeriod, seasonStatus } from "../../seasonDisplay";
 
 const ROW = "grid items-center gap-x-6 gap-y-2 px-4 py-4 sm:px-5 sm:grid-cols-[minmax(0,1fr)_180px_110px_16px]";
 
@@ -26,6 +25,7 @@ export default function SeasonsPage() {
   return (
     <>
       <PageHeader
+        section
         title="Stagioni"
         meta="Scegline una per vederla nella panoramica. Quella attiva è la stagione che mostra il sito pubblico."
         actions={
@@ -83,8 +83,6 @@ export default function SeasonsPage() {
         )}
         <Pagination {...pager} />
       </div>
-
-      <DangerZone />
 
       {creating && (
         <SeasonDialog

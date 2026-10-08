@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AdminError } from "@/app/lib/adminTypes";
 import { ArchetypePicker, ManaCost } from "@/app/components/ArchetypePicker";
@@ -13,13 +14,15 @@ import {
   Dialog,
   DIALOG_FORM,
   DialogFooter,
+  displayDate,
   EmptyState,
   notify,
   Pagination,
   usePage,
 } from "../dashboardUi";
-import { CONTROL, CONTROL_INVALID } from "../fields";
-import { tappaSubtitle, tappaTitle } from "@/app/lib/format";
+import { CONTROL } from "../fields";
+import { tappaTitle } from "@/app/lib/format";
+import { meleeTournamentUrl } from "@/app/lib/melee";
 
 // What the Archetipi pages share: the tournament's data and the actions on
 // it, and the pieces both the dashboard and the table walk show.
@@ -52,7 +55,15 @@ export type FindBy = "table" | "name";
 export type View = {
   /** Missing from an API that predates the choice, which went by table. */
   find_by?: FindBy;
-  tournament: { id: number; name: string; opened_at: string; closed_at: string | null; open: boolean } | null;
+  tournament: {
+    id: number;
+    name: string;
+    opened_at: string;
+    closed_at: string | null;
+    open: boolean;
+    /** The tappa played as this tournament. */
+    event_id: number | null;
+  } | null;
   round: { number: number; published: boolean; tables: Table[]; byes: Seat[] } | null;
   players: Player[];
 };
@@ -150,19 +161,20 @@ export function useDeclarations() {
     return true;
   }
 
-  async function openTournament(id: number, reopening = false) {
+  /** Make tappa eventId the tournament in progress, or reopen it to players. */
+  async function openTappa(eventId: number, reopening = false) {
     setBusy(true);
-    const res = await call("/api/admin/declarations/open", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tournament_id: id }),
-    });
+    const ok = await startTappa(call, eventId);
     setBusy(false);
-    if (!res.ok) {
-      setError(res.error);
+    if (!ok.ok) {
+      setError(ok.error);
       return false;
     }
-    notify(reopening ? "I giocatori possono di nuovo indicare il mazzo." : "Raccolta dei mazzi aperta per il torneo scelto.");
+    notify(
+      reopening
+        ? "Raccolta attiva: sul sito è tornato il pulsante «il mio mazzo»."
+        : "Tappa in corso, raccolta attiva: sul sito c'è il pulsante «il mio mazzo».",
+    );
     await load();
     return true;
   }
@@ -175,7 +187,7 @@ export function useDeclarations() {
       setError(res.error);
       return false;
     }
-    notify("Raccolta chiusa ai giocatori. Tu puoi ancora modificare i mazzi.");
+    notify("Raccolta disattivata: il pulsante «il mio mazzo» non è più sul sito. Tu puoi ancora modificare i mazzi.");
     await load();
     return true;
   }
@@ -201,7 +213,7 @@ export function useDeclarations() {
     return true;
   }
 
-  return { call, view, archetypes, error, busy, walk, setDeck, openTournament, closeDeclarations, setFindBy };
+  return { call, view, archetypes, error, busy, walk, setDeck, openTappa, closeDeclarations, setFindBy };
 }
 
 /**
@@ -567,76 +579,117 @@ export function PlayersTable({ players, onPick }: { players: Player[]; onPick: (
 }
 
 /**
- * The tournament declarations are collected for, set by its Melee id: nothing
- * is picked by date, since Melee's dates can't be trusted to tell the tappe
- * apart. The id or the tournament's melee.gg link both work. Setting another
- * one opens declarations there; the current one's are kept.
+ * Make a tappa the tournament in progress: declarations open on its Melee
+ * tournament. Only a tappa with one can be, which the backend checks too.
  */
-export function TournamentSelect({
+export function startTappa(call: ReturnType<typeof useAdmin>["call"], eventId: number) {
+  return call<View["tournament"]>("/api/admin/declarations/open", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ event_id: eventId }),
+  });
+}
+
+/**
+ * Which tappa is in progress, and the switch to another. Only tappe with
+ * their Melee tournament and no results yet can be picked: the pairings, the
+ * roster and the decks' way into the results all go through it.
+ */
+export function TappaSelect({
   current,
   busy,
   onSelect,
+  children,
 }: {
   current: View["tournament"];
   busy: boolean;
-  onSelect: (id: number) => Promise<boolean>;
+  onSelect: (eventId: number) => Promise<boolean>;
+  /** The tournament's state and settings, under the tappa. */
+  children?: React.ReactNode;
 }) {
-  const [text, setText] = useState("");
-  const id = meleeTournamentId(text);
-  const invalid = text.trim() !== "" && id === null;
-  const same = id !== null && id === current?.id;
-
-  async function submit(event: React.FormEvent) {
-    event.preventDefault();
-    if (id === null || same) return;
-    if (await onSelect(id)) setText("");
-  }
+  const { events, season } = useAdmin();
+  const tappa = current?.event_id ? events.find((e) => e.id === current.event_id) : undefined;
+  // The active season's tappe that could be played tonight, nearest first.
+  const [now] = useState(() => Date.now());
+  const candidates = events
+    .filter((e) => e.season_id === season?.id && e.melee_tournament_id && !e.has_results && e.id !== tappa?.id)
+    .sort((a, b) => Math.abs(Date.parse(a.played_at) - now) - Math.abs(Date.parse(b.played_at) - now));
+  const missing = events.filter((e) => e.season_id === season?.id && !e.melee_tournament_id && !e.has_results).length;
+  const [picked, setPicked] = useState<string>("");
+  const choice = picked || (candidates[0] ? String(candidates[0].id) : "");
 
   return (
-    <div className="mb-4">
-      <p className="lbl mb-1.5">Torneo</p>
-      {current && (
-        <p className="mb-2 flex max-w-xl items-baseline gap-2 text-[15px]">
-          <span className="min-w-0 truncate font-medium">{tappaTitle(current.name)}</span>
-          {tappaTitle(current.name) !== current.name && (
-            <span className="min-w-0 truncate text-[13px] text-ink/45">{tappaSubtitle(current.name)}</span>
+    <section className="card mb-6 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-4">
+        <div className="min-w-0">
+          <p className="lbl">Tappa in corso</p>
+          {current ? (
+            <p className="mt-1 flex flex-wrap items-baseline gap-x-2 text-[17px]">
+              {tappa ? (
+                <Link href={`/admin/events/${tappa.id}`} className="font-semibold hover:text-accent">
+                  {tappaTitle(tappa.name)}
+                </Link>
+              ) : (
+                <span className="font-semibold">{tappaTitle(current.name)}</span>
+              )}
+              <a
+                href={meleeTournamentUrl(current.id)}
+                target="_blank"
+                rel="noopener"
+                className="tn text-[14px] text-ink/45 hover:text-ink"
+              >
+                Melee {current.id} ↗
+              </a>
+            </p>
+          ) : (
+            <p className="mt-1 text-[16px] text-ink/60">Nessuna: scegline una per aprire la raccolta dei mazzi.</p>
           )}
-          <span className="tn ml-auto shrink-0 text-[13px] text-ink/45">ID {current.id}</span>
+        </div>
+        {candidates.length > 0 && (
+          <form
+            className="flex flex-wrap items-center gap-2"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              if (choice && (await onSelect(Number(choice)))) setPicked("");
+            }}
+          >
+            <select
+              aria-label="Tappa da mettere in corso"
+              value={choice}
+              onChange={(e) => setPicked(e.target.value)}
+              disabled={busy}
+              className={`${CONTROL} w-auto max-w-72`}
+            >
+              {candidates.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {tappaTitle(e.name)} · {displayDate(e.played_at)}
+                </option>
+              ))}
+            </select>
+            <button type="submit" className={current ? BUTTON : BUTTON_PRIMARY} disabled={busy || !choice}>
+              {current ? "Cambia tappa" : "Metti in corso"}
+            </button>
+          </form>
+        )}
+      </div>
+      {candidates.length === 0 && !current && (
+        <p className="mt-3 text-[15px] text-ink/60">
+          Nessuna tappa della stagione ha il suo ID Melee.{" "}
+          <Link href="/admin/events" className="font-semibold text-accent hover:underline">
+            Aggiungilo dalla tappa
+          </Link>{" "}
+          e torna qui.
         </p>
       )}
-      <form onSubmit={submit} className="flex max-w-xl gap-2">
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          disabled={busy}
-          inputMode="url"
-          aria-label="ID o link del torneo Melee"
-          aria-invalid={invalid}
-          placeholder={current ? "Cambia torneo: ID o link Melee" : "ID o link del torneo Melee, es. 475829"}
-          className={`${CONTROL} ${invalid ? CONTROL_INVALID : ""}`}
-        />
-        <button type="submit" className={BUTTON_PRIMARY} disabled={busy || id === null || same}>
-          Apri
-        </button>
-      </form>
-      <p className={`mt-2 text-[13px] ${invalid ? "text-accent" : "text-ink/50"}`}>
-        {invalid
-          ? "Serve il numero del torneo o il suo link melee.gg/Tournament/View/…"
-          : same
-            ? "È già il torneo scelto."
-            : "Lo trovi nel link del torneo su melee.gg, dopo /Tournament/View/."}
-      </p>
-    </div>
+      {missing > 0 && !current && candidates.length > 0 && (
+        <p className="mt-3 text-[13px] text-ink/50">
+          {missing === 1 ? "Una tappa non ha" : `${missing} tappe non hanno`} ancora l&apos;ID Melee e non si può
+          mettere in corso.
+        </p>
+      )}
+      {children}
+    </section>
   );
-}
-
-/** "475829" or "https://melee.gg/Tournament/View/475829" → 475829; anything else → null. */
-export function meleeTournamentId(text: string): number | null {
-  const t = text.trim();
-  const m = /^(\d+)$/.exec(t) ?? /\/Tournament\/View\/(\d+)/i.exec(t);
-  if (!m) return null;
-  const id = Number(m[1]);
-  return Number.isSafeInteger(id) && id > 0 ? id : null;
 }
 
 /** Every registered player with their archetype; missing ones are Non Disponibile. */

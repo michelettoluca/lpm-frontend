@@ -2,20 +2,25 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import type { ManagedEvent } from "@/app/lib/adminTypes";
 import { tappaTitle } from "@/app/lib/format";
 import { useAdmin } from "../AdminShell";
 import { ErrorPanel } from "../ErrorPanel";
 import { EventDialog } from "../EventDialog";
-import { BUTTON, BUTTON_PRIMARY, EmptyState, notify, PageHeader, Pagination, usePage } from "../dashboardUi";
-import { EventRow, useMeleeSync, useSeasonEvents } from "../eventDisplay";
+import { BUTTON, BUTTON_PRIMARY, EmptyState, notify, PageHeader, SectionHeader } from "../dashboardUi";
+import { EventRow, isPast, isToday, useMeleeSync, useSeasonEvents } from "../eventDisplay";
 
-/** Every tappa of the season picked in the sidebar, in date order. */
+/**
+ * Every tappa of the season picked in the sidebar: tonight's first, kept
+ * there past midnight, then the ones to come, the soonest on top, then the
+ * ones played, the latest on top.
+ * A season holds a dozen or two, so no paging.
+ */
 export default function EventsPage() {
   const { season, setEvents } = useAdmin();
   const { events, imported, toImport } = useSeasonEvents(season?.id);
   const { sync, syncing, error } = useMeleeSync();
   const [creating, setCreating] = useState(false);
-  const { rows, pager } = usePage(events);
 
   if (!season) {
     return (
@@ -65,18 +70,17 @@ export default function EventsPage() {
         </div>
       )}
 
-      <div className="card">
-        {events.length === 0 ? (
+      {events.length === 0 ? (
+        <div className="card">
           <EmptyState>Nessuna tappa in questa stagione. Programmane una: comparirà sul sito tra i prossimi eventi.</EmptyState>
-        ) : (
-          <ul>
-            {rows.map((event) => (
-              <EventRow key={event.id} event={event} />
-            ))}
-          </ul>
-        )}
-        <Pagination {...pager} />
-      </div>
+        </div>
+      ) : (
+        <div className="space-y-10">
+          <Group title="Oggi" events={events.filter(isToday)} />
+          <Group title="In programma" events={events.filter((e) => !isToday(e) && !isPast(e))} />
+          <Group title="Giocate" events={events.filter((e) => !isToday(e) && isPast(e)).reverse()} />
+        </div>
+      )}
 
       {creating && (
         <EventDialog
@@ -98,5 +102,21 @@ export default function EventsPage() {
         />
       )}
     </>
+  );
+}
+
+function Group({ title, events }: { title: string; events: ManagedEvent[] }) {
+  if (events.length === 0) return null;
+  return (
+    <section>
+      <SectionHeader title={title} aside={events.length} />
+      <div className="card">
+        <ul>
+          {events.map((event) => (
+            <EventRow key={event.id} event={event} />
+          ))}
+        </ul>
+      </div>
+    </section>
   );
 }

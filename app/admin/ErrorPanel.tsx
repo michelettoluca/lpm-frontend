@@ -79,10 +79,7 @@ export function ErrorPanel({
     case "conflict":
       return (
         <Panel title="Conflitto con i dati esistenti">
-          <p>
-            Il torneo è già stato importato oppure l&apos;evento selezionato ha
-            già dei risultati. Aggiorna l&apos;elenco e verifica l&apos;evento scelto.
-          </p>
+          <p>{conflictText(error.message)}</p>
           <Raw message={error.message} />
         </Panel>
       );
@@ -96,8 +93,7 @@ export function ErrorPanel({
               melee.gg, quindi ha annullato l&apos;import. <strong>Non è stato scritto nulla</strong>.
             </p>
             <p>
-              Controlla che tutti i risultati siano stati inseriti su melee.gg e riprova. Se il problema resta, importa i
-              due CSV del torneo.
+              Controlla che tutti i risultati siano stati inseriti su melee.gg e riprova.
             </p>
             <pre className="tn max-h-64 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-ink/15 bg-surface p-3 font-mono text-[13px] leading-[1.5] text-ink/80">
               {error.message}
@@ -152,4 +148,15 @@ export function FieldError({ message }: { message: string }) {
   return (
     <p className="mt-1.5 text-[13px] font-semibold text-accent">{message}</p>
   );
+}
+
+/** The conflicts the backend names, in plain words; anything else gets the general one. */
+function conflictText(message: string) {
+  if (message.includes("another event already has this melee tournament"))
+    return "Questo torneo Melee è già associato a un'altra tappa. Controlla l'ID o toglilo dall'altra tappa.";
+  if (message.includes("imported from another melee tournament"))
+    return "I risultati della tappa vengono da un altro torneo Melee: reimpostali prima di cambiarlo.";
+  if (message.includes("played as another melee tournament"))
+    return "La tappa è associata a un altro torneo Melee: si importano solo i suoi risultati.";
+  return "Il torneo è già stato importato oppure la tappa ha già dei risultati. Aggiorna la pagina e controlla la tappa.";
 }

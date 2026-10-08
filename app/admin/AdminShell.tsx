@@ -3,11 +3,12 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Toaster } from "sonner";
-import { createContext, useCallback, useContext, useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useId, useState, type ReactNode } from "react";
 import type { AdminAccount, AdminError, ManagedEvent, Season } from "@/app/lib/adminTypes";
 import { callAdmin, isAuthLoss, type CallResult } from "./client";
 import { ErrorPanel } from "./ErrorPanel";
-import { BUTTON_PRIMARY, useCloseOnBack } from "./dashboardUi";
+import { Crown } from "@/app/lib/emblem";
+import { BUTTON_PRIMARY, useCloseOnBack, useDismiss } from "./dashboardUi";
 import { CONTROL } from "./fields";
 
 type DashboardContext = {
@@ -32,7 +33,8 @@ type DashboardContext = {
   setLive: (live: LiveTournament | null) => void;
 };
 
-export type LiveTournament = { name: string; open: boolean };
+/** The tournament in progress: always a tappa's Melee tournament, open to players or not. */
+export type LiveTournament = { id: number; name: string; open: boolean; event_id: number | null };
 
 const Context = createContext<DashboardContext | null>(null);
 
@@ -238,33 +240,14 @@ const LIVE: NavItem = {
   match: (path) => path.startsWith("/admin/declarations"),
 };
 
-const LPI: NavItem = {
-  href: "/admin/lpi",
-  label: "Archetipi LPI",
-  icon: <Icon d="M6 4.5h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-10a1 1 0 0 1 1-1ZM8 2.5h8.5a1 1 0 0 1 1 1V14" />,
-  match: (path) => path.startsWith("/admin/lpi"),
-};
-
-const SEASONS: NavItem = {
+const SETTINGS: NavItem = {
   href: "/admin/seasons",
-  label: "Stagioni",
+  label: "Impostazioni",
   icon: <Icon d="M10 3.5v2M10 14.5v2M3.5 10h2M14.5 10h2M5.4 5.4l1.4 1.4M13.2 13.2l1.4 1.4M5.4 14.6l1.4-1.4M13.2 6.8l1.4-1.4M12.5 10a2.5 2.5 0 1 1-5 0 2.5 2.5 0 0 1 5 0Z" />,
-  match: (path) => path.startsWith("/admin/seasons"),
+  match: (path) => ["/admin/seasons", "/admin/lpi", "/admin/admins", "/admin/advanced"].some((p) => path.startsWith(p)),
 };
 
-const ADMINS: NavItem = {
-  href: "/admin/admins",
-  label: "Amministratori",
-  icon: <Icon d="M7.5 9a2.75 2.75 0 1 0 0-5.5 2.75 2.75 0 0 0 0 5.5ZM2.5 16.5a5 5 0 0 1 10 0M13 4a2.75 2.75 0 0 1 0 5M15 12a5 5 0 0 1 2.5 4.5" />,
-  match: (path) => path.startsWith("/admin/admins"),
-};
-
-/** The settings, rarely visited, under the season's own pages. */
-function settings(me: AdminAccount) {
-  return me.is_super ? [LPI, SEASONS, ADMINS] : [LPI, SEASONS];
-}
-
-const ALL_NAV = [OVERVIEW, EVENTS, LIVE, LPI, SEASONS, ADMINS];
+const ALL_NAV = [OVERVIEW, EVENTS, LIVE, SETTINGS];
 
 function Icon({ d }: { d: string }) {
   return (
@@ -294,6 +277,19 @@ function NavLink({ item, onNavigate, mark }: { item: NavItem; onNavigate?: () =>
   );
 }
 
+/** The public site's LPM wordmark, the red crown resting askew on the M. */
+function Wordmark({ size = 26 }: { size?: number }) {
+  return (
+    <span
+      className="relative font-[family-name:var(--font-archivo)] leading-none font-extrabold tracking-[-0.03em]"
+      style={{ fontSize: size }}
+    >
+      LPM
+      <Crown className="absolute -top-[0.6em] -right-[0.22em] h-[0.78em] w-auto origin-[40%_100%] rotate-[16deg] text-accent" />
+    </span>
+  );
+}
+
 /**
  * The season switcher, then the season's pages, the tournament collecting
  * decks, the settings, and the account at the bottom.
@@ -302,9 +298,11 @@ function Sidebar({ me, busy, onLogout, onNavigate }: { me: AdminAccount; busy: b
   const { live } = useAdmin();
   return (
     <nav className="flex h-full w-full flex-col px-3 py-4" aria-label="Sezioni">
-      <Link href="/admin" onClick={onNavigate} className="mb-5 flex h-9 items-center gap-2.5 px-3">
-        <span className="grid h-6 w-6 place-items-center rounded-md bg-accent text-[13px] font-bold text-white">L</span>
-        <span className="font-[family-name:var(--font-archivo)] text-[16px] font-bold">Lega Pauper Milano</span>
+      <Link href="/admin" onClick={onNavigate} aria-label="LPM admin: panoramica" className="mt-2 mb-6 flex h-10 items-end gap-2.5 px-3">
+        <Wordmark />
+        <span className="mb-[2px] rounded-md bg-ink/[0.08] px-1.5 py-0.5 text-[11px] font-semibold tracking-wide text-ink/60 uppercase">
+          admin
+        </span>
       </Link>
       <SeasonSwitcher onNavigate={onNavigate} />
       <ul className="mt-3 space-y-1">
@@ -323,38 +321,14 @@ function Sidebar({ me, busy, onLogout, onNavigate }: { me: AdminAccount; busy: b
           }
         />
       </ul>
-      <p className="mt-7 mb-1.5 px-3 text-[13px] font-medium text-ink/40">Impostazioni</p>
-      <ul className="space-y-1">
-        {settings(me).map((item) => (
-          <NavLink key={item.href} item={item} onNavigate={onNavigate} />
-        ))}
-      </ul>
-      <div className="mt-auto pt-4">
+      <div className="mt-auto space-y-1 pt-4">
+        <ul>
+          <NavLink item={SETTINGS} onNavigate={onNavigate} />
+        </ul>
         <AccountMenu me={me} busy={busy} onLogout={onLogout} />
       </div>
     </nav>
   );
-}
-
-/** Closes a popup on a click outside it or on Escape. */
-function useDismiss(open: boolean, close: () => void) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (event: MouseEvent) => {
-      if (!ref.current?.contains(event.target as Node)) close();
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
-    };
-    document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open, close]);
-  return ref;
 }
 
 /**
@@ -595,9 +569,9 @@ function Gate({
 
   return (
     <section className="card mx-auto max-w-sm p-6">
-      <div className="mb-5 flex items-center gap-2">
-        <span className="grid h-5 w-5 place-items-center rounded-md bg-accent text-[12px] font-bold text-white">L</span>
-        <span className="text-[15px] font-semibold">Lega Pauper Milano · Admin</span>
+      <div className="mt-2 mb-6 flex items-end gap-2.5">
+        <Wordmark size={22} />
+        <span className="text-[14px] font-semibold text-ink/55">admin</span>
       </div>
       <h1 className="text-[20px] font-semibold leading-tight">
         {step === "email" ? "Accedi alla gestione della lega" : "Controlla la tua email"}

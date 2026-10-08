@@ -59,16 +59,9 @@ export function DangerZone() {
   const summary = result ? describe(result.deleted) : "";
 
   return (
-    <details className="group mt-16 border-t border-ink/10 pt-6">
-      <summary className="flex cursor-pointer list-none items-center gap-2 text-[15px] font-semibold  text-ink/45 hover:text-ink [&::-webkit-details-marker]:hidden">
-        <span className="transition-transform group-open:rotate-90" aria-hidden>
-          ›
-        </span>
-        Strumenti avanzati
-      </summary>
-
-      <div className="mt-5 max-w-xl rounded-xl border border-accent/40 bg-surface p-5">
-        <h2 className="font-medium text-accent">Svuota il database</h2>
+    <div>
+      <div className="max-w-xl rounded-2xl border border-accent/40 bg-surface p-5">
+        <h2 className="text-[19px] font-semibold text-accent">Svuota il database</h2>
         <p className="mt-1.5 text-[15px] leading-[1.5] text-ink/55">
           Cancella tutti gli eventi, i match, le classifiche e i giocatori. Serve solo per ripartire da zero: per
           rifare un singolo torneo basta eliminare il suo evento e importarlo di nuovo.
@@ -140,6 +133,6 @@ export function DangerZone() {
             : "Le stagioni verranno mantenute."}
         </p>
       </ConfirmResetDialog>
-    </details>
+    </div>
   );
 }

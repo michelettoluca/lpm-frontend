@@ -5,14 +5,40 @@ import { useState } from "react";
 import type { AdminError, ManagedEvent, MeleeSyncResult } from "@/app/lib/adminTypes";
 import { tappaSubtitle, tappaTitle } from "@/app/lib/format";
 import { useAdmin } from "./AdminShell";
-import { Badge, dayAndMonth, displayTime, notify } from "./dashboardUi";
+import { Badge, dayAndMonth, displayTime, localDate, notify } from "./dashboardUi";
 
 export function isPast(event: ManagedEvent) {
   return new Date(event.played_at).getTime() < Date.now();
 }
 
+/**
+ * When the league's day turns over, in hours after midnight in Milan: a night
+ * that runs past midnight still belongs to the day it started.
+ */
+const DAY_ENDS_AT_HOURS = 6;
+
+/** Today's league day as YYYY-MM-DD: until 6 in the morning it is still yesterday. */
+function leagueToday() {
+  return localDate(new Date(Date.now() - DAY_ENDS_AT_HOURS * 60 * 60 * 1000).toISOString());
+}
+
+/** Whether the tappa is tonight's, by the date set on it here, not Melee's. */
+export function isToday(event: ManagedEvent) {
+  return localDate(event.played_at) === leagueToday();
+}
+
+/** Whether the tappa is the tournament in progress, collecting decks. */
+export function useIsLive(event: ManagedEvent) {
+  const { live } = useAdmin();
+  return live?.event_id === event.id;
+}
+
 export function EventStatus({ event }: { event: ManagedEvent }) {
+  const live = useIsLive(event);
   if (event.has_results) return <Badge tone="success">Importata</Badge>;
+  if (live) return <Badge tone="attention">In corso</Badge>;
+  // Without its Melee tournament a tappa can't collect decks nor be imported.
+  if (!event.melee_tournament_id) return <Badge tone="attention">Manca ID Melee</Badge>;
   if (isPast(event)) return <Badge tone="attention">Da importare</Badge>;
   return <Badge>In programma</Badge>;
 }
@@ -57,10 +83,8 @@ export function EventRow({ event }: { event: ManagedEvent }) {
 }
 
 const SKIP_REASONS: Record<MeleeSyncResult["skipped"][number]["reason"], string> = {
-  no_tournament: "nessun torneo su melee.gg quel giorno",
-  ambiguous: "più tornei o più tappe nello stesso giorno: scegli il torneo dalla pagina della tappa",
+  no_tournament: "manca l'ID del torneo Melee: aggiungilo dalla pagina della tappa",
   not_ended: "il torneo su melee.gg non è ancora concluso",
-  too_old: "più vecchia di 90 giorni: importala dalla pagina della tappa",
   failed: "import non riuscito",
 };
 
@@ -91,7 +115,7 @@ function SyncSummary({ result }: { result: MeleeSyncResult }) {
   );
 }
 
-/** Import every past tappa from the Melee tournament held on its day. */
+/** Import every past tappa from the Melee tournament it is played as. */
 export function useMeleeSync() {
   const { call, refresh } = useAdmin();
   const [syncing, setSyncing] = useState(false);

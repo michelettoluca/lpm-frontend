@@ -153,25 +153,12 @@ export function logout(token: string): Promise<AdminResult<{ ok: true }>> {
   return adminFetch("/auth/logout", token, { method: "POST" });
 }
 
-/**
- * event_id selects the existing event; the CSV files are multipart.
- * Content-Type is left unset so fetch writes the multipart boundary itself.
- */
-export function importPath(eventId: number): string {
-  return `/admin/import/melee?event_id=${eventId}`;
+/** Import tappa `eventId`'s results from the Melee tournament it is played as. */
+export function meleeApiImportPath(eventId: number): string {
+  return `/admin/import/melee/api?event_id=${eventId}`;
 }
 
-/** Pull the results of Melee tournament `tournamentId` from the Melee API. */
-export function meleeApiImportPath(eventId: number, tournamentId: number): string {
-  return `/admin/import/melee/api?event_id=${eventId}&tournament_id=${tournamentId}`;
-}
-
-/** Melee tournaments that started within a few days of event `eventId`. */
-export function meleeTournamentsPath(eventId: number): string {
-  return `/admin/melee/tournaments?event_id=${eventId}`;
-}
-
-/** Import every past event from the Melee tournament held on its day. */
+/** Import every past tappa from the Melee tournament it is played as. */
 export const MELEE_SYNC_PATH = "/admin/import/melee/sync";
 
 export function resetPath(includeSeasons: boolean): string {

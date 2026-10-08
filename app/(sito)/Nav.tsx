@@ -75,9 +75,10 @@ function MenuIcon() {
 /**
  * The sections and the deck button. On a computer the links sit in a row; on a
  * phone they fold into a menu that drops under the header over a blurred
- * backdrop, and only the deck button stays in sight beside the menu's.
+ * backdrop, and only the deck button stays in sight beside the menu's. The
+ * deck button only shows while an admin has the deck collection on (decks).
  */
-export function Nav() {
+export function Nav({ decks }: { decks: boolean }) {
   const path = usePathname();
   // Open for the page it was opened on: going to another page closes it.
   const [openOn, setOpenOn] = useState<string | null>(null);
@@ -109,13 +110,15 @@ export function Nav() {
           </Link>
         );
       })}
-      <Link
-        href="/mazzo"
-        aria-current={path === "/mazzo" ? "page" : undefined}
-        className="rg-pill rg-display rg-strong inline-flex min-h-11 items-center px-4 text-[18px] lg:ml-1 lg:px-5 lg:text-[19px]"
-      >
-        il mio mazzo
-      </Link>
+      {decks && (
+        <Link
+          href="/mazzo"
+          aria-current={path === "/mazzo" ? "page" : undefined}
+          className="rg-pill rg-display rg-strong inline-flex min-h-11 items-center px-4 text-[18px] lg:ml-1 lg:px-5 lg:text-[19px]"
+        >
+          il mio mazzo
+        </Link>
+      )}
       <button
         type="button"
         aria-expanded={open}

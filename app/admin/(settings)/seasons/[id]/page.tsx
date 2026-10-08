@@ -2,7 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { useAdmin } from "../../AdminShell";
+import { useAdmin } from "../../../AdminShell";
 
 // A season is now the panel's context: its old address picks it and opens the overview.
 export default function OldSeasonPage() {

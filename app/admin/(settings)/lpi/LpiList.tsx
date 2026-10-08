@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import type { AdminError } from "@/app/lib/adminTypes";
 import { ManaCost, useArchetypeSearch } from "@/app/components/ArchetypePicker";
 import { archetypeLabel, colorsOf, type Archetype } from "@/app/lib/decks";
-import { useAdmin } from "../AdminShell";
-import { ErrorPanel } from "../ErrorPanel";
+import { useAdmin } from "../../AdminShell";
+import { ErrorPanel } from "../../ErrorPanel";
 import {
   Badge,
   BUTTON_PRIMARY,
@@ -23,8 +23,8 @@ import {
   TD,
   TH,
   usePage,
-} from "../dashboardUi";
-import { CONTROL } from "../fields";
+} from "../../dashboardUi";
+import { CONTROL } from "../../fields";
 
 type ListedArchetype = Archetype & { hidden: boolean };
 

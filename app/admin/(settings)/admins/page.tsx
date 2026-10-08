@@ -2,9 +2,9 @@
 
 import { useEffect, useId, useState } from "react";
 import type { AdminError, AdminListEntry } from "@/app/lib/adminTypes";
-import { useAdmin } from "../AdminShell";
-import { ErrorPanel, FieldError } from "../ErrorPanel";
-import { CONTROL, CONTROL_INVALID, Field } from "../fields";
+import { useAdmin } from "../../AdminShell";
+import { ErrorPanel, FieldError } from "../../ErrorPanel";
+import { CONTROL, CONTROL_INVALID, Field } from "../../fields";
 import {
   Badge,
   BUTTON_DANGER,
@@ -25,7 +25,7 @@ import {
   TD,
   TH,
   usePage,
-} from "../dashboardUi";
+} from "../../dashboardUi";
 
 export default function AdminsPage() {
   const { me, call } = useAdmin();
@@ -56,7 +56,7 @@ export default function AdminsPage() {
 
   if (!me.is_super) {
     return (
-      <PageHeader title="Amministratori" meta="Solo il super amministratore può gestire gli amministratori." />
+      <PageHeader section title="Amministratori" meta="Solo il super amministratore può gestire gli amministratori." />
     );
   }
 
@@ -101,6 +101,7 @@ export default function AdminsPage() {
   return (
     <>
       <PageHeader
+        section
         title="Amministratori"
         meta="Chi è in questa lista accede alla dashboard con un codice inviato alla sua email."
         actions={

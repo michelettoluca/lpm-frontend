@@ -11,18 +11,18 @@ import { EventDialog } from "./EventDialog";
 import { SeasonDialog } from "./SeasonDialog";
 import {
   BUTTON,
-  BUTTON_DANGER,
   BUTTON_PRIMARY,
   Callout,
   ConfirmDialog,
   displayDate,
   displayTime,
   EmptyState,
+  MoreMenu,
   notify,
   PageHeader,
   SectionHeader,
 } from "./dashboardUi";
-import { EventRow, isPast, useMeleeSync, useSeasonEvents } from "./eventDisplay";
+import { EventRow, isPast, isToday, useMeleeSync, useSeasonEvents } from "./eventDisplay";
 import { countedLabel, Progress, seasonPeriod, seasonStatus } from "./seasonDisplay";
 
 /** A number worth seeing first, with what it means and, sometimes, what to do. */
@@ -82,9 +82,11 @@ function Overview({ season, noneActive, liveName }: { season: Season; noneActive
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<AdminError | null>(null);
 
-  const upcoming = events.filter((event) => !isPast(event));
-  const next = upcoming[0];
-  const played = events.filter(isPast).reverse();
+  // Tonight's tappa stays the next one, and in its own list, past midnight.
+  const today = events.filter(isToday);
+  const upcoming = events.filter((event) => !isToday(event) && !isPast(event));
+  const next = today[0] ?? upcoming[0];
+  const played = events.filter((event) => !isToday(event) && isPast(event)).reverse();
 
   function open(m: Modal) {
     setModal(m);
@@ -138,17 +140,15 @@ function Overview({ season, noneActive, liveName }: { season: Season; noneActive
         }
         actions={
           <>
-            {!season.is_active && (
-              <button type="button" className={BUTTON} onClick={() => open("activate")}>
-                Rendi attiva
-              </button>
-            )}
             <button type="button" className={BUTTON} onClick={() => open("edit-season")}>
               Modifica
             </button>
-            <button type="button" className={BUTTON_DANGER} onClick={() => open("delete-season")}>
-              Elimina
-            </button>
+            <MoreMenu
+              actions={[
+                ...(season.is_active ? [] : [{ label: "Rendi attiva sul sito", onSelect: () => open("activate") }]),
+                { label: "Elimina stagione", danger: true, onSelect: () => open("delete-season") },
+              ]}
+            />
           </>
         }
       />
@@ -203,29 +203,45 @@ function Overview({ season, noneActive, liveName }: { season: Season; noneActive
         >
           <p className={`${BIG} ${toImport > 0 ? "text-accent" : ""}`}>{toImport}</p>
         </Tile>
-        <Tile
-          label="Prossima tappa"
-          foot={
-            !next && (
-              <button type="button" className={`${BUTTON} w-full`} onClick={() => open("new-event")}>
-                Nuova tappa
-              </button>
-            )
-          }
-        >
-          {next ? (
-            <Link href={`/admin/events/${next.id}`} className="group block">
-              <p className="tn font-[family-name:var(--font-archivo)] text-[22px] leading-tight font-bold group-hover:text-accent">
-                {displayDate(next.played_at)}
-              </p>
-              <p className="mt-1 truncate text-[15px] text-ink/70">
-                {tappaTitle(next.name)} · ore {displayTime(next.played_at)}
-              </p>
-            </Link>
-          ) : (
-            <p className="text-[15px] text-ink/50">Nessuna tappa in programma.</p>
-          )}
-        </Tile>
+        {season.ended_at && !next ? (
+          <Tile label="Stagione conclusa">
+            <p className="tn font-[family-name:var(--font-archivo)] text-[22px] leading-tight font-bold">
+              {displayDate(season.ended_at)}
+            </p>
+            <p className="mt-1 text-[15px] text-ink/60">
+              {season.is_active ? "È ancora la stagione mostrata dal sito." : "Resta consultabile, il sito mostra un'altra stagione."}
+            </p>
+          </Tile>
+        ) : (
+          <Tile
+            label="Prossima tappa"
+            foot={
+              !next && (
+                <button type="button" className={`${BUTTON} w-full`} onClick={() => open("new-event")}>
+                  Nuova tappa
+                </button>
+              )
+            }
+          >
+            {next ? (
+              <Link href={`/admin/events/${next.id}`} className="group block">
+                <p className="tn font-[family-name:var(--font-archivo)] text-[22px] leading-tight font-bold group-hover:text-accent">
+                  {displayDate(next.played_at)}
+                </p>
+                <p className="mt-1 truncate text-[15px] text-ink/70">
+                  {tappaTitle(next.name)} · ore {displayTime(next.played_at)}
+                </p>
+                {!next.melee_tournament_id && (
+                  <p className="mt-2 text-[13px] font-semibold text-[#ff5a66]">
+                    Manca l&apos;ID del torneo Melee: senza non si può mettere in corso.
+                  </p>
+                )}
+              </Link>
+            ) : (
+              <p className="text-[15px] text-ink/50">Nessuna tappa in programma.</p>
+            )}
+          </Tile>
+        )}
       </div>
 
       {events.length === 0 ? (
@@ -239,9 +255,12 @@ function Overview({ season, noneActive, liveName }: { season: Season; noneActive
           </EmptyState>
         </section>
       ) : (
-        <div className="grid items-start gap-x-6 gap-y-10 lg:grid-cols-2">
-          <EventList title="In programma" events={upcoming.slice(0, 4)} empty="Nessuna tappa in programma." />
-          <EventList title="Ultime giocate" events={played.slice(0, 4)} empty="Nessuna tappa giocata finora." />
+        <div className="space-y-10">
+          {today.length > 0 && <EventList title="Oggi" events={today} empty="" complete />}
+          <div className="grid items-start gap-x-6 gap-y-10 xl:grid-cols-2">
+            <EventList title="In programma" events={upcoming.slice(0, 4)} empty="Nessuna tappa in programma." />
+            <EventList title="Ultime giocate" events={played.slice(0, 4)} empty="Nessuna tappa giocata finora." />
+          </div>
         </div>
       )}
 
@@ -317,15 +336,28 @@ function Overview({ season, noneActive, liveName }: { season: Season; noneActive
   );
 }
 
-function EventList({ title, events, empty }: { title: string; events: ReturnType<typeof useSeasonEvents>["events"]; empty: string }) {
+/** A few tappe under a title; complete when the list has them all, so no link to the rest. */
+function EventList({
+  title,
+  events,
+  empty,
+  complete = false,
+}: {
+  title: string;
+  events: ReturnType<typeof useSeasonEvents>["events"];
+  empty: string;
+  complete?: boolean;
+}) {
   return (
     <section>
       <SectionHeader
         title={title}
         action={
-          <Link href="/admin/events" className="text-[14px] font-medium text-ink/55 hover:text-ink">
-            Tutte le tappe →
-          </Link>
+          !complete && (
+            <Link href="/admin/events" className="text-[14px] font-medium text-ink/55 hover:text-ink">
+              Tutte le tappe →
+            </Link>
+          )
         }
       />
       <div className="card">

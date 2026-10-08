@@ -75,7 +75,16 @@ export type ResetResult = {
   seasons_cleared: boolean;
 };
 
-export type ManagedEvent = { id: number; season_id: number; name: string; format: string | null; played_at: string; has_results: boolean };
+export type ManagedEvent = {
+  id: number;
+  season_id: number;
+  name: string;
+  format: string | null;
+  played_at: string;
+  has_results: boolean;
+  /** The Melee tournament the tappa is played as: what collecting decks and importing the results go through. */
+  melee_tournament_id?: number | null;
+};
 
 /** A Melee tournament offered for import, as the backend reads it from the Melee API. */
 export type MeleeTournament = {
@@ -93,16 +102,15 @@ export type MeleeTournament = {
   same_day: boolean;
 };
 
-export type MeleeSyncSkipReason = "no_tournament" | "ambiguous" | "not_ended" | "too_old" | "failed";
+export type MeleeSyncSkipReason = "no_tournament" | "not_ended" | "failed";
 
 export type MeleeSyncResult = {
-  imported: { event_id: number; event_name: string; tournament_id: number; tournament_name: string }[];
+  imported: { event_id: number; event_name: string; tournament_id: number }[];
   skipped: {
     event_id: number;
     event_name: string;
     played_at: string;
     reason: MeleeSyncSkipReason;
     error?: string;
-    candidates?: MeleeTournament[];
   }[];
 };
