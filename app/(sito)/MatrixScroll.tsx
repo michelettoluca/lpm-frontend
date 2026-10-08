@@ -18,9 +18,12 @@ export function MatrixScroll({ head, children }: { head: ReactNode; children: Re
       <div aria-hidden="true" ref={strip} className="sticky top-0 z-30 -mx-5 overflow-hidden bg-[var(--rg-paper)] sm:mx-0">
         {head}
       </div>
-      {/* Scrolling stops on a whole column. */}
+      {/* Scrolling stops on a whole column. Relative so the table's hidden header, placed
+          absolutely, stays inside and is clipped with it: past the page's edge it would widen the
+          page, and a phone then lays the page out wider and taller than the screen, which leaves
+          nothing for the strip to stick to. */}
       <div
-        className="-mx-5 snap-x snap-proximity overflow-x-auto pb-2 sm:mx-0"
+        className="relative -mx-5 snap-x snap-proximity overflow-x-auto pb-2 sm:mx-0"
         onScroll={(event) => {
           if (strip.current) strip.current.scrollLeft = event.currentTarget.scrollLeft;
         }}
