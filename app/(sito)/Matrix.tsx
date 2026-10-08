@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { MatchRecord, MatchupMatrix } from "@/app/lib/site";
 import { archetypeLabel } from "@/app/lib/decks";
+import { MatrixScroll } from "./MatrixScroll";
 import { Mana } from "./ui";
 
 type Archetype = MatchupMatrix["archetypes"][number];
@@ -93,8 +94,19 @@ export function Matrix({
 
   return (
     <div className="rg-mx">
-      {/* On phones the matrix runs to the panel's edges and scrolling stops on a whole column. */}
-      <div className="-mx-5 snap-x snap-proximity overflow-x-auto pb-2 sm:mx-0">
+      <MatrixScroll
+        head={
+          <table
+            className={`table-fixed border-separate border-spacing-0 text-[13px] ${WIDTHS}`}
+            style={{ width: `calc(var(--name) + ${columns.length + 1} * var(--col))` }}
+          >
+            <Columns columns={columns} />
+            <thead>
+              <HeadRow columns={columns} />
+            </thead>
+          </table>
+        }
+      >
         <table
           // No gap between data cells: each draws its own edge.
           className={`table-fixed border-separate border-spacing-0 text-[13px] ${WIDTHS}`}
@@ -102,34 +114,9 @@ export function Matrix({
           style={{ width: `calc(var(--name) + ${columns.length + 1} * var(--col))` }}
           aria-label={label}
         >
-          <thead>
-            <tr>
-              <th className="sticky left-0 z-20 w-[var(--name)] bg-[var(--rg-paper)]" />
-              {/* Grey rules between the column names, like the ones between the row names. */}
-              <th scope="col" className={`${COL} border-l ${LINE} px-1 pb-2 align-bottom ${NAME}`}>
-                totale
-              </th>
-              {columns.map((c, ci) => (
-                <th
-                  key={c.id}
-                  scope="col"
-                  className={`${COL} border-l ${ci === columns.length - 1 ? "border-r" : ""} ${LINE} px-0.5 pb-2 align-bottom sm:px-1.5`}
-                >
-                  {/* The colours stand in for a picture of the deck, the name right above the numbers. */}
-                  <span className="mb-1.5 flex h-3.5 justify-center">
-                    <Mana colors={c.colors} size={14} />
-                  </span>
-                  {/* The same lines kept for every name (three on phones), so the colours line up across the header. */}
-                  <span className="flex h-[3.9em] items-end justify-center text-[10px] sm:h-[2.6em] sm:text-[12px]">
-                    <span
-                      className={`line-clamp-3 hyphens-auto [overflow-wrap:anywhere] sm:line-clamp-2 ${NAME} max-sm:text-[10px] max-sm:tracking-normal`}
-                    >
-                      {archetypeLabel(c.name)}
-                    </span>
-                  </span>
-                </th>
-              ))}
-            </tr>
+          <Columns columns={columns} />
+          <thead className="rg-mx-sr-head">
+            <HeadRow columns={columns} />
           </thead>
           <tbody>
             {rows.map((r, ri) => {
@@ -186,7 +173,7 @@ export function Matrix({
             })}
           </tbody>
         </table>
-      </div>
+      </MatrixScroll>
 
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
         <span className="flex items-center gap-2">
@@ -197,5 +184,53 @@ export function Matrix({
         {mirror && <span className="rg-muted">Sulla diagonale i mirror.</span>}
       </div>
     </div>
+  );
+}
+
+/**
+ * The columns' widths, the same in the table and in the copy of its header
+ * that sticks to the top, so the two line up.
+ */
+function Columns({ columns }: { columns: Archetype[] }) {
+  return (
+    <colgroup>
+      <col className="w-[var(--name)]" />
+      {[null, ...columns].map((c, i) => (
+        <col key={c?.id ?? `total-${i}`} className="w-[var(--col)]" />
+      ))}
+    </colgroup>
+  );
+}
+
+/** The column names: the total, then every archetype faced. */
+function HeadRow({ columns }: { columns: Archetype[] }) {
+  return (
+    <tr>
+      <th className="sticky left-0 z-20 w-[var(--name)] bg-[var(--rg-paper)]" />
+      {/* Grey rules between the column names, like the ones between the row names. */}
+      <th scope="col" className={`${COL} border-l ${LINE} px-1 pb-2 align-bottom ${NAME}`}>
+        <span>totale</span>
+      </th>
+      {columns.map((c, ci) => (
+        <th
+          key={c.id}
+          scope="col"
+          className={`${COL} border-l ${ci === columns.length - 1 ? "border-r" : ""} ${LINE} px-0.5 pb-2 align-bottom sm:px-1.5`}
+        >
+          {/* The colours stand in for a picture of the deck, the name right above the numbers. */}
+          <span className="mb-1.5 flex h-3.5 justify-center">
+            <Mana colors={c.colors} size={14} />
+          </span>
+          {/* The same lines kept for every name (three on phones), so the colours line up across the header. */}
+          <span className="flex h-[3.9em] items-end justify-center text-[10px] sm:h-[2.6em] sm:text-[12px]">
+            <span
+              className={`line-clamp-3 hyphens-auto [overflow-wrap:anywhere] sm:line-clamp-2 ${NAME} max-sm:text-[10px] max-sm:tracking-normal`}
+            >
+              {archetypeLabel(c.name)}
+            </span>
+          </span>
+        </th>
+      ))}
+    </tr>
   );
 }
