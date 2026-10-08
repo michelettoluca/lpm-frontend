@@ -854,6 +854,26 @@ body:has(.lpm)::before {
   --mx-edge: var(--rg-line);
   color: var(--rg-mute);
 }
+/*
+ * The column names show in the strip that sticks above the matrix
+ * (MatrixScroll.tsx); the table's own row stays for screen readers, out of
+ * sight and taking no room.
+ */
+.lpm .rg-mx-sr-head th {
+  height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-top-width: 0;
+  border-bottom-width: 0;
+}
+.lpm .rg-mx-sr-head th > * {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 /* Won-lost-drawn above, the rate large, the count below. */
 .lpm .rg-mx-rec {
   font-size: 10px;
