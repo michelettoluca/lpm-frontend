@@ -5,6 +5,7 @@ import { PRIZE_POINTS, getEventData, type Standing } from "@/app/lib/site";
 import { ArrowLink, ColHeads, Comune, Head, PixelStar, Section, plural, sameRomeDay, weekday } from "../../ui";
 import { Matrix } from "../../Matrix";
 import { Metagame } from "./Metagame";
+import { DeckTag } from "../../DeckTag";
 
 export async function generateMetadata(props: PageProps<"/tappe/[id]">) {
   const { id } = await props.params;
@@ -105,7 +106,10 @@ export default async function EventPage(props: PageProps<"/tappe/[id]">) {
                       {first.player_name}
                       {first.prize && <PixelStar size={14} className="shrink-0 text-[var(--rg-o)]" label="9 punti o più" />}
                     </span>
-                    <span className="rg-muted mt-1 block text-[14px] tnum">{rec(first)}</span>
+                    <span className="rg-muted mt-1 flex min-w-0 items-center gap-2 text-[14px] tnum">
+                      {rec(first)}
+                      {first.deck && <DeckTag deck={first.deck} />}
+                    </span>
                   </span>
                   <span className="pb-0.5 text-right">
                     <span className="rg-display tnum block text-[36px] leading-none lg:text-[48px]">{first.points}</span>
@@ -126,7 +130,10 @@ export default async function EventPage(props: PageProps<"/tappe/[id]">) {
                       {s.player_name}
                       {s.prize && <PixelStar size={13} className="shrink-0 text-[var(--rg-o)]" label="9 punti o più" />}
                     </span>
-                    <span className="rg-muted mt-0.5 block text-[14px] tnum">{rec(s)}</span>
+                    <span className="rg-muted mt-0.5 flex min-w-0 items-center gap-2 text-[14px] tnum">
+                      {rec(s)}
+                      {s.deck && <DeckTag deck={s.deck} />}
+                    </span>
                   </span>
                   <span className="text-right">
                     <span className="rg-display tnum block text-[28px] leading-none lg:text-[34px]">{s.points}</span>
@@ -149,9 +156,12 @@ export default async function EventPage(props: PageProps<"/tappe/[id]">) {
                         className={`rg-row -mx-2 grid min-h-12 items-center px-2 ${COLS}`}
                       >
                         <span className="rg-muted tnum text-[15px] font-semibold">{s.rank}</span>
-                        <span className="flex min-w-0 items-center gap-2 text-[16px] font-semibold">
-                          <span className="truncate">{s.player_name}</span>
-                          {s.prize && <PixelStar size={12} className="shrink-0 text-[var(--rg-o)]" label="9 punti o più" />}
+                        <span className="min-w-0 py-2">
+                          <span className="flex min-w-0 items-center gap-2 text-[16px] font-semibold">
+                            <span className="truncate">{s.player_name}</span>
+                            {s.prize && <PixelStar size={12} className="shrink-0 text-[var(--rg-o)]" label="9 punti o più" />}
+                          </span>
+                          {s.deck && <DeckTag deck={s.deck} className="rg-muted flex text-[13px]" />}
                         </span>
                         <span className="rg-muted tnum text-right text-[14px]">{rec(s)}</span>
                         <span className="rg-display rg-strong tnum text-right text-[18px]">{s.points}</span>

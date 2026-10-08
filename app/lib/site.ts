@@ -15,6 +15,7 @@ import {
   getPlayerDecks,
   getPlayerEvents,
   getSeasons,
+  type Deck,
   type EventSummary,
   type H2HOpponent,
   type LeaderboardEntry,
@@ -43,7 +44,7 @@ import {
 import { UNDEFEATED_POINTS, improvable, maxGain, verdicts, type Verdict } from "./potential";
 
 export type { Verdict } from "./potential";
-export type { EventSummary, LeaderboardEntry, MatchRecord, MatchupMatrix, Metagame, MetagameArchetype, Pairing, PlayerDeck, PlayerEventEntry, Season, Standing };
+export type { Deck, EventSummary, LeaderboardEntry, MatchRecord, MatchupMatrix, Metagame, MetagameArchetype, Pairing, PlayerDeck, PlayerEventEntry, Season, Standing };
 export { dateTile, formatDateMeta, splitName, tappaNumber, tappaSubtitle, tappaTitle, winPct };
 
 /** A tappa result of 9 points or more (3 wins) earns the star. */

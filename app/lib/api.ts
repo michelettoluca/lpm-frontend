@@ -30,6 +30,9 @@ export type EventSummary = {
   played_at: string;
 };
 
+/** The archetype a player brought to a tappa. */
+export type Deck = { id: number; name: string; colors: string[] };
+
 export type Standing = {
   event_id: number;
   player_id: number;
@@ -44,6 +47,8 @@ export type Standing = {
   gwp: number;
   omw: number;
   ogw: number;
+  /** The player's deck, null when nobody knows it. */
+  deck: Deck | null;
 };
 
 export type EventDetail = {
@@ -71,6 +76,8 @@ export type PlayerEventEntry = {
   ogw: number;
   /** False when the result falls outside the season's best counted_events. */
   counted: boolean;
+  /** The player's deck, null when nobody knows it. */
+  deck: Deck | null;
 };
 
 export type H2HMatch = {

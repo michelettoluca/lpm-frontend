@@ -7,6 +7,7 @@ import { Matrix } from "../../Matrix";
 import { SeasonPicker } from "../../SeasonPicker";
 import { ColHeads, Head, MarkerCircle, PixelStar, Section, plural } from "../../ui";
 import { FaceOff } from "./FaceOff";
+import { DeckTag } from "../../DeckTag";
 
 
 export async function generateMetadata(props: PageProps<"/giocatori/[id]">) {
@@ -111,9 +112,12 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
                           {t.prize && <PixelStar size={14} className="text-[var(--rg-o)]" label="9 punti o più" />}
                           {t.dropped && <span className="rg-badge ml-1">scartata</span>}
                         </span>
-                        <span className="rg-muted block text-[14px] tnum">
-                          {d.day} {d.mon} · {t.wins + t.byes}-{t.losses}-{t.draws}
-                          {t.byes > 0 ? ` (${plural(t.byes, "bye", "bye")})` : ""}
+                        <span className="rg-muted flex min-w-0 flex-wrap items-center gap-x-2 text-[14px] tnum">
+                          <span>
+                            {d.day} {d.mon} · {t.wins + t.byes}-{t.losses}-{t.draws}
+                            {t.byes > 0 ? ` (${plural(t.byes, "bye", "bye")})` : ""}
+                          </span>
+                          {t.deck && <DeckTag deck={t.deck} />}
                         </span>
                       </span>
                       <span className={`rg-display rg-strong tnum text-right text-[24px] ${t.dropped ? "line-through decoration-1" : ""}`}>
