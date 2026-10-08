@@ -1,17 +1,8 @@
-import { Figtree, Fraunces } from "next/font/google";
+import { Figtree } from "next/font/google";
 import { HomeLink, Nav } from "./Nav";
 import { Footer } from "./Footer";
-import { FontSwitch } from "./FontSwitch";
 import { WobbleDefs } from "./ui";
 import "./sito.css";
-
-/* Fraunces, variable: soft corners (SOFT 100), no wonky letters, light weights. */
-const display = Fraunces({
-  variable: "--font-rg-display",
-  subsets: ["latin"],
-  axes: ["SOFT", "WONK", "opsz"],
-  display: "swap",
-});
 
 /* Figtree for the text: friendly and modern, easy to read small. */
 const text = Figtree({
@@ -23,7 +14,7 @@ const text = Figtree({
 /** The public site: header, page, and the closing panel. The admin has its own layout. */
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`lpm ${display.variable} ${text.variable}`}>
+    <div className={`lpm ${text.variable}`}>
       <WobbleDefs />
       <a href="#rg-main" className="rg-skip">
         salta al contenuto
@@ -39,8 +30,6 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
       </main>
 
       <Footer />
-      {/* Inlined at build time: production drops the switch and its code. */}
-      {process.env.NODE_ENV === "development" && <FontSwitch />}
     </div>
   );
 }

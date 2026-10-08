@@ -140,18 +140,21 @@ body:has(.lpm)::before {
 }
 
 /* Type */
+/* Headings and big numbers in Archivo, bold and a little tight: the root
+   layout already loads it for the admin. */
 .lpm .rg-display {
-  font-family: var(--font-rg-display), Georgia, serif;
-  font-weight: 400;
-  font-optical-sizing: auto;
-  font-variation-settings: "SOFT" 100, "WONK" 0;
-  letter-spacing: -0.01em;
+  font-family: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.03em;
 }
 .lpm .rg-tight {
-  letter-spacing: -0.025em;
+  letter-spacing: -0.035em;
 }
 .lpm .rg-strong {
   font-weight: 500;
+}
+.lpm .rg-display.rg-strong {
+  font-weight: 800;
 }
 .lpm .tnum {
   font-variant-numeric: tabular-nums lining-nums;
@@ -327,9 +330,9 @@ body:has(.lpm)::before {
   gap: 10px;
   padding: 0 26px;
   border-radius: 999px;
-  font-family: var(--font-rg-display), Georgia, serif;
-  font-variation-settings: "SOFT" 100, "WONK" 0;
-  font-weight: 500;
+  font-family: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
   font-size: 21px;
   line-height: 1;
   transition: transform 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
@@ -957,19 +960,6 @@ body:has(.lpm)::before {
    light and a deep one on dark, never a see-through ink that dulls the hue. */
 .lpm .rg-watermark {
   color: light-dark(#f1f3f6, #1c2330);
-}
-
-/* The development font picker, floating over the page. */
-.lpm .rg-devfont {
-  background: var(--rg-paper);
-  color: var(--rg-ink);
-  box-shadow:
-    inset 0 0 0 1.5px var(--rg-line-strong),
-    0 8px 24px -10px rgb(0 0 0 / 0.35);
-}
-.lpm .rg-devfont select {
-  color: var(--rg-ink);
-  cursor: pointer;
 }
 
 /* The crown on the header's M: askew at rest, it straightens and lifts a

@@ -178,7 +178,7 @@ function Sleep() {
       <path d="M48 112 q6 5 12 0" {...FACE} />
       <path d="M70 112 q6 5 12 0" {...FACE} />
       <circle cx="65" cy="126" r="3.5" fill="var(--rg-paper)" />
-      <g fill="currentColor" style={{ fontFamily: "var(--font-rg-display)" }}>
+      <g fill="currentColor" style={{ fontFamily: "var(--font-archivo)" }}>
         <text x="100" y="80" fontSize="18">z</text>
         <text x="116" y="60" fontSize="24">z</text>
         <text x="134" y="36" fontSize="32">z</text>
@@ -202,7 +202,7 @@ function Lost() {
         <path d="M85 51 L96 48" {...FACE} strokeWidth="3" />
         <path d="M66 80 q4 -5 8 0 t8 0 t8 0" {...FACE} strokeWidth="3.4" />
       </Card>
-      <text x="14" y="58" fontSize="44" fill="currentColor" style={{ fontFamily: "var(--font-rg-display)" }}>
+      <text x="14" y="58" fontSize="44" fill="currentColor" style={{ fontFamily: "var(--font-archivo)" }}>
         ?
       </text>
     </>
