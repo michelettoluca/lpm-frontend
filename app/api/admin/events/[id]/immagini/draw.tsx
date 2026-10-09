@@ -417,7 +417,7 @@ function Imbattuti({ rows }: { rows: Row[] }) {
 /* ------------------------------------------------------------------ */
 
 /** The image of one kind for a tappa with results, or null when the tappa has nothing to show for it. */
-export async function drawImage(e: EventData, kind: ImageKind, file: string): Promise<ImageResponse | null> {
+export async function drawImage(e: EventData, kind: ImageKind): Promise<ImageResponse | null> {
   let body: ReactNode;
   let height: number;
   switch (kind) {
@@ -459,10 +459,5 @@ export async function drawImage(e: EventData, kind: ImageKind, file: string): Pr
     width: WIDTH,
     height: kind === "imbattuti" ? height : Math.max(PORTRAIT, height),
     fonts: await loadFonts(),
-    headers: {
-      "Content-Disposition": `inline; filename="${file}"`,
-      // For the signed-in admin only: never a shared cache.
-      "Cache-Control": "private, max-age=60",
-    },
   });
 }
