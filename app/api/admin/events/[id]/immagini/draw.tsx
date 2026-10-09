@@ -289,85 +289,84 @@ function Classifica({ e }: { e: EventData }) {
 
 const classificaHeight = (e: EventData) => CHROME + COL_HEADS + standingRows(e) * standingRow(e);
 
-const STATS = 96;
-const barRow = (e: EventData) => fill(PORTRAIT - STATS - 44, e.metagame!.archetypes.length, 62, 92);
+const barRow = (e: EventData) => fill(PORTRAIT - 44, metagameRows(e).length, 62, 116);
 /** The bar's free end, rounded like the page's. */
 const ROUND_END = { borderTopRightRadius: 5, borderBottomRightRadius: 5 } as const;
 
-/** A short fact with its label above, like the page's <dl>. */
-function Stat({ label, children, width }: { label: string; children: ReactNode; width?: number }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", minWidth: 0, ...(width ? { width } : { flex: 1 }) }}>
-      <div style={{ ...EYEBROW, fontSize: 15 }}>{label}</div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 6, minWidth: 0, ...DISPLAY, fontSize: 30, lineHeight: 1.1 }}>
-        {children}
-      </div>
-    </div>
+type MetagameRow = {
+  key: string;
+  name: string;
+  colors: readonly string[];
+  players: number;
+  wins: number;
+  losses: number;
+  draws: number;
+  /** The archetype the night's winner played. */
+  won: boolean;
+  /** The row that gathers the decks one player each brought. */
+  other: boolean;
+};
+
+/**
+ * The archetypes as rows: those one player each brought fold into one
+ * "altro" row, as long as something else stands on its own and there are at
+ * least two of them to gather.
+ */
+function metagameRows(e: EventData): MetagameRow[] {
+  const all = e.metagame!.archetypes.map<MetagameRow>((a) => ({
+    key: String(a.archetype_id),
+    name: archetypeLabel(a.name),
+    colors: a.colors,
+    players: a.players,
+    wins: a.wins,
+    losses: a.losses,
+    draws: a.draws,
+    won: a.best_rank === 1,
+    other: false,
+  }));
+  const singles = all.filter((r) => r.players === 1);
+  const rest = all.filter((r) => r.players > 1);
+  if (rest.length === 0 || singles.length < 2) return all;
+  const other = singles.reduce<MetagameRow>(
+    (acc, r) => ({ ...acc, players: acc.players + r.players, wins: acc.wins + r.wins, losses: acc.losses + r.losses, draws: acc.draws + r.draws }),
+    { key: "altro", name: `Altro (${singles.length} archetipi)`, colors: [], players: 0, wins: 0, losses: 0, draws: 0, won: false, other: true },
   );
+  return [...rest, other];
 }
 
 /** The decks played, as a bar each, the winning deck in red. */
 function Mazzi({ e }: { e: EventData }) {
-  const { archetypes, declared, players } = e.metagame!;
-  const max = Math.max(1, ...archetypes.map((a) => a.players));
-  const top = archetypes[0];
-  const tiedTop = archetypes.filter((a) => a.players === top.players);
-  const winner = archetypes.find((a) => a.best_rank === 1);
+  const rows = metagameRows(e);
+  const max = Math.max(1, ...rows.map((r) => r.players));
   const row = barRow(e);
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      <div style={{ display: "flex", gap: 32, height: STATS, borderBottom: `2px solid ${LINE}` }}>
-        <Stat label={tiedTop.length > 1 ? "i più giocati" : "il più giocato"}>
-          <div style={CLIP}>{tiedTop.map((a) => archetypeLabel(a.name)).join(", ")}</div>
-          <div style={{ color: MUTE, fontFamily: "Figtree", fontSize: 18, fontWeight: 600, letterSpacing: 0, flexShrink: 0 }}>{`× ${top.players}`}</div>
-        </Stat>
-        <Stat label="vince con">
-          {winner ? (
-            <div style={{ ...CLIP, color: RED }}>{archetypeLabel(winner.name)}</div>
-          ) : (
-            <div style={{ ...CLIP, color: MUTE }}>mazzo sconosciuto</div>
-          )}
-        </Stat>
-        <Stat label="archetipi" width={150}>
-          <div>{String(archetypes.length)}</div>
-          {declared < players && (
-            <div style={{ color: MUTE, fontFamily: "Figtree", fontSize: 18, fontWeight: 600, letterSpacing: 0 }}>{`su ${declared} mazzi noti`}</div>
-          )}
-        </Stat>
-      </div>
-
       <div style={{ display: "flex", alignItems: "flex-end", gap: 18, ...EYEBROW, fontSize: 14, height: 44, paddingBottom: 6 }}>
         <div style={{ width: 360 }}>archetipo</div>
         <div style={{ flex: 1 }}>giocatori</div>
         <div style={{ width: 56 }} />
         <div style={{ display: "flex", justifyContent: "flex-end", width: 90 }}>v-p</div>
       </div>
-      {archetypes.map((a, i) => {
-        const won = a.best_rank === 1;
-        return (
-          <div
-            key={a.archetype_id}
-            style={{ display: "flex", alignItems: "center", gap: 18, height: row, borderTop: i ? `1.5px solid ${LINE}` : "none" }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 10, width: 360, minWidth: 0 }}>
-              <div style={{ ...CLIP, fontSize: 23, fontWeight: 700, color: won ? RED : INK, lineHeight: 1.2 }}>{archetypeLabel(a.name)}</div>
-              <Mana colors={a.colors} size={18} />
-            </div>
-            <div style={{ display: "flex", flex: 1, height: Math.round(row * 0.26), background: SOFT, ...ROUND_END }}>
-              <div style={{ width: `${Math.max((a.players / max) * 100, 2)}%`, height: "100%", background: won ? RED : INK, ...ROUND_END }} />
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-end", width: 56, ...STRONG, fontSize: 26, lineHeight: 1 }}>{String(a.players)}</div>
-            <div style={{ display: "flex", justifyContent: "flex-end", width: 90, color: MUTE, fontSize: 17, fontWeight: 600 }}>
-              {`${a.wins}-${a.losses}${a.draws ? `-${a.draws}` : ""}`}
-            </div>
+      {rows.map((r, i) => (
+        <div key={r.key} style={{ display: "flex", alignItems: "center", gap: 18, height: row, borderTop: i ? `1.5px solid ${LINE}` : "none" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, width: 360, minWidth: 0 }}>
+            <div style={{ ...CLIP, fontSize: 23, fontWeight: 700, color: r.won ? RED : r.other ? MUTE : INK, lineHeight: 1.2 }}>{r.name}</div>
+            <Mana colors={r.colors} size={18} />
           </div>
-        );
-      })}
+          <div style={{ display: "flex", flex: 1, height: Math.min(24, Math.round(row * 0.26)), background: SOFT, ...ROUND_END }}>
+            <div style={{ width: `${Math.max((r.players / max) * 100, 2)}%`, height: "100%", background: r.won ? RED : r.other ? MUTE : INK, ...ROUND_END }} />
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", width: 56, ...STRONG, fontSize: 26, lineHeight: 1 }}>{String(r.players)}</div>
+          <div style={{ display: "flex", justifyContent: "flex-end", width: 90, color: MUTE, fontSize: 17, fontWeight: 600 }}>
+            {`${r.wins}-${r.losses}${r.draws ? `-${r.draws}` : ""}`}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
 
-const mazziHeight = (e: EventData) => CHROME + STATS + 44 + e.metagame!.archetypes.length * barRow(e);
+const mazziHeight = (e: EventData) => CHROME + 44 + metagameRows(e).length * barRow(e);
 
 const unbeatenRow = (rows: Row[]) => fill(SQUARE, rows.length, 128, 190);
 
@@ -429,7 +428,7 @@ export async function drawImage(e: EventData, kind: ImageKind, file: string): Pr
     case "mazzi": {
       if (!e.metagame) return null;
       body = (
-        <Frame e={e} title="archetipi più giocati" meta={playersAndRounds(e)}>
+        <Frame e={e} title="metagame" meta={playersAndRounds(e)}>
           <Mazzi e={e} />
         </Frame>
       );

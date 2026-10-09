@@ -19,7 +19,7 @@ const never = () => () => {};
 
 const LABELS: Record<ShareImage["kind"], string> = {
   classifica: "Classifica finale",
-  mazzi: "Mazzi giocati",
+  mazzi: "Metagame",
   imbattuti: "Imbattuti",
 };
 
