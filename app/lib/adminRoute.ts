@@ -1,4 +1,5 @@
-import { revalidateTag } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { after } from "next/server";
 import { adminFetch, type AdminResult } from "./adminApi";
 import { PUBLIC_DATA_TAG } from "./api";
 import type { AdminError } from "./adminTypes";
@@ -74,11 +75,34 @@ export function forwardedFor(request: Request): string | undefined {
 }
 
 /**
+ * How long after a write to expire the public data a second time. A public
+ * fetch already in flight when the write lands can store the old answer just
+ * after the first expiry, with a timestamp that makes it look fresh: Next
+ * would serve it for a minute, then one more stale-while-revalidate round.
+ */
+const SECOND_EXPIRY_MS = 5_000;
+
+/**
+ * Expire the public pages' cached API data, so the next visit renders fresh
+ * results instead of one stale-while-revalidate round behind: now, and once
+ * more after anything that was in flight has landed. The second round goes
+ * through the root layout's path, which every cached page and fetch carries
+ * as a tag: a repeat of the same tag and profile within one request is
+ * dropped by Next as a duplicate.
+ */
+function expirePublicData() {
+  revalidateTag(PUBLIC_DATA_TAG, { expire: 0 });
+  after(async () => {
+    await new Promise((resolve) => setTimeout(resolve, SECOND_EXPIRY_MS));
+    revalidatePath("/", "layout");
+  });
+}
+
+/**
  * Forward a request to an admin endpoint using the session cookie. A 401 from
  * the API means the session is gone, so the cookie is cleared in the same
- * response and the UI falls back to the login screen. A successful
- * write expires the public pages' cached API data, so the next visit renders
- * fresh results instead of one stale-while-revalidate round behind.
+ * response and the UI falls back to the login screen. A successful write
+ * expires the public pages' cached API data.
  */
 export async function proxy<T>(
   request: Request,
@@ -88,7 +112,7 @@ export async function proxy<T>(
   const token = readSession(request);
   if (!token) return missingSession();
   const result = await adminFetch<T>(path, token, { ...init, forwardedFor: forwardedFor(request) });
-  if (result.ok && init.method !== "GET") revalidateTag(PUBLIC_DATA_TAG, { expire: 0 });
+  if (result.ok && init.method !== "GET") expirePublicData();
   const lost = !result.ok && result.status === 401;
   return toResponse(result, lost ? { "Set-Cookie": clearedCookie() } : undefined);
 }
