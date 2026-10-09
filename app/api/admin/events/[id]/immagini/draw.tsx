@@ -329,11 +329,12 @@ function metagameRows(e: EventData): MetagameRow[] {
   const rest = all.filter((r) => !folded.includes(r));
   if (rest.length === 0 || folded.reduce((n, r) => n + r.players, 0) < 2) return all;
   const named = folded.filter((r) => !r.other).length;
+  const rogue = folded.filter((r) => r.other).reduce((n, r) => n + r.players, 0);
+  const parts = [...(named > 0 ? [plural(named, "archetipo", "archetipi")] : []), ...(rogue > 0 ? [`${rogue} rogue`] : [])];
   const other = folded.reduce<MetagameRow>(
     (acc, r) => ({ ...acc, players: acc.players + r.players, wins: acc.wins + r.wins, losses: acc.losses + r.losses, draws: acc.draws + r.draws }),
-    { key: "altro", name: named > 0 ? `Altro (${named} archetipi e rogue)` : "Altro (rogue)", colors: [], players: 0, wins: 0, losses: 0, draws: 0, won: false, other: true },
+    { key: "altro", name: `Altro (${parts.join(" e ")})`, colors: [], players: 0, wins: 0, losses: 0, draws: 0, won: false, other: true },
   );
-  if (!folded.some((r) => r.name === ROGUE)) other.name = `Altro (${named} archetipi)`;
   return [...rest, other];
 }
 
