@@ -22,6 +22,7 @@ import {
 } from "../../dashboardUi";
 import { EventStatus, isPast } from "../../eventDisplay";
 import { EventDecks } from "./EventDecks";
+import { EventImages } from "./EventImages";
 
 type Modal = "edit" | "delete" | "reset";
 
@@ -189,6 +190,12 @@ export default function EventDetailPage() {
       {event.has_results && (
         <div className="mt-8">
           <EventDecks eventId={event.id} eventName={event.name} />
+        </div>
+      )}
+
+      {event.has_results && (
+        <div className="mt-8">
+          <EventImages eventId={event.id} />
         </div>
       )}
 
