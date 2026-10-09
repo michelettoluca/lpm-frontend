@@ -30,7 +30,7 @@ export function shareImages(e: EventData): ShareImage[] {
     title,
   });
   const list = [image("classifica", `${e.title}: la classifica finale`)];
-  if (e.metagame) list.push(image("mazzi", `${e.title}: i mazzi giocati`));
+  if (e.metagame) list.push(image("mazzi", `${e.title}: il metagame`));
   if (undefeated(e.standings).length > 0) list.push(image("imbattuti", `${e.title}: gli imbattuti`));
   return list;
 }
