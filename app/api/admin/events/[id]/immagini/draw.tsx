@@ -8,7 +8,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { ReactNode } from "react";
 import { MANA_FILL, STAR, manaGlyph, plural, weekday } from "@/app/(sito)/ui";
-import { archetypeLabel } from "@/app/lib/decks";
+import { ROGUE, archetypeLabel } from "@/app/lib/decks";
 import { CROWN_PATH, CROWN_VIEWBOX } from "@/app/lib/emblem";
 import type { Deck, EventData } from "@/app/lib/site";
 import { undefeated, type ImageKind } from "./kinds";
@@ -308,9 +308,10 @@ type MetagameRow = {
 };
 
 /**
- * The archetypes as rows: those one player each brought fold into one
- * "altro" row, as long as something else stands on its own and there are at
- * least two of them to gather.
+ * The archetypes as rows: those one player each brought, and Rogue, Lega
+ * Pauper Italia's catch-all, fold into one "altro" row at the end, as long
+ * as something else stands on its own and there is more than one deck to
+ * gather.
  */
 function metagameRows(e: EventData): MetagameRow[] {
   const all = e.metagame!.archetypes.map<MetagameRow>((a) => ({
@@ -322,15 +323,17 @@ function metagameRows(e: EventData): MetagameRow[] {
     losses: a.losses,
     draws: a.draws,
     won: a.best_rank === 1,
-    other: false,
+    other: a.name === ROGUE,
   }));
-  const singles = all.filter((r) => r.players === 1);
-  const rest = all.filter((r) => r.players > 1);
-  if (rest.length === 0 || singles.length < 2) return all;
-  const other = singles.reduce<MetagameRow>(
+  const folded = all.filter((r) => r.other || r.players === 1);
+  const rest = all.filter((r) => !folded.includes(r));
+  if (rest.length === 0 || folded.reduce((n, r) => n + r.players, 0) < 2) return all;
+  const named = folded.filter((r) => !r.other).length;
+  const other = folded.reduce<MetagameRow>(
     (acc, r) => ({ ...acc, players: acc.players + r.players, wins: acc.wins + r.wins, losses: acc.losses + r.losses, draws: acc.draws + r.draws }),
-    { key: "altro", name: `Altro (${singles.length} archetipi)`, colors: [], players: 0, wins: 0, losses: 0, draws: 0, won: false, other: true },
+    { key: "altro", name: named > 0 ? `Altro (${named} archetipi e rogue)` : "Altro (rogue)", colors: [], players: 0, wins: 0, losses: 0, draws: 0, won: false, other: true },
   );
+  if (!folded.some((r) => r.name === ROGUE)) other.name = `Altro (${named} archetipi)`;
   return [...rest, other];
 }
 
