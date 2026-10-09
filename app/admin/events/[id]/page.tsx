@@ -20,6 +20,7 @@ import {
 } from "../../dashboardUi";
 import { EventStatus } from "../../eventDisplay";
 import { EventDecks } from "./EventDecks";
+import { EventImages } from "./EventImages";
 import { MeleeTournament } from "./MeleeTournament";
 
 type Modal = "edit" | "delete" | "reset";
@@ -140,6 +141,12 @@ export default function EventDetailPage() {
         <EventDecks eventId={event.id} eventName={event.name} />
       ) : (
         <MeleeTournament key={event.melee_tournament_id ?? 0} event={event} />
+      )}
+
+      {event.has_results && (
+        <div className="mt-8">
+          <EventImages eventId={event.id} />
+        </div>
       )}
 
       {modal === "edit" && (

@@ -102,7 +102,7 @@ function Pixels({ rows, size, className, label }: { rows: string[]; size: number
   );
 }
 
-const STAR = ["...#...", "..###..", "#######", ".#####.", "..###..", ".##.##.", "##...##"];
+export const STAR = ["...#...", "..###..", "#######", ".#####.", "..###..", ".##.##.", "##...##"];
 
 export function PixelStar({ size = 14, className = "", label }: { size?: number; className?: string; label?: string }) {
   return <Pixels rows={STAR} size={size} className={className} label={label} />;
@@ -295,7 +295,7 @@ export function Comune({ pose, className = "", label }: { pose: Pose; className?
 const MANA_NAME: Record<string, string> = { W: "bianco", U: "blu", B: "nero", R: "rosso", G: "verde" };
 
 /** The circle colours of the original symbols. */
-const MANA_FILL: Record<string, string> = {
+export const MANA_FILL: Record<string, string> = {
   W: "#f8f6d8",
   U: "#c1d7e9",
   B: "#cac5c0",
@@ -305,13 +305,13 @@ const MANA_FILL: Record<string, string> = {
 /** The glyph colour of the original symbols. */
 const GLYPH = "#0d0f0f";
 
-/** The original glyphs, simplified: sun, drop, skull, fireball, tree. */
-function faithful(c: string): ReactNode {
+/** The original glyphs, simplified: sun, drop, skull, fireball, tree. Grouped in a <g>, not a fragment: the share images serialise them. */
+export function manaGlyph(c: string): ReactNode {
   const bg = MANA_FILL[c];
   switch (c) {
     case "W": // a sun with sixteen points and a light ring round its core
       return (
-        <>
+        <g>
           <path
             d="M12 3.6 L13.91 7.38 L17.94 6.06 L16.62 10.09 L20.4 12 L16.62 13.91 L17.94 17.94 L13.91 16.62 L12 20.4 L10.09 16.62 L6.06 17.94 L7.38 13.91 L3.6 12 L7.38 10.09 L6.06 6.06 L10.09 7.38 Z"
             fill={GLYPH}
@@ -321,18 +321,18 @@ function faithful(c: string): ReactNode {
           />
           <circle cx="12" cy="12" r="5.6" fill={bg} />
           <circle cx="12" cy="12" r="4.4" fill={GLYPH} />
-        </>
+        </g>
       );
     case "U": // a drop with a glint
       return (
-        <>
+        <g>
           <path d="M12.6 3.4 C10 6.4 6.6 10.6 6.6 14.4 C6.6 17.6 9 20 12 20 C15 20 17.4 17.6 17.4 14.6 C17.4 11.6 15.6 9.4 14.2 7.4 C13.2 6 12.6 4.8 12.6 3.4 Z" fill={GLYPH} />
           <path d="M14.4 13.2 C15.3 14.6 15.2 16.4 13.9 17.5" fill="none" stroke={bg} strokeWidth="1.4" strokeLinecap="round" />
-        </>
+        </g>
       );
     case "B": // a skull
       return (
-        <>
+        <g>
           <path
             d="M12 4.2 C7.8 4.2 5.2 7 5.2 10.6 C5.2 12.8 6.2 14.4 7.6 15.2 V17.6 C7.6 18.4 8.2 19 9 19 H15 C15.8 19 16.4 18.4 16.4 17.6 V15.2 C17.8 14.4 18.8 12.8 18.8 10.6 C18.8 7 16.2 4.2 12 4.2 Z"
             fill={GLYPH}
@@ -341,28 +341,28 @@ function faithful(c: string): ReactNode {
           <ellipse cx="14.7" cy="11.2" rx="1.8" ry="2" fill={bg} />
           <path d="M12 13.4 L11 15.2 H13 Z" fill={bg} />
           <path d="M10.4 16.8 V19 M12 16.8 V19 M13.6 16.8 V19" stroke={bg} strokeWidth="0.8" />
-        </>
+        </g>
       );
     case "R": // a fireball trailing up and right
       return (
-        <>
+        <g>
           <path
             d="M5.4 13.2 C5.6 9 9.6 6.8 14.2 5.8 C16.4 5.3 18.2 4.6 19.8 3.6 C19.2 6.2 17.6 7.8 15.8 8.8 C17.2 8.9 18.5 8.7 19.6 8.2 C18.6 11.2 16.6 12.8 15 13.6 Z"
             fill={GLYPH}
           />
           <circle cx="10.4" cy="14.4" r="5.4" fill={GLYPH} />
           <path d="M7.7 15.8 C8 17.2 9.1 18.2 10.6 18.4" fill="none" stroke={bg} strokeWidth="1.3" strokeLinecap="round" />
-        </>
+        </g>
       );
     case "G": // a round tree on a short trunk
       return (
-        <>
+        <g>
           <circle cx="12" cy="8.2" r="4.2" fill={GLYPH} />
           <circle cx="8.3" cy="10.8" r="3.4" fill={GLYPH} />
           <circle cx="15.7" cy="10.8" r="3.4" fill={GLYPH} />
           <circle cx="12" cy="11.6" r="3.6" fill={GLYPH} />
           <path d="M11 12 L10.7 17.2 C10.6 18 9.7 18.8 8.4 19.3 H15.6 C14.3 18.8 13.4 18 13.3 17.2 L13 12 Z" fill={GLYPH} />
-        </>
+        </g>
       );
   }
   return null;
@@ -376,7 +376,7 @@ export function Mana({ colors, size = 22 }: { colors: readonly string[]; size?: 
       {colors.map((c, i) => (
         <svg key={`${c}-${i}`} viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" className="block">
           <circle cx="12" cy="12" r="12" fill={MANA_FILL[c] ?? "#ddd"} />
-          {faithful(c)}
+          {manaGlyph(c)}
         </svg>
       ))}
     </span>
