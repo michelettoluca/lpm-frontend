@@ -8,6 +8,9 @@ import { SeasonPicker } from "../../SeasonPicker";
 import { ColHeads, Head, MarkerCircle, PixelStar, Section, plural } from "../../ui";
 import { FaceOff } from "./FaceOff";
 import { DeckTag } from "../../DeckTag";
+import { Easter } from "../../Easter";
+import { Drift } from "../../Drift";
+import { teamOf } from "@/app/lib/teams";
 
 
 export async function generateMetadata(props: PageProps<"/giocatori/[id]">) {
@@ -34,24 +37,29 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
   if (!p) notFound();
   const deckSeason = d.choice.seasons.find((x) => x.id === d.choice.selected);
   const within = deckSeason ? `nella ${deckSeason.name}` : "in tutte le stagioni";
+  const team = teamOf(id);
 
 
   return (
     <div className="rg-stack">
       {/* ---------------- hero ---------------- */}
       <section className="rg-panel">
+        {/* The player's team, if any: its logo scattered behind the card, like the league's on the home. */}
+        {team && <Drift icon={team.logo} cols={5} rows={3} seed={Number(id) * 7 + 3} />}
         <Link href="/classifica" className="rg-textlink -ml-1 inline-flex min-h-11 items-center px-1 text-[15px]">
           ← la classifica
         </Link>
         {p.season && <p className="rg-eyebrow mt-4">stagione {p.season.name.toLowerCase()}</p>}
         <h1 className="rg-display rg-tight mt-2 text-[48px] leading-[0.95] break-words sm:text-[72px] lg:text-[104px]">
-          {p.first}
-          {p.last && (
-            <>
-              <br />
-              {p.last}
-            </>
-          )}
+          <Easter playerId={id}>
+            {p.first}
+            {p.last && (
+              <>
+                <br />
+                {p.last}
+              </>
+            )}
+          </Easter>
         </h1>
 
         <dl className="rg-hr mt-8 grid grid-cols-2 gap-x-6 gap-y-6 pt-6 sm:grid-cols-4 lg:mt-12 lg:pt-8">

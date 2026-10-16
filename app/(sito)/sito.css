@@ -1242,3 +1242,246 @@ body:has(.lpm)::before {
   border-radius: 2px;
   background: var(--rg-ink);
 }
+
+/* The easter eggs' charge (Easter.tsx): Diego's name crackling like a
+   hero's fist, jagged arcs with an orange glow along its edges (white-hot on
+   dark, orange on the light paper), the letters glowing a little. On his
+   page in the name's own box; in the standings over the screen. */
+.lpm .rg-charge-host {
+  position: relative;
+  display: inline-block;
+}
+.lpm .rg-charge {
+  position: absolute;
+  left: -28px;
+  top: -28px;
+  overflow: visible;
+  pointer-events: none;
+}
+.lpm .rg-charge.rg-charge-float {
+  position: fixed;
+  z-index: 110;
+}
+.lpm .rg-crackles {
+  fill: none;
+  stroke: light-dark(#f58a07, #fff8ee);
+  stroke-width: 1.4px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 1.5px #f7941d) drop-shadow(0 0 4px #f7941d);
+}
+.lpm .rg-charged {
+  text-shadow: 0 0 0.35em rgb(247 148 29 / 0.45);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lpm .rg-charged {
+    animation: rg-charged 0.18s steps(1) infinite;
+  }
+}
+@keyframes rg-charged {
+  50% {
+    text-shadow: 0 0 0.5em rgb(247 148 29 / 0.6);
+  }
+}
+
+/* The easter eggs' mist (Easter.tsx): soft puffs fixed on the screen, over
+   the grain. The ones behind blend so only the paper takes them and the
+   letters stay crisp: darken on light, lighten on dark. The ones in front
+   simply veil, faintly. */
+.lpm .rg-mist {
+  position: fixed;
+  z-index: 105;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+.lpm .rg-mist-back {
+  background: radial-gradient(closest-side, light-dark(#c3cad5, #3c475a), transparent);
+  mix-blend-mode: darken;
+}
+.lpm .rg-mist-front {
+  background: radial-gradient(closest-side, light-dark(rgb(255 255 255 / 0.75), rgb(200 210 225 / 0.22)), transparent);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .lpm .rg-mist-back {
+    mix-blend-mode: lighten;
+  }
+}
+:root[data-theme="dark"] .lpm .rg-mist-back {
+  mix-blend-mode: lighten;
+}
+
+/* The easter eggs' peaches (Easter.tsx): emoji with a white edge and a soft
+   shadow, like stickers, tilted, placed around the name, some behind its
+   letters. They pop on one after another. */
+.lpm .rg-peaches {
+  position: relative;
+  isolation: isolate;
+  display: inline-block;
+}
+.lpm .rg-sticker {
+  position: absolute;
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  translate: -50% -50%;
+  rotate: var(--tilt);
+  filter: drop-shadow(0.06em 0 0 #fff) drop-shadow(-0.06em 0 0 #fff) drop-shadow(0 0.06em 0 #fff)
+    drop-shadow(0 -0.06em 0 #fff) drop-shadow(0 0.08em 0.08em rgb(0 0 0 / 0.25));
+}
+/* Behind the letters, paler, so front and back read apart. */
+.lpm .rg-sticker-back {
+  z-index: -1;
+  opacity: 0.45;
+}
+/* The standings' one peach, in the line after the name, raised a little:
+   there only while the row is pointed at. Both classes, to outweigh the
+   stickers' pop below. */
+.lpm .rg-sticker.rg-sticker-inline {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  margin-left: 0.2em;
+  font-size: 0.85em;
+  translate: 0 -0.3em;
+  scale: 0;
+  animation: none;
+}
+.lpm .rg-row:hover .rg-sticker-inline {
+  scale: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lpm .rg-row:hover .rg-sticker-inline {
+    animation: rg-sticker-on 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lpm .rg-sticker {
+    animation: rg-sticker-on 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+  }
+}
+@keyframes rg-sticker-on {
+  from {
+    scale: 0;
+    rotate: calc(var(--tilt) - 40deg);
+  }
+  60% {
+    scale: 1.2;
+    rotate: calc(var(--tilt) + 8deg);
+  }
+  to {
+    scale: 1;
+    rotate: var(--tilt);
+  }
+}
+
+/* The easter eggs' chat (Easter.tsx): his messages piling up behind a card,
+   faint bubbles on the left, yours now and then on the right in the red,
+   the oldest fading as they climb. In a row of the standings, smaller,
+   while pointed at. */
+.lpm .rg-chat {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 18px 20px;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: 0;
+  text-align: left;
+  mask-image: linear-gradient(to bottom, transparent, #000 55%);
+}
+@media (min-width: 1024px) {
+  .lpm .rg-chat {
+    padding: 32px 48px;
+    font-size: 14px;
+  }
+}
+.lpm .rg-chat-msg {
+  max-width: min(78%, 34em);
+  margin: 0;
+  padding: 0.45em 0.8em;
+  border-radius: 1.1em;
+}
+.lpm .rg-chat-his {
+  align-self: flex-start;
+  border-bottom-left-radius: 0.3em;
+  background: light-dark(rgb(20 26 36 / 0.06), rgb(232 236 242 / 0.07));
+  color: light-dark(rgb(20 26 36 / 0.3), rgb(232 236 242 / 0.26));
+}
+.lpm .rg-chat-mine {
+  align-self: flex-end;
+  border-bottom-right-radius: 0.3em;
+  background: color-mix(in srgb, var(--rg-o) 14%, transparent);
+  color: color-mix(in srgb, var(--rg-o) 55%, transparent);
+}
+.lpm .rg-chat-name {
+  display: block;
+  font-size: 0.8em;
+  font-weight: 700;
+}
+.lpm .rg-chat-dots {
+  display: flex;
+  gap: 0.25em;
+  padding-block: 0.7em;
+}
+.lpm .rg-chat-dots i {
+  width: 0.4em;
+  height: 0.4em;
+  border-radius: 50%;
+  background: currentColor;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lpm .rg-chat-msg {
+    animation: rg-chat-in 0.25s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+    transform-origin: left bottom;
+  }
+  .lpm .rg-chat-mine {
+    transform-origin: right bottom;
+  }
+  .lpm .rg-chat-dots i {
+    animation: rg-chat-dot 1s ease-in-out infinite;
+  }
+  .lpm .rg-chat-dots i:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+  .lpm .rg-chat-dots i:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+}
+@keyframes rg-chat-in {
+  from {
+    scale: 0.6;
+    opacity: 0;
+  }
+}
+@keyframes rg-chat-dot {
+  0%,
+  60%,
+  100% {
+    translate: 0 0;
+    opacity: 0.5;
+  }
+  30% {
+    translate: 0 -0.25em;
+    opacity: 1;
+  }
+}
+.lpm .rg-chat-host {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.lpm .rg-chat.rg-chat-row {
+  gap: 3px;
+  padding: 2px 8px;
+  font-size: 10.5px;
+  mask-image: linear-gradient(to bottom, transparent, #000 70%);
+}
