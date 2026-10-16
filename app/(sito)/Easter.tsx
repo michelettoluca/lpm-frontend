@@ -633,7 +633,8 @@ const BEAR_PICTURES: { src: string; w: number; h: number }[] = [
 function rainBear(back: HTMLElement, front: HTMLElement, small: boolean) {
   const W = back.clientWidth;
   const H = back.clientHeight;
-  const tall = small ? between(10, 18) : between(18, 46);
+  // Mostly small and middling, now and then a big one.
+  const tall = small ? between(10, 18) : 16 + Math.random() ** 2.2 * 70;
   const ahead = Math.random() < 0.33;
   const pic = BEAR_PICTURES[Math.floor(Math.random() * BEAR_PICTURES.length)];
   const el = document.createElement("img");
@@ -688,7 +689,7 @@ function Bears({ soft, children }: { soft: boolean; children: ReactNode }) {
 
     let timer: number | null = null;
     const rain = () => {
-      if (timer === null) timer = window.setInterval(() => !document.hidden && rainBear(back, front, soft), soft ? 160 : 120);
+      if (timer === null) timer = window.setInterval(() => !document.hidden && rainBear(back, front, soft), soft ? 160 : 260);
     };
     const stop = () => {
       if (timer !== null) window.clearInterval(timer);
