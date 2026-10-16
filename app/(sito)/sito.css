@@ -1558,96 +1558,21 @@ body:has(.lpm)::before {
   opacity: 0.5;
 }
 
-/* The easter eggs' peek (Easter.tsx): a picture of the player coming up out
-   of the bottom left corner of his card, tilted, having a look round with an
-   "oh, oh?" and ducking back, every eight seconds or so. In the card, which
-   clips it; over its text, since he's peeking at it. */
+/* The easter eggs' peek (Easter.tsx): a picture of the player, a sticker,
+   peeking in from an edge of the screen, turned so his head comes in first;
+   where and how far is set from the script. */
 .lpm .rg-peek {
-  position: absolute;
-  left: -4%;
-  bottom: 0;
-  z-index: 1;
-  width: min(46%, 230px);
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 110;
   pointer-events: none;
   user-select: none;
-  transform-origin: 30% 100%;
-  translate: 0 52%;
-  rotate: 12deg;
-}
-.lpm .rg-peek-who {
-  display: block;
-  width: 100%;
-  height: auto;
-  filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.3));
-}
-.lpm .rg-peek-oh {
-  position: absolute;
-  top: 2%;
-  left: 62%;
-  padding: 0.3em 0.7em;
-  border: 2px solid #141a24;
-  border-radius: 1em 1em 1em 0.2em;
-  background: #fff;
-  color: #141a24;
-  font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Marker Felt", cursive;
-  font-size: 14px;
-  font-weight: 700;
-  white-space: nowrap;
-  rotate: -12deg;
-}
-@media (prefers-reduced-motion: no-preference) {
-  .lpm .rg-peek {
-    animation: rg-peek 8s ease-in-out infinite;
-    animation-delay: 1s;
-  }
-  .lpm .rg-peek-oh {
-    animation: rg-peek-oh 8s ease-in-out infinite;
-    animation-delay: 1s;
-  }
-}
-/* Hidden under the edge; up; a look one way and the other; down. */
-@keyframes rg-peek {
-  0%,
-  22% {
-    translate: 0 100%;
-    rotate: 12deg;
-  }
-  32% {
-    translate: 0 52%;
-    rotate: 14deg;
-  }
-  44% {
-    translate: 0 50%;
-    rotate: 6deg;
-  }
-  56% {
-    translate: 0 50%;
-    rotate: 16deg;
-  }
-  64% {
-    translate: 0 52%;
-    rotate: 12deg;
-  }
-  74%,
-  100% {
-    translate: 0 100%;
-    rotate: 12deg;
-  }
-}
-@keyframes rg-peek-oh {
-  0%,
-  34% {
-    opacity: 0;
-    scale: 0.4;
-  }
-  38%,
-  60% {
-    opacity: 1;
-    scale: 1;
-  }
-  64%,
-  100% {
-    opacity: 0;
-    scale: 0.6;
-  }
+  /* Turned about its own corner: the script works out where that goes. */
+  transform-origin: 0 0;
+  transform: translate(-9999px, -9999px);
+  /* A white edge all round, like a sticker, and a soft shadow. */
+  filter: drop-shadow(3px 0 0 #fff) drop-shadow(-3px 0 0 #fff) drop-shadow(0 3px 0 #fff) drop-shadow(0 -3px 0 #fff)
+    drop-shadow(0 6px 10px rgb(0 0 0 / 0.3));
+  will-change: transform;
 }

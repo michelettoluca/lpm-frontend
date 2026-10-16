@@ -13,8 +13,8 @@ export const EFFECT_LABELS: Record<Effect, string> = {
   pesca: "Pesche attaccate al nome come sticker",
   copione: "Chat a raffica dietro la card, sulla Ruby Storm",
   fumetto: "Nuvolette da fumetto con le sue frasi",
-  orsetti: "Pioggia di orsetti gommosi che si ammucchiano in fondo alla card",
-  peek: "Fa capolino dall'angolo in basso a sinistra della card",
+  orsetti: "Pioggia di orsetti gommosi dietro e davanti alla card",
+  peek: "Fa capolino a turno dai quattro lati dello schermo",
 };
 
 export const EASTER_EGGS: { playerId: number; name: string; effect: Effect }[] = [
