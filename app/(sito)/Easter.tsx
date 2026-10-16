@@ -888,8 +888,8 @@ type Growth = {
   shape: number[];
   pores: number[];
 };
-/** A stretch of a root of the rot, and when it's drawn. */
-type Vein = { x1: number; y1: number; x2: number; y2: number; w: number; at: number };
+/** A stretch of a root of the rot, when it starts to grow and how long it takes to. */
+type Vein = { x1: number; y1: number; x2: number; y2: number; w: number; at: number; dur: number };
 /** A stain of rot soaking into the card, spreading out from where it's dropped. */
 type Stain = { x: number; y: number; r: number; at: number; grow: number; a: number };
 /** A glow along a root, stamped where it passes. */
@@ -899,8 +899,8 @@ type Rot = { growths: Growth[]; veins: Vein[]; stains: Stain[]; shines: Shine[];
 
 /**
  * A soft round glow in each step of green, and the rot's stain, drawn once
- * to stamp: on light paper a sick olive going brown at its heart, on dark a
- * sick green, as if the card were wearing through to something glowing.
+ * to stamp: a sick green, as if the card were wearing through to something
+ * glowing; on light paper a sharper, acid one, to glow against the white.
  */
 function sprites(dark: boolean): { halo: HTMLCanvasElement[]; stain: HTMLCanvasElement } {
   const draw = (stops: [number, string][]) => {
@@ -931,9 +931,9 @@ function sprites(dark: boolean): { halo: HTMLCanvasElement[]; stain: HTMLCanvasE
             [1, "rgb(100 145 35 / 0)"],
           ]
         : [
-            [0, "rgb(58 62 16 / 1)"],
-            [0.45, "rgb(74 92 22 / 0.6)"],
-            [1, "rgb(74 92 22 / 0)"],
+            [0, "rgb(130 205 20 / 1)"],
+            [0.45, "rgb(120 200 30 / 0.5)"],
+            [1, "rgb(120 200 30 / 0)"],
           ],
     ),
   };
@@ -1064,20 +1064,21 @@ function infect(w: number, h: number, lines: Box[], ink: Point[], time: number, 
   // come `pace` px a ms. Behind, it glows and stains the card as it goes.
   const card: Box = { left: 0, top: 0, right: w, bottom: h };
   const root = (into: Rot, x: number, y: number, heading: number, len: number, width: number, when: number, pace: number, depth: number, within = card) => {
-    const step = small ? 2.5 : 5;
+    // Short stretches, so a root bends smoothly.
+    const step = small ? 2 : 3;
     let a = heading;
     for (let d = 0; d < len; d += step) {
-      a += between(-0.35, 0.35) + (heading - a) * 0.08;
+      a += between(-0.27, 0.27) + (heading - a) * 0.05;
       const x2 = x + Math.cos(a) * step;
       const y2 = y + Math.sin(a) * step;
       if (x2 < within.left || y2 < within.top || x2 > within.right || y2 > within.bottom) return;
       const thick = Math.max(0.5, width * (1 - (d / len) * 0.85));
-      into.veins.push({ x1: x, y1: y, x2, y2, w: thick, at: when });
+      into.veins.push({ x1: x, y1: y, x2, y2, w: thick, at: when, dur: step / pace });
       if (into === back) {
-        if (Math.random() < 0.15) into.shines.push({ x: x2, y: y2, r: thick * between(3, 5), at: when });
-        if (Math.random() < 0.035) into.stains.push({ x: x2, y: y2, r: between(16, 50) * scale, at: when, grow: 2500, a: between(0.08, 0.18) });
+        if (Math.random() < 0.09) into.shines.push({ x: x2, y: y2, r: thick * between(3, 5), at: when });
+        if (Math.random() < 0.021) into.stains.push({ x: x2, y: y2, r: between(16, 50) * scale, at: when, grow: 2500, a: between(0.08, 0.18) });
       }
-      if (depth < 2 && Math.random() < 0.05) {
+      if (depth < 2 && Math.random() < 0.03) {
         root(into, x2, y2, a + (Math.random() < 0.5 ? -1 : 1) * between(0.5, 1.1), (len - d) * between(0.4, 0.7), thick * 0.7, when, pace, depth + 1, within);
       }
       x = x2;
@@ -1118,12 +1119,12 @@ function infect(w: number, h: number, lines: Box[], ink: Point[], time: number, 
   for (let n = small ? 2 : 8; n > 0; n--) {
     const p = pick();
     const heading = (Math.random() < 0.5 ? 0 : Math.PI) + between(-0.7, 0.7);
-    root(front, p.x, p.y, heading, between(40, 160) * size, between(1, 2.4) * size, along(p) * 2600 + between(300, 2500), small ? 0.08 : 0.025, 1, over);
+    root(front, p.x, p.y, heading, between(40, 160) * size, between(1, 2.4) * size, along(p) * 3500 + between(300, 3500), small ? 0.06 : 0.016, 1, over);
   }
 
   for (const rot of [back, front]) {
     for (const g of rot.growths) rot.end = Math.max(rot.end, g.at + g.grow);
-    for (const v of rot.veins) rot.end = Math.max(rot.end, v.at);
+    for (const v of rot.veins) rot.end = Math.max(rot.end, v.at + v.dur);
     for (const t of rot.stains) rot.end = Math.max(rot.end, t.at + t.grow);
   }
   return { back, front };
@@ -1237,13 +1238,13 @@ function drawGrowth(ctx: CanvasRenderingContext2D, g: Growth, e: number) {
   ctx.stroke();
 }
 
-/** The roots' colours: a dark root with a sick green down the thick of it; on dark paper, moss with a brighter green. */
-const ROOT = { light: [MOLD_BODY, "hsl(92 70% 42%)"], dark: ["hsl(84 30% 24%)", "hsl(95 85% 52%)"] };
+/** The roots' colours: moss with a bright sick green down the thick of it; on light paper a deeper green, with an acid lime. */
+const ROOT = { light: ["hsl(110 60% 19%)", "hsl(86 100% 48%)"], dark: ["hsl(84 30% 24%)", "hsl(95 85% 52%)"] };
 
 /**
  * The infection at `now` ms, from where it was painted at `then` (from
  * scratch when null): each stain soaked in so far; the roots grown since
- * and their glow, added; each growth that has started since, its glow
+ * and their glow, added, and the stretches still growing; each growth that has started since, its glow
  * stamped; each done since, drawn for good; and each still growing, as far
  * as it has.
  */
@@ -1255,40 +1256,48 @@ function paintMold(c: MoldCanvases, rot: Rot, then: number | null, now: number, 
       const k = Math.min(1, (now - s.at) / s.grow);
       if (k <= 0) continue;
       const r = s.r * (1 - (1 - k) ** 2);
-      c.stain.globalAlpha = s.a * k * (dark ? 0.8 : 1);
+      // White paper takes more of it to glow.
+      c.stain.globalAlpha = Math.min(1, s.a * k * (dark ? 0.8 : 1.9));
       c.stain.drawImage(art.stain, s.x - r, s.y - r, 2 * r, 2 * r);
     }
     c.stain.globalAlpha = 1;
   }
   if (then === null) for (const ctx of [c.glow, c.done, c.cores]) if (ctx) clear(ctx);
   if (c.glow) {
-    // Along the roots, a glow, stronger on dark paper.
-    c.glow.globalAlpha = dark ? 0.22 : 0.08;
+    // Along the roots, a glow.
+    c.glow.globalAlpha = dark ? 0.22 : 0.5;
     for (const g of rot.shines) if (fresh(g.at)) c.glow.drawImage(art.halo[HALO_STEPS >> 1], g.x - g.r, g.y - g.r, 2 * g.r, 2 * g.r);
     c.glow.globalAlpha = 1;
   }
+  // The roots: each stretch drawn for good once grown; the one growing,
+  // as far as it has, afresh, so a root creeps on rather than steps.
   const [body, core] = ROOT[dark ? "dark" : "light"];
-  c.done.lineCap = c.cores.lineCap = "round";
-  c.done.strokeStyle = body;
-  c.cores.strokeStyle = core;
-  for (const seg of rot.veins) {
-    if (!fresh(seg.at)) continue;
-    c.done.beginPath();
-    c.done.moveTo(seg.x1, seg.y1);
-    c.done.lineTo(seg.x2, seg.y2);
-    c.done.lineWidth = seg.w;
-    c.done.stroke();
-    if (seg.w > 1.3) {
-      c.cores.beginPath();
-      c.cores.moveTo(seg.x1, seg.y1);
-      c.cores.lineTo(seg.x2, seg.y2);
-      c.cores.lineWidth = seg.w * 0.32;
-      c.cores.stroke();
-    }
-  }
-
   clear(c.growing);
-  c.growing.lineCap = "round";
+  for (const ctx of [c.done, c.cores, c.growing]) ctx.lineCap = "round";
+  const stroke = (ctx: CanvasRenderingContext2D, seg: Vein, f: number, colour: string, width: number) => {
+    ctx.beginPath();
+    ctx.moveTo(seg.x1, seg.y1);
+    ctx.lineTo(seg.x1 + (seg.x2 - seg.x1) * f, seg.y1 + (seg.y2 - seg.y1) * f);
+    ctx.strokeStyle = colour;
+    ctx.lineWidth = width;
+    ctx.stroke();
+  };
+  const coreWidth = dark ? 0.32 : 0.45;
+  const growing: [Vein, number][] = [];
+  for (const seg of rot.veins) {
+    if (seg.at > now) continue;
+    const end = seg.at + seg.dur;
+    if (end > now) {
+      growing.push([seg, (now - seg.at) / seg.dur]);
+      continue;
+    }
+    if (!fresh(end)) continue;
+    stroke(c.done, seg, 1, body, seg.w);
+    if (seg.w > 1.3) stroke(c.cores, seg, 1, core, seg.w * coreWidth);
+  }
+  for (const [seg, f] of growing) stroke(c.growing, seg, f, body, seg.w);
+  for (const [seg, f] of growing) if (seg.w > 1.3) stroke(c.growing, seg, f, core, seg.w * coreWidth);
+
   for (const g of rot.growths) {
     if (g.at > now) continue;
     if (c.glow && fresh(g.at)) {
@@ -1356,7 +1365,7 @@ function Mold({ soft, children }: { soft: boolean; children: ReactNode }) {
     const backC: MoldCanvases = { stain: b.stain, glow: b.glow, done: b.done, cores: b.cores, growing: b.growing };
     const frontC: MoldCanvases = { done: f.done, cores: f.cores, growing: f.growing };
 
-    const time = soft ? 1500 : 16000;
+    const time = soft ? 2000 : 24000;
     const none: Rot = { growths: [], veins: [], stains: [], shines: [], end: 0 };
     let rot = { back: none, front: none };
     let end = 0;
