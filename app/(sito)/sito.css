@@ -1351,53 +1351,113 @@ body:has(.lpm)::before {
   }
 }
 
-/* The easter eggs' script (Easter.tsx): a play's script writing itself out
-   behind a card, typewriter type in a faint ink, the speaker in small caps,
-   the stage directions in italics, the old lines fading as they climb. In a
-   row of the standings, smaller, while pointed at. */
-.lpm .rg-copione {
+/* The easter eggs' chat (Easter.tsx): his messages piling up behind a card,
+   faint bubbles on the left, yours now and then on the right in the red,
+   the oldest fading as they climb. In a row of the standings, smaller,
+   while pointed at. */
+.lpm .rg-chat {
   position: absolute;
   inset: 0;
   z-index: -1;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
+  gap: 6px;
   padding: 18px 20px;
   overflow: hidden;
   pointer-events: none;
   user-select: none;
-  font: 400 13px/1.6 "American Typewriter", "Courier Prime", "Courier New", Courier, serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
   letter-spacing: 0;
   text-align: left;
-  color: light-dark(rgb(20 26 36 / 0.22), rgb(232 236 242 / 0.17));
   mask-image: linear-gradient(to bottom, transparent, #000 55%);
 }
 @media (min-width: 1024px) {
-  .lpm .rg-copione {
+  .lpm .rg-chat {
     padding: 32px 48px;
     font-size: 14px;
   }
 }
-.lpm .rg-copione p {
+.lpm .rg-chat-msg {
+  max-width: min(78%, 34em);
   margin: 0;
+  padding: 0.45em 0.8em;
+  border-radius: 1.1em;
 }
-.lpm .rg-copione-who {
-  font-variant: small-caps;
+.lpm .rg-chat-his {
+  align-self: flex-start;
+  border-bottom-left-radius: 0.3em;
+  background: light-dark(rgb(20 26 36 / 0.06), rgb(232 236 242 / 0.07));
+  color: light-dark(rgb(20 26 36 / 0.3), rgb(232 236 242 / 0.26));
+}
+.lpm .rg-chat-mine {
+  align-self: flex-end;
+  border-bottom-right-radius: 0.3em;
+  background: color-mix(in srgb, var(--rg-o) 14%, transparent);
+  color: color-mix(in srgb, var(--rg-o) 55%, transparent);
+}
+.lpm .rg-chat-name {
+  display: block;
+  font-size: 0.8em;
   font-weight: 700;
-  letter-spacing: 0.06em;
 }
-.lpm .rg-copione-note {
-  font-style: italic;
-  padding-left: 2em;
+.lpm .rg-chat-dots {
+  display: flex;
+  gap: 0.25em;
+  padding-block: 0.7em;
 }
-.lpm .rg-copione-host {
+.lpm .rg-chat-dots i {
+  width: 0.4em;
+  height: 0.4em;
+  border-radius: 50%;
+  background: currentColor;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lpm .rg-chat-msg {
+    animation: rg-chat-in 0.25s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+    transform-origin: left bottom;
+  }
+  .lpm .rg-chat-mine {
+    transform-origin: right bottom;
+  }
+  .lpm .rg-chat-dots i {
+    animation: rg-chat-dot 1s ease-in-out infinite;
+  }
+  .lpm .rg-chat-dots i:nth-child(2) {
+    animation-delay: 0.15s;
+  }
+  .lpm .rg-chat-dots i:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+}
+@keyframes rg-chat-in {
+  from {
+    scale: 0.6;
+    opacity: 0;
+  }
+}
+@keyframes rg-chat-dot {
+  0%,
+  60%,
+  100% {
+    translate: 0 0;
+    opacity: 0.5;
+  }
+  30% {
+    translate: 0 -0.25em;
+    opacity: 1;
+  }
+}
+.lpm .rg-chat-host {
   position: relative;
   isolation: isolate;
   overflow: hidden;
 }
-.lpm .rg-copione.rg-copione-row {
+.lpm .rg-chat.rg-chat-row {
+  gap: 3px;
   padding: 2px 8px;
-  font-size: 11px;
-  line-height: 1.4;
+  font-size: 10.5px;
   mask-image: linear-gradient(to bottom, transparent, #000 70%);
 }

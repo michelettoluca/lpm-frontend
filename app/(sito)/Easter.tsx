@@ -242,70 +242,86 @@ function Peaches({ children }: { children: ReactNode }) {
   );
 }
 
-/** One line of the script as an element: the speaker's name in small caps before their words, or a stage direction. */
-function lineOf(b: Battuta): { el: HTMLElement; words: HTMLElement } {
+/** A message bubble: his on the left, with his name over the first of a run; yours on the right. */
+function bubble(b: Battuta, first: boolean): HTMLElement {
   const el = document.createElement("p");
-  const words = document.createElement("span");
-  if (b.who) {
-    const who = document.createElement("span");
-    who.className = "rg-copione-who";
-    who.textContent = `${b.who} `;
-    el.append(who);
-  } else {
-    el.className = "rg-copione-note";
+  el.className = `rg-chat-msg ${b.who === "IO" ? "rg-chat-mine" : "rg-chat-his"}`;
+  if (first && b.who === "LODOVICO") {
+    const name = document.createElement("span");
+    name.className = "rg-chat-name";
+    name.textContent = "Lodovico";
+    el.append(name);
   }
-  el.append(words);
-  return { el, words };
+  el.append(b.text);
+  return el;
 }
+
+/** The three dots of someone writing. */
+function dots(): HTMLElement {
+  const el = document.createElement("p");
+  el.className = "rg-chat-msg rg-chat-his rg-chat-dots";
+  el.append(...[0, 1, 2].map(() => document.createElement("i")));
+  return el;
+}
+
+/** The script as messages: his lines broken at every sentence, the way he writes, one after another; yours whole. */
+const CHAT: Battuta[] = COPIONE.flatMap((b) =>
+  b.who === "LODOVICO" ? b.text.split(/(?<=[.?!])\s+/).map((text) => ({ who: b.who, text })) : [b],
+);
 
 /**
- * Writes the script out, line after line, his words fast, the directions a
- * touch slower, keeping only as many lines as fit and starting over at the
- * end. Returns what stops it.
+ * Plays the script as a chat: he fires off message after message, each
+ * after a moment of writing, his stage directions a longer spell of it; you
+ * get a word in now and then, after a pause. Only what fits is kept, the
+ * oldest dropping off the top, and it starts over at the end. Returns what
+ * stops it.
  */
-function writeScript(page: HTMLElement, from: number): () => void {
-  let line = from % COPIONE.length;
-  let char = 0;
-  let wait = 0;
-  let frame = 0;
-  let current: HTMLElement | null = null;
-  const fits = () => Math.ceil(page.clientHeight / (parseFloat(getComputedStyle(page).lineHeight) || 16)) + 2;
-  const tick = () => {
-    frame = requestAnimationFrame(tick);
-    if (wait > 0) return void wait--;
-    const b = COPIONE[line];
-    if (!current) {
-      const { el, words } = lineOf(b);
-      page.append(el);
-      current = words;
-      while (page.childElementCount > fits()) page.firstElementChild?.remove();
-    }
-    char = Math.min(b.text.length, char + (b.who === "LODOVICO" ? 3 : 2));
-    current.textContent = b.text.slice(0, char);
-    if (char === b.text.length) {
-      line = (line + 1) % COPIONE.length;
-      char = 0;
-      current = null;
-      wait = b.who ? 8 : 18;
-    }
+function playChat(page: HTMLElement, from: number): () => void {
+  let i = from % CHAT.length;
+  let last: Battuta["who"] | null = null;
+  let timer = 0;
+  const trim = () => {
+    while (page.childElementCount > 1 && page.scrollHeight > page.clientHeight + 24) page.firstElementChild?.remove();
   };
-  frame = requestAnimationFrame(tick);
-  return () => cancelAnimationFrame(frame);
+  const step = () => {
+    const b = CHAT[i];
+    i = (i + 1) % CHAT.length;
+    const writing = b.who === "IO" ? null : dots();
+    if (writing) {
+      page.append(writing);
+      trim();
+    }
+    // Yours after a while; his quick, a little longer the more he has to say.
+    const wait = !b.who ? 1100 : b.who === "IO" ? 1700 : Math.min(650, 160 + b.text.length * 3);
+    timer = window.setTimeout(() => {
+      writing?.remove();
+      if (b.who) {
+        page.append(bubble(b, b.who !== last));
+        last = b.who;
+        trim();
+      }
+      timer = window.setTimeout(step, b.who === "IO" ? 700 : 60);
+    }, wait);
+  };
+  step();
+  return () => window.clearTimeout(timer);
 }
 
-/** The script as it stands, for reduced motion: the first lines, still. */
-function stillScript(page: HTMLElement) {
+/** The chat as it stands, for reduced motion: the first messages, still. */
+function stillChat(page: HTMLElement) {
+  let last: Battuta["who"] | null = null;
+  const said = CHAT.filter((b) => b.who).slice(0, 10);
   page.replaceChildren(
-    ...COPIONE.slice(0, 12).map((b) => {
-      const { el, words } = lineOf(b);
-      words.textContent = b.text;
+    ...said.map((b) => {
+      const el = bubble(b, b.who !== last);
+      last = b.who;
       return el;
     }),
   );
 }
 
 /**
- * Lodovico's script behind his page's first card, writing itself out for as
+ * Lodovico's chat behind his page's first card, him messaging away for as
  * long as it is on screen. It sits in the card, which is its own layer,
  * behind the text; the name stays as it is.
  */
@@ -314,10 +330,10 @@ function Copione({ children }: { children: ReactNode }) {
   useEffect(() => {
     const el = page.current;
     if (!el) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return stillScript(el);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return stillChat(el);
     let stop: (() => void) | null = null;
     const seen = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !stop) stop = writeScript(el, 0);
+      if (entry.isIntersecting && !stop) stop = playChat(el, 0);
       if (!entry.isIntersecting && stop) {
         stop();
         stop = null;
@@ -332,12 +348,12 @@ function Copione({ children }: { children: ReactNode }) {
   return (
     <>
       {children}
-      <span ref={page} aria-hidden="true" className="rg-copione" />
+      <span ref={page} aria-hidden="true" className="rg-chat" />
     </>
   );
 }
 
-/** His script in the standings: behind his row, small, from a random line, while the row is pointed at. */
+/** His chat in the standings: behind his row, small, from a random message, while the row is pointed at. */
 function CopioneRow({ children }: { children: ReactNode }) {
   const el = useRef<HTMLSpanElement>(null);
   useEffect(() => {
@@ -346,14 +362,14 @@ function CopioneRow({ children }: { children: ReactNode }) {
     let shown: { page: HTMLElement; stop: () => void } | null = null;
     const start = () => {
       if (shown) return;
-      row.classList.add("rg-copione-host");
+      row.classList.add("rg-chat-host");
       const page = document.createElement("span");
-      page.className = "rg-copione rg-copione-row";
+      page.className = "rg-chat rg-chat-row";
       page.setAttribute("aria-hidden", "true");
       row.prepend(page);
       const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (still) stillScript(page);
-      shown = { page, stop: still ? () => {} : writeScript(page, Math.floor(Math.random() * COPIONE.length)) };
+      if (still) stillChat(page);
+      shown = { page, stop: still ? () => {} : playChat(page, Math.floor(Math.random() * CHAT.length)) };
     };
     const stop = () => {
       if (!shown) return;
@@ -377,7 +393,7 @@ function CopioneRow({ children }: { children: ReactNode }) {
 /**
  * A player's name with their easter egg, if they have one: bolts thrown out
  * like sparks, a mist drifting past, peaches stuck on like stickers, or a
- * play's script writing itself out behind it. On
+ * chat of his messages piling up behind it. On
  * the player's own page in full; `soft` in the standings, fewer and smaller,
  * where the peach is a single one, put after the name by `EasterMark`.
  * Anyone else's name comes back as it is.
