@@ -1358,14 +1358,6 @@ body:has(.lpm)::before {
   translate: 0 -0.25em;
 }
 /* Lisa Coronini's one lobster takes less room. */
-.lpm .rg-peach-mark.rg-peach-mark-one {
-  width: 1.7em;
-}
-.lpm .rg-sticker-picture {
-  display: block;
-  width: auto;
-  height: 1em;
-}
 .lpm .rg-sticker.rg-sticker-inline {
   scale: 0;
   animation: none;
@@ -1991,5 +1983,41 @@ body:has(.lpm)::before {
   }
   to {
     rotate: 3deg;
+  }
+}
+
+/* In the standings, Lisa Coronini's lobster after her name, bigger than the
+   row, which cuts it off: while the row is pointed at, it walks in from the
+   top right the way it does onto her card, quicker, then sways. */
+.lpm .rg-row:has(.rg-lobster-mark) {
+  overflow: clip;
+}
+.lpm .rg-lobster-mark {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  align-self: stretch;
+  width: 3.9em;
+  margin-left: 0.2em;
+  pointer-events: none;
+}
+.lpm .rg-lobster-mark > img {
+  position: absolute;
+  top: calc(50% - 1.35em);
+  left: 0;
+  height: 2.7em;
+  width: auto;
+  aspect-ratio: 1405 / 973;
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.3));
+  opacity: 0;
+}
+.lpm .rg-row:hover .rg-lobster-mark > img {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lpm .rg-row:hover .rg-lobster-mark > img {
+    animation:
+      rg-lobster-in 1.6s linear both,
+      rg-lobster-sway 3.2s ease-in-out 1.6s infinite alternate;
   }
 }
