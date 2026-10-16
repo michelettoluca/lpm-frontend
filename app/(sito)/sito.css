@@ -1357,6 +1357,10 @@ body:has(.lpm)::before {
   margin-left: 0.25em;
   translate: 0 -0.25em;
 }
+/* Lisa Coronini's one lobster takes less room. */
+.lpm .rg-peach-mark.rg-peach-mark-one {
+  width: 1.2em;
+}
 .lpm .rg-sticker.rg-sticker-inline {
   scale: 0;
   animation: none;

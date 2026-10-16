@@ -4,7 +4,7 @@
  * back office: this list is the record of who has what (the team page shows
  * it, read only).
  */
-export type Effect = "fulmini" | "nebbia" | "pesca" | "copione" | "fumetto" | "orsetti" | "peek" | "napoletano" | "infezione" | "ventaglio" | "cintura";
+export type Effect = "fulmini" | "nebbia" | "pesca" | "copione" | "fumetto" | "orsetti" | "peek" | "napoletano" | "infezione" | "ventaglio" | "cintura" | "aragosta";
 
 /** What each effect looks like, for the list. "fulmini" is kept for whoever gets it next: nobody has it now. */
 export const EFFECT_LABELS: Record<Effect, string> = {
@@ -19,6 +19,7 @@ export const EFFECT_LABELS: Record<Effect, string> = {
   infezione: "Radici radioattive che partono dal nome e si mangiano la card",
   ventaglio: "Una mano di Great Furnace e Goblin Tomb Raider a ventaglio nella card",
   cintura: "La cintura da campione del Pauper Geddon, che piomba sulla card",
+  aragosta: "Un'aragosta attaccata al nome come sticker",
 };
 
 export const EASTER_EGGS: { playerId: number; name: string; effect: Effect }[] = [
@@ -30,6 +31,7 @@ export const EASTER_EGGS: { playerId: number; name: string; effect: Effect }[] =
   { playerId: 28, name: "Arturo Precioso", effect: "pesca" },
   { playerId: 35, name: "Matteo Conte", effect: "fumetto" },
   { playerId: 37, name: "Stefano D'Antonio", effect: "peek" },
+  { playerId: 38, name: "Lisa Coronini", effect: "aragosta" },
   { playerId: 45, name: "Andrea Forti", effect: "orsetti" },
   { playerId: 87, name: "Matteo Strazzera", effect: "nebbia" },
 ];

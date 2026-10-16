@@ -310,13 +310,13 @@ function Electric({ soft, children }: { soft: boolean; children: ReactNode }) {
 }
 
 const PEACH = "\u{1F351}";
+const LOBSTER = "\u{1F99E}";
 
-/**
- * Where the peaches stick around the name, in its box: the centre as a share
- * of its width and height, the size in em of the name's type, the tilt, and
- * whether it sits behind the letters or over them.
- */
-const PEACHES = [
+/** A sticker by the name: its centre as a share of the name's box, its size in em of the name's type, its tilt, and whether it's over the letters. */
+type Spot = { x: number; y: number; size: number; tilt: number; front?: boolean };
+
+/** Where the peaches stick around the name, some behind the letters and some over them. */
+const PEACHES: Spot[] = [
   { x: 1.04, y: 0.62, size: 0.7, tilt: 14, front: true },
   { x: 0.86, y: 0.02, size: 0.45, tilt: -14, front: false },
   { x: 0.1, y: -0.06, size: 0.52, tilt: 9, front: false },
@@ -330,16 +330,19 @@ const PEACHES = [
   { x: 0.22, y: 1.06, size: 0.3, tilt: 16, front: false },
 ];
 
+/** Lisa Coronini's lobster: just one, big, at the end of her name, over it. */
+const LOBSTERS: Spot[] = [{ x: 1.06, y: 0.62, size: 0.8, tilt: 16, front: true }];
+
 /**
- * Peaches stuck around the name like stickers, of different sizes, some
- * behind the letters and some over them, popping on one after another as the
- * page opens.
+ * Stickers stuck around the name, Arturo Precioso's peaches of different
+ * sizes, some behind the letters and some over them, or Lisa Coronini's one
+ * lobster, popping on one after another as the page opens.
  */
-function Peaches({ children }: { children: ReactNode }) {
+function Stickers({ emoji, spots, children }: { emoji: string; spots: Spot[]; children: ReactNode }) {
   return (
     <span className="rg-peaches">
       {children}
-      {PEACHES.map((p, i) => (
+      {spots.map((p, i) => (
         <span
           key={i}
           aria-hidden="true"
@@ -354,7 +357,7 @@ function Peaches({ children }: { children: ReactNode }) {
             } as CSSProperties
           }
         >
-          {PEACH}
+          {emoji}
         </span>
       ))}
     </span>
@@ -1632,8 +1635,10 @@ function Belt({ children }: { children: ReactNode }) {
 export function Easter({ playerId, soft = false, children }: { playerId: number | string; soft?: boolean; children: ReactNode }) {
   const effect = effectOf(playerId);
   // Davide Rapacciuolo's is the words of his whole page (parole.ts), not something on his name.
-  if (!effect || effect === "napoletano" || (effect === "pesca" && soft)) return <>{children}</>;
-  if (effect === "pesca") return <Peaches>{children}</Peaches>;
+  // The stickers in the standings are by the name, put there by `EasterMark`.
+  if (!effect || effect === "napoletano" || ((effect === "pesca" || effect === "aragosta") && soft)) return <>{children}</>;
+  if (effect === "pesca") return <Stickers emoji={PEACH} spots={PEACHES}>{children}</Stickers>;
+  if (effect === "aragosta") return <Stickers emoji={LOBSTER} spots={LOBSTERS}>{children}</Stickers>;
   if (effect === "copione") return soft ? <CopioneRow>{children}</CopioneRow> : <Copione>{children}</Copione>;
   if (effect === "fulmini") return <Electric soft={soft}>{children}</Electric>;
   if (effect === "fumetto") return <Comic soft={soft}>{children}</Comic>;
@@ -1652,28 +1657,33 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
 }
 
 /** The standings' little bunch of peaches, by the name: where each sits in it, its size in em and its tilt. */
-const MARK_PEACHES = [
+const MARK_PEACHES: Spot[] = [
   { x: 0.25, y: 0.62, size: 0.95, tilt: 12 },
   { x: 0.78, y: 0.28, size: 0.62, tilt: -16 },
   { x: 1.12, y: 0.82, size: 0.72, tilt: 24 },
   { x: 0.55, y: -0.1, size: 0.5, tilt: -6 },
 ];
 
+/** Lisa Coronini's lobster in the standings, by the name: just the one. */
+const MARK_LOBSTER: Spot[] = [{ x: 0.5, y: 0.5, size: 1.1, tilt: 14 }];
+
 /**
  * Arturo Precioso's peaches in the standings: a little bunch just after
  * his name, popping on one after another while the row is pointed at
  * (sito.css). Its own element beside the name, not in it: a name cut short
- * with an ellipsis would cut them off too. Tommaso Cavallini's hand of
- * cards and Filippo Pezza's belt's plate go there the same way.
+ * with an ellipsis would cut them off too. Lisa Coronini's one lobster,
+ * Tommaso Cavallini's hand of cards and Filippo Pezza's belt's plate go
+ * there the same way.
  */
 export function EasterMark({ playerId }: { playerId: number | string }) {
   const effect = effectOf(playerId);
   if (effect === "ventaglio") return <FanMark />;
   if (effect === "cintura") return <span aria-hidden="true" className="rg-belt-mark" dangerouslySetInnerHTML={{ __html: BELT_PLATE }} />;
-  if (effect !== "pesca") return null;
+  if (effect !== "pesca" && effect !== "aragosta") return null;
+  const lobster = effect === "aragosta";
   return (
-    <span aria-hidden="true" className="rg-peach-mark">
-      {MARK_PEACHES.map((p, i) => (
+    <span aria-hidden="true" className={`rg-peach-mark ${lobster ? "rg-peach-mark-one" : ""}`}>
+      {(lobster ? MARK_LOBSTER : MARK_PEACHES).map((p, i) => (
         <span
           key={i}
           className="rg-sticker rg-sticker-inline"
@@ -1687,7 +1697,7 @@ export function EasterMark({ playerId }: { playerId: number | string }) {
             } as CSSProperties
           }
         >
-          {PEACH}
+          {lobster ? LOBSTER : PEACH}
         </span>
       ))}
     </span>
