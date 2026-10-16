@@ -310,7 +310,8 @@ function Electric({ soft, children }: { soft: boolean; children: ReactNode }) {
 }
 
 const PEACH = "\u{1F351}";
-const LOBSTER = "\u{1F99E}";
+/** Lisa Coronini's lobster: a sticker, cut out of the picture she was given, edged in white; 1405 by 973. */
+const LOBSTER = "/easter/aragosta.webp";
 
 /** A sticker by the name: its centre as a share of the name's box, its size in em of the name's type, its tilt, and whether it's over the letters. */
 type Spot = { x: number; y: number; size: number; tilt: number; front?: boolean };
@@ -330,13 +331,10 @@ const PEACHES: Spot[] = [
   { x: 0.22, y: 1.06, size: 0.3, tilt: 16, front: false },
 ];
 
-/** Lisa Coronini's lobster: just one, big, at the end of her name, over it. */
-const LOBSTERS: Spot[] = [{ x: 1.06, y: 0.62, size: 0.8, tilt: 16, front: true }];
-
 /**
  * Stickers stuck around the name, Arturo Precioso's peaches of different
- * sizes, some behind the letters and some over them, or Lisa Coronini's one
- * lobster, popping on one after another as the page opens.
+ * sizes, some behind the letters and some over them, popping on one after
+ * another as the page opens.
  */
 function Stickers({ emoji, spots, children }: { emoji: string; spots: Spot[]; children: ReactNode }) {
   return (
@@ -1501,6 +1499,31 @@ const SPREAD = 28;
 const turnOf = (i: number) => -SPREAD + (2 * SPREAD * i) / (HAND.length - 1);
 
 /**
+ * Lisa Coronini's lobster, of comic size: one huge one at the top right of
+ * her first card, cut off by its right edge; it comes in from that corner
+ * down towards the middle as the page opens, a jerky step at a time,
+ * turning right and left, strikes a pose, then sways a little (sito.css).
+ * Over the text.
+ */
+function Lobster({ children }: { children: ReactNode }) {
+  const el = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const host = el.current?.closest<HTMLElement>(".rg-panel");
+    if (!host) return;
+    const lobster = document.createElement("img");
+    lobster.className = "rg-lobster";
+    lobster.src = LOBSTER;
+    lobster.alt = "";
+    lobster.setAttribute("aria-hidden", "true");
+    host.append(lobster);
+    return () => lobster.remove();
+  }, []);
+
+  return <span ref={el}>{children}</span>;
+}
+
+/**
  * Tommaso Cavallini's hand of cards, fanned out in the bottom right corner
  * of his first card as if held just under it: dealt in one after another
  * from under its edge as the page opens, then rocking a little in the hand
@@ -1637,7 +1660,7 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   // The stickers in the standings are by the name, put there by `EasterMark`.
   if (!effect || effect === "napoletano" || ((effect === "pesca" || effect === "aragosta") && soft)) return <>{children}</>;
   if (effect === "pesca") return <Stickers emoji={PEACH} spots={PEACHES}>{children}</Stickers>;
-  if (effect === "aragosta") return <Stickers emoji={LOBSTER} spots={LOBSTERS}>{children}</Stickers>;
+  if (effect === "aragosta") return <Lobster>{children}</Lobster>;
   if (effect === "copione") return soft ? <CopioneRow>{children}</CopioneRow> : <Copione>{children}</Copione>;
   if (effect === "fulmini") return <Electric soft={soft}>{children}</Electric>;
   if (effect === "fumetto") return <Comic soft={soft}>{children}</Comic>;
@@ -1671,13 +1694,15 @@ const MARK_LOBSTER: Spot[] = [{ x: 0.5, y: 0.5, size: 1.1, tilt: 14 }];
  * his name, popping on one after another while the row is pointed at
  * (sito.css). Its own element beside the name, not in it: a name cut short
  * with an ellipsis would cut them off too. Lisa Coronini's one lobster,
- * Tommaso Cavallini's hand of cards and Filippo Pezza's belt's plate go
- * there the same way.
+ * Tommaso Cavallini's hand of cards and Filippo Pezza's belt, slung aslant,
+ * go there the same way.
  */
 export function EasterMark({ playerId }: { playerId: number | string }) {
   const effect = effectOf(playerId);
   if (effect === "ventaglio") return <FanMark />;
-  if (effect === "cintura") return <span aria-hidden="true" className="rg-belt-mark" dangerouslySetInnerHTML={{ __html: BELT_PLATE }} />;
+  // His belt slung aslant just after his name in the standings.
+  if (effect === "cintura")
+    return <span aria-hidden="true" className="rg-belt-mark" dangerouslySetInnerHTML={{ __html: `<span class="rg-belt-mark-strap"></span>${BELT_PLATE}` }} />;
   if (effect !== "pesca" && effect !== "aragosta") return null;
   const lobster = effect === "aragosta";
   return (
@@ -1696,7 +1721,8 @@ export function EasterMark({ playerId }: { playerId: number | string }) {
             } as CSSProperties
           }
         >
-          {lobster ? LOBSTER : PEACH}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {lobster ? <img src={LOBSTER} alt="" className="rg-sticker-picture" /> : PEACH}
         </span>
       ))}
     </span>

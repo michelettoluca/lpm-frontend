@@ -1359,7 +1359,12 @@ body:has(.lpm)::before {
 }
 /* Lisa Coronini's one lobster takes less room. */
 .lpm .rg-peach-mark.rg-peach-mark-one {
-  width: 1.2em;
+  width: 1.7em;
+}
+.lpm .rg-sticker-picture {
+  display: block;
+  width: auto;
+  height: 1em;
 }
 .lpm .rg-sticker.rg-sticker-inline {
   scale: 0;
@@ -1832,40 +1837,159 @@ body:has(.lpm)::before {
     translate: 260px 0;
   }
 }
-/* In the standings, the plate just after the name, popping on and glinting
-   while the row is pointed at. */
+/* In the standings, a little belt slung aslant at the end of his name, its
+   strap cut off by the row's edges: there only while the row is pointed
+   at, popping on, its plate glinting. Drawn about the middle of its place
+   in the line. */
+.lpm .rg-row:has(.rg-belt-mark) {
+  overflow: clip;
+}
 .lpm .rg-belt-mark {
   position: relative;
+  z-index: 1;
   display: inline-block;
   flex-shrink: 0;
-  width: 2.6em;
+  width: 4.2em;
   height: 1em;
-  margin-left: 0.25em;
+  /* Over a little of the name's last letter. */
+  margin-left: -0.55em;
+  rotate: -28deg;
+  scale: 0;
+  pointer-events: none;
+}
+.lpm .rg-row:hover .rg-belt-mark {
+  scale: 1;
+}
+.lpm .rg-belt-mark-strap {
+  position: absolute;
+  left: calc(50% - 5em);
+  top: calc(50% - 0.6em);
+  width: 10em;
+  height: 1.2em;
+  border-block: 1px solid #5a4636;
+  background: linear-gradient(#4a3829, #1a120d 55%, #3a2b20);
+  box-shadow: 0 2px 5px rgb(0 0 0 / 0.35);
+}
+.lpm .rg-belt-mark-strap::before,
+.lpm .rg-belt-mark-strap::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  border-top: 1px dashed #c9a23a;
+  opacity: 0.85;
+}
+.lpm .rg-belt-mark-strap::before {
+  top: 15%;
+}
+.lpm .rg-belt-mark-strap::after {
+  bottom: 15%;
 }
 .lpm .rg-belt-mark > .rg-belt-plate {
-  left: 0;
-  top: -0.35em;
-  width: 2.6em;
-  height: auto;
-  aspect-ratio: 380 / 226;
-  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.35));
-  scale: 0;
-  rotate: -12deg;
-}
-.lpm .rg-row:hover .rg-belt-mark > .rg-belt-plate {
-  scale: 1;
-  rotate: 0deg;
+  left: calc(50% - 1.9em);
+  top: calc(50% - 3.8em * 226 / 380 * 0.5575);
+  width: 3.8em;
+  height: calc(3.8em * 226 / 380);
+  filter: drop-shadow(0 2px 3px rgb(0 0 0 / 0.4));
 }
 .lpm .rg-belt-mark .rg-belt-glint {
   animation: none;
 }
 @media (prefers-reduced-motion: no-preference) {
-  .lpm .rg-belt-mark > .rg-belt-plate {
-    transition:
-      scale 0.35s cubic-bezier(0.3, 1.5, 0.5, 1),
-      rotate 0.35s cubic-bezier(0.3, 1.5, 0.5, 1);
+  .lpm .rg-belt-mark {
+    transition: scale 0.35s cubic-bezier(0.3, 1.5, 0.5, 1);
   }
   .lpm .rg-row:hover .rg-belt-mark .rg-belt-glint {
     animation: rg-belt-glint 1.6s ease-in-out 0.2s infinite;
+  }
+}
+
+/* The easter eggs' lobster (Easter.tsx): Lisa Coronini's, of comic size,
+   a sticker at the top right of her first card, cut off by the card's right
+   edge, over the text. It comes in from that corner, down towards the
+   middle, a step at a time, jerkily, turning right and left at each,
+   strikes a pose, then sways a little. */
+.lpm .rg-lobster {
+  position: absolute;
+  z-index: 1;
+  top: -3%;
+  right: -7%;
+  /* On a phone, small enough to stay by the name's short first line. */
+  width: clamp(215px, 40vw + 70px, 680px);
+  height: auto;
+  aspect-ratio: 1405 / 973;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 8px 14px rgb(0 0 0 / 0.3));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lpm .rg-lobster {
+    animation:
+      rg-lobster-in 2.8s linear 0.3s both,
+      rg-lobster-sway 3.2s ease-in-out 3.1s infinite alternate;
+  }
+}
+/* Each step a quick lurch, turned one way then the other, then a moment
+   still; at the end, a little swell as it strikes its pose. */
+@keyframes rg-lobster-in {
+  0% {
+    translate: 60% -80%;
+    rotate: 0deg;
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  9%,
+  13% {
+    translate: 50% -67%;
+    rotate: 12deg;
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  22%,
+  26% {
+    translate: 40% -53%;
+    rotate: -12deg;
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  35%,
+  39% {
+    translate: 31% -41%;
+    rotate: 12deg;
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  48%,
+  52% {
+    translate: 22% -29%;
+    rotate: -12deg;
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  61%,
+  65% {
+    translate: 14% -18%;
+    rotate: 12deg;
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  74%,
+  78% {
+    translate: 6% -8%;
+    rotate: -11deg;
+    scale: 1;
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  88% {
+    translate: 0 0;
+    rotate: 0deg;
+    scale: 1.08;
+    animation-timing-function: ease-in-out;
+  }
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+    scale: 1;
+  }
+}
+@keyframes rg-lobster-sway {
+  from {
+    rotate: -3deg;
+  }
+  to {
+    rotate: 3deg;
   }
 }
