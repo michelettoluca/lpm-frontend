@@ -1833,8 +1833,9 @@ body:has(.lpm)::before {
   }
 }
 /* In the standings, a little belt slung aslant at the end of his name, its
-   strap cut off by the row's edges, its plate glinting while the row is
-   pointed at. Drawn about the middle of its place in the line. */
+   strap cut off by the row's edges: there only while the row is pointed
+   at, popping on, its plate glinting. Drawn about the middle of its place
+   in the line. */
 .lpm .rg-row:has(.rg-belt-mark) {
   overflow: clip;
 }
@@ -1848,7 +1849,11 @@ body:has(.lpm)::before {
   /* Over a little of the name's last letter. */
   margin-left: -0.55em;
   rotate: -28deg;
+  scale: 0;
   pointer-events: none;
+}
+.lpm .rg-row:hover .rg-belt-mark {
+  scale: 1;
 }
 .lpm .rg-belt-mark-strap {
   position: absolute;
@@ -1885,6 +1890,9 @@ body:has(.lpm)::before {
   animation: none;
 }
 @media (prefers-reduced-motion: no-preference) {
+  .lpm .rg-belt-mark {
+    transition: scale 0.35s cubic-bezier(0.3, 1.5, 0.5, 1);
+  }
   .lpm .rg-row:hover .rg-belt-mark .rg-belt-glint {
     animation: rg-belt-glint 1.6s ease-in-out 0.2s infinite;
   }
