@@ -4,7 +4,7 @@
  * back office: this list is the record of who has what (the team page shows
  * it, read only).
  */
-export type Effect = "fulmini" | "nebbia" | "pesca" | "copione" | "fumetto" | "orsetti" | "peek" | "napoletano" | "infezione";
+export type Effect = "fulmini" | "nebbia" | "pesca" | "copione" | "fumetto" | "orsetti" | "peek" | "napoletano" | "infezione" | "ventaglio";
 
 /** What each effect looks like, for the list. "fulmini" is kept for whoever gets it next: nobody has it now. */
 export const EFFECT_LABELS: Record<Effect, string> = {
@@ -17,12 +17,14 @@ export const EFFECT_LABELS: Record<Effect, string> = {
   peek: "Fa capolino a turno dai quattro lati della card",
   napoletano: "Tutta la sua pagina scritta in napoletano",
   infezione: "Radici radioattive che partono dal nome e si mangiano la card",
+  ventaglio: "Una mano di Great Furnace e Goblin Tomb Raider a ventaglio nella card",
 };
 
 export const EASTER_EGGS: { playerId: number; name: string; effect: Effect }[] = [
   { playerId: 1, name: "Lodovico De Jaegher", effect: "copione" },
   { playerId: 6, name: "Davide Rapacciuolo", effect: "napoletano" },
   { playerId: 13, name: "Demetrio Morselli", effect: "infezione" },
+  { playerId: 20, name: "Tommaso Cavallini", effect: "ventaglio" },
   { playerId: 28, name: "Arturo Precioso", effect: "pesca" },
   { playerId: 35, name: "Matteo Conte", effect: "fumetto" },
   { playerId: 37, name: "Stefano D'Antonio", effect: "peek" },
