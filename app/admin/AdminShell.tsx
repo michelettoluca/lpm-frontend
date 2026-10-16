@@ -8,6 +8,7 @@ import type { AdminAccount, AdminError, ManagedEvent, Season } from "@/app/lib/a
 import { callAdmin, isAuthLoss, type CallResult } from "./client";
 import { ErrorPanel } from "./ErrorPanel";
 import { Crown } from "@/app/lib/emblem";
+import { getStored } from "@/app/lib/storage";
 import { BUTTON_PRIMARY, useCloseOnBack, useDismiss } from "./dashboardUi";
 import { CONTROL } from "./fields";
 
@@ -50,11 +51,11 @@ const TOAST_OPTIONS = { style: { fontFamily: "var(--font-archivo), system-ui, sa
 
 const WIDTH = "mx-auto w-full max-w-[1080px] px-4 sm:px-8";
 
-const SEASON_KEY = "lpm:admin-season";
+const SEASON_KEY = "lpm-admin-season";
 
 function storedSeason() {
   try {
-    return Number(localStorage.getItem(SEASON_KEY)) || null;
+    return Number(getStored(SEASON_KEY, "lpm:admin-season")) || null;
   } catch {
     return null;
   }

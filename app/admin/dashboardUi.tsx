@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
+import { getStored } from "@/app/lib/storage";
 
 const BUTTON_BASE =
   "inline-flex h-10 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-[15px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40";
@@ -222,11 +223,11 @@ export function DetailList({ items }: { items: [string, ReactNode][] }) {
 /** Rows per page the admin tables offer; the choice is kept in this browser. */
 const PAGE_SIZES = [10, 15, 25, 50];
 const DEFAULT_PAGE_SIZE = 15;
-const PAGE_SIZE_KEY = "lpm:admin-page-size";
+const PAGE_SIZE_KEY = "lpm-admin-page-size";
 
 function storedPageSize() {
   try {
-    const stored = Number(localStorage.getItem(PAGE_SIZE_KEY));
+    const stored = Number(getStored(PAGE_SIZE_KEY, "lpm:admin-page-size"));
     return PAGE_SIZES.includes(stored) ? stored : DEFAULT_PAGE_SIZE;
   } catch {
     return DEFAULT_PAGE_SIZE;

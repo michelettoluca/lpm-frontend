@@ -9,11 +9,18 @@ import { paroleAt } from "./parole";
 
 /**
  * The closing panel under every page, except the deck flow: at the table the
- * phone shows only what is needed to declare.
+ * phone shows only what is needed to declare, and the privacy link.
  */
 export function Footer() {
   const path = usePathname();
-  if (path === "/mazzo") return <div className="pb-6 lg:pb-10" />;
+  if (path === "/mazzo")
+    return (
+      <div className="rg-wrap pb-6 lg:pb-10">
+        <Link className="rg-textlink rg-muted inline-flex min-h-11 items-center text-[14px]" href="/privacy">
+          privacy
+        </Link>
+      </div>
+    );
   const { lang, footer: w } = paroleAt(path);
   return (
     <footer lang={lang} className="rg-wrap mt-2.5 pb-6 lg:pb-10 lg:mt-4">
@@ -34,6 +41,9 @@ export function Footer() {
             </a>
             <Link className="rg-textlink inline-flex min-h-11 items-center" href="/regole">
               {w.rules}
+            </Link>
+            <Link className="rg-textlink inline-flex min-h-11 items-center" href="/privacy">
+              {w.privacy}
             </Link>
           </p>
         </div>
