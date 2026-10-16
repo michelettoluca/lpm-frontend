@@ -2616,12 +2616,8 @@ function Beer({ soft, children }: { soft: boolean; children: ReactNode }) {
   return <span ref={el}>{children}</span>;
 }
 
-/**
- * A three-toed footprint, toes up, in a 100 by 120 box: a round pad, and
- * over it, a little apart, three toes close together like thorns, pointed,
- * the middle one longest, the others leaning out.
- */
-const FOOTPRINT = `<path d="M20 72 C18 94 32 117 50 117 C68 117 82 94 80 72 C78 61 66 58 50 59 C34 58 22 61 20 72 Z"/><path d="M21 54 C19 42 16 30 11 15 C22 23 33 36 38 52 C32 56 25 56 21 54 Z"/><path d="M42 52 C43 37 46 20 51 2 C55 20 58 37 59 52 C54 55 47 55 42 52 Z"/><path d="M63 52 C68 36 78 23 89 15 C84 30 81 42 79 54 C75 56 68 56 63 52 Z"/>`;
+/** A three-toed footprint, toes up, in a 100 by 110 box: three fat toes spread wide, clawed at their tips, on a broad heel. */
+const FOOTPRINT = `<ellipse cx="50" cy="40" rx="13" ry="30"/><ellipse cx="26" cy="52" rx="12" ry="26" transform="rotate(-32 26 52)"/><ellipse cx="74" cy="52" rx="12" ry="26" transform="rotate(32 74 52)"/><ellipse cx="50" cy="80" rx="25" ry="21"/><path d="M44 14 L50 -3 L56 14Z"/><path d="M17.3 26.8 L5.8 19.8 L7.1 33.2Z"/><path d="M82.7 26.8 L94.2 19.8 L92.9 33.2Z"/>`;
 
 /** A crack from (x, y) heading `angle` for about `reach` px, jagged, forking now and then: its lines as point lists. */
 function crack(x: number, y: number, angle: number, reach: number): [number, number][][] {
@@ -2682,19 +2678,19 @@ function Dino({ soft, children }: { soft: boolean; children: ReactNode }) {
       const w = host.offsetWidth;
       const h = host.offsetHeight;
       const foot = document.createElementNS(SVG, "svg");
-      foot.setAttribute("viewBox", "0 0 100 120");
+      foot.setAttribute("viewBox", "0 -4 100 114");
       foot.setAttribute("aria-hidden", "true");
       foot.setAttribute("class", "rg-dino-print");
       // Pressed in: in shade along one edge, lit along the other, its floor between.
       foot.innerHTML = [
-        ["rg-dino-shade", "-1.2 -1.2"],
-        ["rg-dino-lit", "1.2 1.2"],
+        ["rg-dino-shade", "-2.5 -2.5"],
+        ["rg-dino-lit", "2.5 2.5"],
         ["rg-dino-floor", "0 0"],
       ]
         .map(([tone, at]) => `<g class="${tone}" fill="currentColor" transform="translate(${at})">${FOOTPRINT}</g>`)
         .join("");
       const turn = `${((angle * 180) / Math.PI + 90).toFixed(1)}deg`;
-      foot.style.cssText = `left:${((x / w) * 100).toFixed(2)}%;top:${((y / h) * 100).toFixed(2)}%;width:${size * 0.83}px;height:${size}px;--turn:${turn}`;
+      foot.style.cssText = `left:${((x / w) * 100).toFixed(2)}%;top:${((y / h) * 100).toFixed(2)}%;width:${size * 0.88}px;height:${size}px;--turn:${turn}`;
       host.append(foot);
       marks.push(foot);
       foot.animate(
