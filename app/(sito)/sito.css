@@ -1571,8 +1571,7 @@ body:has(.lpm)::before {
   /* Turned about its own corner: the script works out where that goes. */
   transform-origin: 0 0;
   transform: translate(-9999px, -9999px);
-  /* A white edge all round, like a sticker, and a soft shadow. */
-  filter: drop-shadow(3px 0 0 #fff) drop-shadow(-3px 0 0 #fff) drop-shadow(0 3px 0 #fff) drop-shadow(0 -3px 0 #fff)
-    drop-shadow(0 6px 10px rgb(0 0 0 / 0.3));
+  /* Its white sticker edge is in the picture itself, crisp; just a soft shadow here. */
+  filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.3));
   will-change: transform;
 }

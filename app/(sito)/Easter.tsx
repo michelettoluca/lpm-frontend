@@ -783,8 +783,8 @@ function Bears({ soft, children }: { soft: boolean; children: ReactNode }) {
   return <span ref={el}>{children}</span>;
 }
 
-/** Stefano D'Antonio's picture, lifted out of the one he gave: 354 by 420. */
-const PEEKER = { src: "/easter/stefano-dantonio.png", w: 354, h: 420 };
+/** Stefano D'Antonio's picture, lifted out of the one he gave and edged in white like a sticker: 374 by 440. */
+const PEEKER = { src: "/easter/stefano-dantonio.png", w: 374, h: 440 };
 
 /** The edges he peeks in from, in turn, and how he's turned for each: head in, the cut edge on the screen's. */
 const SIDES = [
