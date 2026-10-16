@@ -1160,3 +1160,56 @@ body:has(.lpm)::before {
   77% { transform: translate(-96px, -133px); }
   88% { transform: translate(52px, 102px); }
 }
+
+/* The season's track on the home (page.tsx): a thin grey line, a tappa to a
+   step, red up to a knob on the last one played, and a bar standing across
+   it where the counted tappe end. */
+.lpm .rg-season {
+  position: relative;
+  height: 6px;
+  margin-block: 6px;
+  border-radius: 999px;
+  background: var(--rg-soft-2);
+}
+.lpm .rg-season > span {
+  position: absolute;
+}
+.lpm .rg-season-fill {
+  inset-block: 0;
+  left: 0;
+  width: calc(100% * var(--p) / var(--n));
+  border-radius: inherit;
+  background: var(--rg-o);
+}
+/* A faint dot on every step, the played ones see-through white on the red. */
+.lpm .rg-season-dot {
+  top: 50%;
+  left: calc(100% * var(--i) / var(--n));
+  width: 4px;
+  height: 4px;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--rg-ink) 35%, transparent);
+}
+.lpm .rg-season-dot-done {
+  background: rgb(255 255 255 / 0.5);
+}
+.lpm .rg-season-knob {
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: var(--rg-paper);
+  border: 4px solid var(--rg-o);
+  left: calc(100% * var(--p) / var(--n));
+}
+.lpm .rg-season-cut {
+  top: -8px;
+  bottom: -8px;
+  left: calc(100% * var(--k) / var(--n));
+  width: 2px;
+  translate: -50% 0;
+  border-radius: 2px;
+  background: var(--rg-ink);
+}

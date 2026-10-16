@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { COUNTED_EVENTS, dateTile, getHomeData } from "@/app/lib/site";
 import { Emblem } from "@/app/lib/emblem";
 import { Calendar, Cup, Drift } from "./Drift";
@@ -17,6 +17,35 @@ function Stat({ label, value, sub }: { label: string; value: ReactNode; sub?: Re
   );
 }
 
+/**
+ * The season as a thin line, a tappa to a step, each step a faint dot: red
+ * up to a knob on the last one played, and a bar across it where the tappe
+ * that count end.
+ */
+function SeasonTrack({ played, total, counted }: { played: number; total: number; counted: number }) {
+  return (
+    <div
+      role="img"
+      aria-label={`${played} tappe giocate su ${total}`}
+      className="rg-season mt-6"
+      style={{ "--n": total, "--p": played } as CSSProperties}
+    >
+      <span className="rg-season-fill" />
+      {Array.from({ length: total - 1 }, (_, i) => i + 1)
+        .filter((i) => i !== counted)
+        .map((i) => (
+          <span
+            key={i}
+            className={`rg-season-dot ${i < played ? "rg-season-dot-done" : ""}`}
+            style={{ "--i": i } as CSSProperties}
+          />
+        ))}
+      {counted < total && <span className="rg-season-cut" style={{ "--k": counted } as CSSProperties} />}
+      <span className="rg-season-knob" />
+    </div>
+  );
+}
+
 const ROWS = "grid-cols-[2.4rem_1fr_2.6rem_2.8rem] gap-2 sm:grid-cols-[3rem_1fr_4.5rem_4.5rem] sm:gap-3";
 
 export default async function Home() {
@@ -24,6 +53,7 @@ export default async function Home() {
   const counted = season?.counted_events ?? COUNTED_EVENTS;
   const avg = played.length ? Math.round(played.reduce((s, t) => s + t.players, 0) / played.length) : 0;
   const [first] = leaderboard;
+  const [next] = upcoming;
   // Second to eighth share one list: only the leader stands out.
   const chasers = leaderboard.slice(1, 8);
 
@@ -41,12 +71,38 @@ export default async function Home() {
           Tornei di Magic: The Gathering in formato Pauper, ogni giovedì sera alla Casa dei Giochi. Solo carte
           comuni, giocatori un po&apos; meno.
         </p>
-        <dl className="rg-hr mt-8 grid grid-cols-2 gap-x-6 gap-y-6 pt-6 sm:grid-cols-4 lg:mt-12 lg:pt-8">
-          <Stat label="giocatori in classifica" value={leaderboard.length} />
-          <Stat label="tappe giocate" value={played.length} sub={`su ${totalEvents}`} />
-          <Stat label="in media al tavolo" value={avg} sub="giocatori" />
-          <Stat label="tappe che contano" value={counted} sub="le migliori" />
-        </dl>
+        {/* Where the season stands comes first, the rest is a footnote to it. */}
+        <div className="rg-hr mt-8 grid gap-8 pt-6 lg:mt-12 lg:grid-cols-[minmax(0,7fr)_minmax(0,4fr)] lg:items-end lg:gap-16 lg:pt-8">
+          <div>
+            <p className="rg-muted text-[14px] font-semibold">tappe giocate</p>
+            <p className="mt-1 flex items-baseline gap-2">
+              <span className="rg-display rg-tight tnum text-[72px] leading-[0.85] lg:text-[112px]">{played.length}</span>
+              <span className="rg-display rg-tight rg-muted tnum text-[32px] leading-none lg:text-[48px]">/{totalEvents}</span>
+            </p>
+            {totalEvents > 0 && <SeasonTrack played={played.length} total={totalEvents} counted={counted} />}
+            <p className="rg-muted mt-5 text-[14px] leading-snug">
+              {next ? (
+                <>
+                  prossima:{" "}
+                  <Link href={`/tappe/${next.id}`} className="rg-textlink font-semibold">
+                    {sameRomeDay(next.played_at) ? "stasera" : `${weekday(next.played_at)} ${dateTile(next.played_at).day} ${dateTile(next.played_at).mon}`}
+                  </Link>
+                </>
+              ) : (
+                "calendario finito, si va alla top 8"
+              )}
+            </p>
+          </div>
+          <div>
+            <dl className="grid grid-cols-2 gap-6">
+              <Stat label="in classifica" value={leaderboard.length} sub="giocatori" />
+              <Stat label="in media al tavolo" value={avg} sub="giocatori" />
+            </dl>
+            <p className="rg-muted mt-4 text-[14px] leading-snug">
+              Per la classifica contano le migliori {counted} tappe di ognuno.
+            </p>
+          </div>
+        </div>
       </section>
 
       {/* ---------------- podium ---------------- */}
