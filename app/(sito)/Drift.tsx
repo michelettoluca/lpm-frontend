@@ -96,6 +96,7 @@ export function Drift({
   rows,
   seed,
   feature = false,
+  tall = 1,
 }: {
   icon: ComponentType<{ className?: string }>;
   cols: number;
@@ -103,10 +104,17 @@ export function Drift({
   seed: number;
   /** One big one too, right of the middle, drifting slowest, over the scatter. */
   feature?: boolean;
+  /**
+   * How much taller than wide the icon is. Sizes are widths, so a tall icon
+   * would fill much more of the panel than a wide one: they shrink to cover
+   * about the same.
+   */
+  tall?: number;
 }) {
-  const items = scatter(cols, rows, seed);
+  const fit = 1 / Math.sqrt(Math.max(1, tall));
+  const items = scatter(cols, rows, seed).map((it) => ({ ...it, size: it.size * fit }));
   if (feature) {
-    items.push({ key: "feature", x: 0.64, y: 0.56, size: 300, rotate: -6, opacity: 0.85, dx: 4, dy: -3, dr: 1.5, duration: 44, delay: -12 });
+    items.push({ key: "feature", x: 0.64, y: 0.56, size: 300 * fit, rotate: -6, opacity: 0.85, dx: 4, dy: -3, dr: 1.5, duration: 44, delay: -12 });
   }
   return (
     <div aria-hidden="true" className="rg-drift rg-watermark">

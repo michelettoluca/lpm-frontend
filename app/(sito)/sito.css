@@ -1529,3 +1529,24 @@ body:has(.lpm)::before {
   text-transform: uppercase;
   color: #141a24;
 }
+
+/* The easter eggs' gummy bears (Easter.tsx): a layer in the card (or the
+   row) they fall into and pile up in, behind its text, clipped by it. */
+.lpm .rg-bears-host {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+}
+.lpm .rg-bears {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.lpm .rg-bear {
+  position: absolute;
+  overflow: visible;
+  opacity: 0.94;
+  filter: drop-shadow(0 1.5px 1.5px rgb(0 0 0 / 0.28));
+  will-change: transform;
+}

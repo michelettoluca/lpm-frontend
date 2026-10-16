@@ -616,6 +616,196 @@ function Comic({ soft, children }: { soft: boolean; children: ReactNode }) {
   return <span ref={el}>{children}</span>;
 }
 
+/** Gummy bear colours, as the bag pours them: yellow, green, orange, red and the milky white one. */
+const BEAR_COLOURS = ["#f6d21a", "#5bcf1f", "#ff981c", "#e5141f", "#efe8d2"];
+
+let bears = 0;
+
+/**
+ * A gummy bear in a 40 by 56 box, drawn as a soft jelly: a wide head with
+ * two ears, a full body with its arms tucked in, stubby legs; lighter where
+ * the jelly is thick, deeper at the rim, two glossy lights on top and a
+ * little shadow under it. A plain gummy bear, nobody's own design.
+ */
+function bear(colour: string, tall: number): SVGSVGElement {
+  const id = `rg-bear-${bears++}`;
+  const svg = document.createElementNS(SVG, "svg");
+  svg.setAttribute("viewBox", "0 0 40 56");
+  svg.setAttribute("width", String((tall * 40) / 56));
+  svg.setAttribute("height", String(tall));
+  svg.setAttribute("class", "rg-bear");
+  // Lighter or deeper shades of the colour, worked out here: not every browser takes color-mix in an SVG.
+  const mix = (towards: string, pct: number) => {
+    const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    const [a, b] = [rgb(colour), rgb(towards)];
+    return `rgb(${a.map((v, i) => Math.round(v + ((b[i] - v) * pct) / 100)).join(" ")})`;
+  };
+  svg.innerHTML = `
+    <defs>
+      <radialGradient id="${id}-jelly" gradientUnits="userSpaceOnUse" cx="17" cy="24" r="30">
+        <stop offset="0" stop-color="${mix("#ffffff", 28)}"/>
+        <stop offset="0.55" stop-color="${colour}"/>
+        <stop offset="1" stop-color="${mix("#000000", 28)}"/>
+      </radialGradient>
+      <radialGradient id="${id}-light">
+        <stop offset="0" stop-color="#fff" stop-opacity="0.85"/>
+        <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <g fill="url(#${id}-jelly)">
+      <ellipse cx="10.5" cy="5.5" rx="4.6" ry="4.4"/>
+      <ellipse cx="29.5" cy="5.5" rx="4.6" ry="4.4"/>
+      <ellipse cx="20" cy="13" rx="11.5" ry="10"/>
+      <rect x="7.5" y="18" width="25" height="28" rx="11"/>
+      <ellipse cx="7.5" cy="28" rx="5" ry="6.2"/>
+      <ellipse cx="32.5" cy="28" rx="5" ry="6.2"/>
+      <ellipse cx="11.5" cy="47.5" rx="7.2" ry="7.4"/>
+      <ellipse cx="28.5" cy="47.5" rx="7.2" ry="7.4"/>
+    </g>
+    <ellipse cx="14.5" cy="9.5" rx="4" ry="2.6" fill="url(#${id}-light)"/>
+    <ellipse cx="14" cy="28" rx="3.6" ry="7" fill="url(#${id}-light)" opacity="0.7"/>
+    <ellipse cx="25.5" cy="45" rx="2.6" ry="2" fill="url(#${id}-light)" opacity="0.6"/>`;
+  return svg;
+}
+
+/**
+ * A rain of gummy bears into a box that piles them up on its floor: each
+ * falls with a little weight, mostly turning to lie on its side, squashes
+ * as it lands and settles flat on the floor or on the ones already there,
+ * so the pile grows slowly. Returns what drops one, false once the pile is
+ * as high as it should go.
+ */
+function bearRain(layer: HTMLElement, small: boolean) {
+  const step = 5;
+  let heap: number[] = [];
+  let count = 0;
+  const max = small ? 16 : 80;
+  return (still = false): boolean => {
+    const W = layer.clientWidth;
+    const H = layer.clientHeight;
+    if (heap.length !== Math.ceil(W / step)) heap = Array(Math.ceil(W / step)).fill(0);
+    if (count >= max || Math.max(...heap) > H * (small ? 0.45 : 0.12)) return false;
+    count++;
+    const tall = small ? between(12, 16) : between(24, 34);
+    const wide = (tall * 40) / 56;
+    // Mostly lying on a side, now and then on its back or face down.
+    const flat = Math.random() < 0.8;
+    const tilt = (flat ? 90 * (Math.random() < 0.5 ? -1 : 1) : 0) + between(-22, 22);
+    // What it covers once down, and how thick it lies, squashed.
+    const foot = flat ? tall : wide;
+    const thick = (flat ? wide : tall) * 0.6;
+    const x = between(-foot * 0.2, W - foot * 0.8);
+    const from = Math.max(0, Math.floor(x / step));
+    const to = Math.min(heap.length - 1, Math.floor((x + foot) / step));
+    let rest = 0;
+    for (let c = from; c <= to; c++) rest = Math.max(rest, heap[c]);
+    // Pressed into the ones under it: the pile gains a little each time.
+    for (let c = from; c <= to; c++) heap[c] = rest + thick * 0.35;
+    const cx = x + foot / 2;
+    const cy = H - rest - thick * 0.4;
+    const svg = bear(BEAR_COLOURS[Math.floor(Math.random() * BEAR_COLOURS.length)], tall);
+    svg.style.left = `${cx - wide / 2}px`;
+    svg.style.top = `${cy - tall / 2}px`;
+    layer.append(svg);
+    const down = `rotate(${tilt}deg)`;
+    if (still) {
+      svg.style.transform = down;
+      return true;
+    }
+    const fall = cy + tall + between(10, 70);
+    svg.animate(
+      [
+        { transform: `translateY(${-fall}px) rotate(${tilt + between(-140, 140)}deg)`, easing: "cubic-bezier(0.5, 0, 1, 0.6)" },
+        { transform: `translateY(0) ${down} scale(1)`, offset: 0.78, easing: "ease-out" },
+        // The squash on landing, then the jelly springs back.
+        { transform: `translateY(0) ${down} scale(1.14, 0.78)`, offset: 0.86, easing: "ease-in-out" },
+        { transform: `translateY(0) ${down} scale(0.96, 1.05)`, offset: 0.93 },
+        { transform: `translateY(0) ${down} scale(1)` },
+      ],
+      { duration: 500 + Math.sqrt(fall) * 32, fill: "forwards" },
+    );
+    return true;
+  };
+}
+
+/**
+ * Andrea Forti's gummy bears. On his page a rain of them into his first
+ * card, from when it opens and while it's on screen, piling up on its floor
+ * behind the text and staying there; `soft`, in the standings, a handful
+ * into his row while it's pointed at, gone when it isn't. Still for reduced
+ * motion: the pile is just there.
+ */
+function Bears({ soft, children }: { soft: boolean; children: ReactNode }) {
+  const el = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const name = el.current;
+    const host = soft ? name?.closest<HTMLElement>(".rg-row") : name?.closest<HTMLElement>(".rg-panel");
+    if (!name || !host) return;
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    let layer: HTMLElement | null = null;
+    let timer: number | null = null;
+    const open = () => {
+      layer = document.createElement("div");
+      layer.className = "rg-bears";
+      layer.setAttribute("aria-hidden", "true");
+      host.classList.add("rg-bears-host");
+      host.prepend(layer);
+      return bearRain(layer, soft);
+    };
+    const rain = (drop: (still?: boolean) => boolean) => {
+      if (timer !== null) return;
+      timer = window.setInterval(() => {
+        if (!document.hidden && !drop()) stopRain();
+      }, soft ? 90 : 110);
+    };
+    const stopRain = () => {
+      if (timer !== null) window.clearInterval(timer);
+      timer = null;
+    };
+
+    if (soft) {
+      let drop: ReturnType<typeof bearRain> | null = null;
+      const start = () => {
+        if (still || drop) return;
+        drop = open();
+        rain(drop);
+      };
+      const end = () => {
+        stopRain();
+        layer?.remove();
+        layer = null;
+        drop = null;
+      };
+      host.addEventListener("pointerenter", start);
+      host.addEventListener("pointerleave", end);
+      host.addEventListener("pointercancel", end);
+      return () => {
+        host.removeEventListener("pointerenter", start);
+        host.removeEventListener("pointerleave", end);
+        host.removeEventListener("pointercancel", end);
+        end();
+      };
+    }
+
+    const drop = open();
+    if (still) {
+      while (drop(true));
+      return () => layer?.remove();
+    }
+    const seen = new IntersectionObserver(([entry]) => (entry.isIntersecting ? rain(drop) : stopRain()));
+    const t = window.setTimeout(() => seen.observe(host), 400);
+    return () => {
+      window.clearTimeout(t);
+      seen.disconnect();
+      stopRain();
+      layer?.remove();
+    };
+  }, [soft]);
+
+  return <span ref={el}>{children}</span>;
+}
+
 /**
  * A player's name with their easter egg, if they have one: a charge of
  * lightning round it, a mist drifting past, peaches stuck on like stickers, or a
@@ -631,6 +821,7 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   if (effect === "copione") return soft ? <CopioneRow>{children}</CopioneRow> : <Copione>{children}</Copione>;
   if (effect === "fulmini") return <Electric soft={soft}>{children}</Electric>;
   if (effect === "fumetto") return <Comic soft={soft}>{children}</Comic>;
+  if (effect === "orsetti") return <Bears soft={soft}>{children}</Bears>;
   return (
     <Burst effect={effect} soft={soft}>
       {children}
