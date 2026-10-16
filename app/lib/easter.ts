@@ -3,10 +3,11 @@
  * point at it. For now set here, by player id; later from the back office,
  * for the super admins only.
  */
-export type Effect = "fulmini" | "nebbia";
+export type Effect = "fulmini" | "nebbia" | "pesca";
 
 const EFFECTS: Record<number, Effect> = {
   21: "fulmini", // Diego Lacedonia
+  28: "pesca", // Arturo Precioso
   87: "nebbia", // Matteo Strazzera
 };
 

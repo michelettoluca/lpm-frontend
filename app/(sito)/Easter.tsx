@@ -124,14 +124,130 @@ const PLAY = {
   nebbia: { first: 4, every: 260, each: 1, greet: 12, draw: (box: DOMRect, i: number) => puff(box, i % 3 === 0) },
 } as const;
 
+const PEACH = "\u{1F351}";
+
+/**
+ * A peach stuck at the end of the name like a sticker, a little above it.
+ * On the player's own page it is always there, slapped on as the page opens,
+ * and wobbles when pointed at. Elsewhere it shows while the name is pointed
+ * at, over the screen, since a row cut short would hide it.
+ */
+function Peach({ greet, children }: { greet: boolean; children: ReactNode }) {
+  const el = useRef<HTMLSpanElement>(null);
+  const stuck = useRef<HTMLSpanElement>(null);
+  const shown = useRef<{ sticker: HTMLElement; place: () => void } | null>(null);
+
+  const still = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const wobble = () => {
+    if (still()) return;
+    stuck.current?.animate(
+      // Around its own tilt.
+      [{ rotate: "12deg" }, { rotate: "-4deg" }, { rotate: "24deg" }, { rotate: "7deg" }, { rotate: "12deg" }],
+      { duration: 600, easing: "ease-in-out" },
+    );
+  };
+  const show = () => {
+    const site = document.querySelector<HTMLElement>(".lpm");
+    if (!site || !el.current || shown.current) return;
+    const sticker = document.createElement("span");
+    sticker.className = "rg-sticker rg-sticker-float";
+    sticker.setAttribute("aria-hidden", "true");
+    sticker.textContent = PEACH;
+    // At the end of the name's last line, its foot on the letters' tops.
+    const place = () => {
+      const lines = el.current?.getClientRects();
+      const line = lines?.[lines.length - 1];
+      if (!line) return;
+      const size = Math.max(18, line.height * 0.62);
+      sticker.style.fontSize = `${size}px`;
+      sticker.style.left = `${line.right - size * 0.1}px`;
+      sticker.style.top = `${line.top - size * 0.55}px`;
+    };
+    place();
+    site.append(sticker);
+    // Capture, so a table scrolled sideways moves it too.
+    window.addEventListener("scroll", place, { passive: true, capture: true });
+    shown.current = { sticker, place };
+    if (!still()) {
+      sticker.animate(
+        [
+          { transform: "rotate(-30deg) scale(0)" },
+          { transform: "rotate(20deg) scale(1.2)", offset: 0.6 },
+          { transform: "rotate(12deg) scale(1)" },
+        ],
+        { duration: 420, easing: "cubic-bezier(0.3, 1.4, 0.5, 1)", fill: "both" },
+      );
+    }
+  };
+  const hide = () => {
+    const s = shown.current;
+    if (!s) return;
+    shown.current = null;
+    window.removeEventListener("scroll", s.place, { capture: true });
+    if (still()) return s.sticker.remove();
+    s.sticker
+      .animate([{ transform: "rotate(12deg) scale(1)", opacity: 1 }, { transform: "rotate(30deg) scale(0.4)", opacity: 0 }], {
+        duration: 220,
+        easing: "ease-in",
+        fill: "both",
+      })
+      .finished.finally(() => s.sticker.remove());
+  };
+  // Gone with the name, should it leave while shown.
+  useEffect(
+    () => () => {
+      const s = shown.current;
+      if (!s) return;
+      window.removeEventListener("scroll", s.place, { capture: true });
+      s.sticker.remove();
+    },
+    [],
+  );
+
+  if (greet) {
+    return (
+      <span ref={el} onPointerEnter={wobble}>
+        {children}
+        <span ref={stuck} aria-hidden="true" className="rg-sticker rg-sticker-stuck">
+          {PEACH}
+        </span>
+      </span>
+    );
+  }
+  return (
+    <span ref={el} onPointerEnter={show} onPointerLeave={hide} onPointerCancel={hide}>
+      {children}
+    </span>
+  );
+}
+
 /**
  * A player's name with their easter egg, if they have one: point at it (or
- * hold a finger on it) and it plays, bolts thrown out like sparks or a mist
- * drifting past. `greet` plays a burst once when the page opens, for the
- * player's own page. Anyone else's name comes back as it is.
+ * hold a finger on it) and it plays, bolts thrown out like sparks, a mist
+ * drifting past, a peach stuck on like a sticker. `greet` plays it once when
+ * the page opens, for the player's own page. Anyone else's name comes back
+ * as it is.
  */
 export function Easter({ playerId, greet = false, children }: { playerId: number | string; greet?: boolean; children: ReactNode }) {
   const effect = effectOf(playerId);
+  if (effect === "pesca") return <Peach greet={greet}>{children}</Peach>;
+  return (
+    <Burst effect={effect} greet={greet}>
+      {children}
+    </Burst>
+  );
+}
+
+/** The effects that throw things out of the name: bolts or mist. */
+function Burst({
+  effect,
+  greet,
+  children,
+}: {
+  effect: keyof typeof PLAY | undefined;
+  greet: boolean;
+  children: ReactNode;
+}) {
   const el = useRef<HTMLSpanElement>(null);
   const timer = useRef<number | null>(null);
   const count = useRef(0);
