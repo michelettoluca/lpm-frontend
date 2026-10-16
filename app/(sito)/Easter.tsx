@@ -851,33 +851,53 @@ function Peek({ soft, children }: { soft: boolean; children: ReactNode }) {
 }
 
 /**
- * The mushrooms Demetrio Morselli's card grows, drawn upright with the foot
- * of the stem at 0 0, 100 tall: a red one with white spots and a ring round
- * its stem, a fat brown porcino, a slim tan one with a pointed cap. The more
- * of the first, the likelier.
+ * The mushrooms Demetrio Morselli's card grows, after the Fungal Colossus:
+ * alien, glowing in the dark, more game than real, and not to be eaten.
+ * Drawn upright with the foot of the stem at 0 0, 100 tall, on a dark
+ * teal stem: a dome whose rim hooks down into fangs, a tall spire whose tip
+ * curls over like a claw, a scalloped bulb; two mean eyes glowing under the
+ * caps of the first and the last.
+ * The cap, its spots and its gills take their colours from `--rg-cap`,
+ * `--rg-spot` and `--rg-gill`; what glows has no ink round it.
  */
 const MUSHROOMS = [
-  `<path fill="#f4ecdc" d="M-11 0C-13-18-9-38-8-52H8C9-38 13-18 11 0Z"/>
-  <path fill="#e6dccb" d="M-11-36Q0-29 11-36L10-40Q0-34-10-40Z"/>
-  <path fill="#e41428" d="M-44-48C-46-84 46-84 44-48C30-42-30-42-44-48Z"/>
-  <g fill="#fff" class="rg-shroom-dots"><circle cx="-22" cy="-62" r="6"/><circle cx="3" cy="-67" r="6"/><circle cx="25" cy="-59" r="5"/><circle cx="-5" cy="-53" r="3.5"/><circle cx="-36" cy="-52" r="3"/><circle cx="13" cy="-51" r="3"/></g>`,
-  `<path fill="#efe2c6" d="M-15 0C-24-14-22-34-12-46H12C22-34 24-14 15 0Z"/>
-  <path fill="#8b5530" d="M-38-40C-41-80 41-80 38-40C26-34-26-34-38-40Z"/>
-  <path fill="#a86b3e" class="rg-shroom-dots" d="M-26-55C-22-66-8-70 4-69C-8-64-18-61-26-55Z"/>`,
-  `<path fill="#f3ead8" d="M-5 0C-6-24-4-48-3-62H3C4-48 6-24 5 0Z"/>
-  <path fill="#c8925a" d="M-22-58C-18-78-6-92 0-93C6-92 18-78 22-58C10-55-10-55-22-58Z"/>`,
+  `<path fill="#0d3d48" d="M-10 0C-14-12-12-30-8-44H8C12-30 14-12 10 0Z"/>
+  <path class="rg-shroom-glow" fill="#eaff5a" d="M-8-37L-2-34L-3-30L-8-32Z M8-37L2-34L3-30L8-32Z"/>
+  <path class="rg-shroom-cap" d="M-44-36C-50-44-50-56-42-66C-30-86 30-86 42-66C50-56 50-44 44-36C40-42 36-44 30-44C20-38 12-46 0-42C-12-46-20-38-30-44C-36-44-40-42-44-36Z"/>
+  <path class="rg-shroom-glow rg-shroom-gill" d="M-30-44C-20-38-12-46 0-42C12-46 20-38 30-44C20-49-20-49-30-44Z"/>
+  <path class="rg-shroom-glow" fill="#fff" fill-opacity="0.3" d="M-34-60C-30-74-14-80 0-80C-12-75-26-68-34-60Z"/>
+  <g class="rg-shroom-glow rg-shroom-spot"><circle cx="-22" cy="-63" r="5"/><circle cx="6" cy="-71" r="5"/><circle cx="25" cy="-61" r="4.5"/><circle cx="-7" cy="-53" r="3"/><circle cx="14" cy="-51" r="2.5"/><circle cx="-38" cy="-50" r="2.5"/></g>`,
+  `<path fill="#0d3d48" d="M-6 0C-9-20-4-40-5-56H5C6-40 9-20 6 0Z"/>
+  <path class="rg-shroom-cap" d="M-24-54C-20-70-8-84 2-92C10-98 18-96 20-89C14-92 10-90 8-86C14-76 20-66 24-54C12-50-12-50-24-54Z"/>
+  <path class="rg-shroom-glow rg-shroom-gill" d="M-20-54C-8-50 8-50 20-54C8-56-8-56-20-54Z"/>
+  <path class="rg-shroom-glow" fill="#fff" fill-opacity="0.3" d="M-15-60C-12-70-6-78 0-84C-4-74-9-67-15-60Z"/>
+  <g class="rg-shroom-glow rg-shroom-spot"><circle cx="-8" cy="-64" r="3.5"/><circle cx="9" cy="-69" r="3"/><circle cx="1" cy="-79" r="2.5"/><circle cx="15" cy="-58" r="2"/></g>`,
+  `<path fill="#0d3d48" d="M-12 0C-14-12-13-26-10-38H10C13-26 14-12 12 0Z"/>
+  <path class="rg-shroom-glow" fill="#eaff5a" d="M-8-29L-2-26L-3-22L-8-24Z M8-29L2-26L3-22L8-24Z"/>
+  <path class="rg-shroom-cap" d="M-32-36C-38-82 38-82 32-36C24-30 18-38 10-32C4-38-4-38-10-32C-18-38-24-30-32-36Z"/>
+  <path class="rg-shroom-glow rg-shroom-gill" d="M-28-36C-22-32-16-38-10-34C-4-38 4-38 10-34C16-38 22-32 28-36C16-41-16-41-28-36Z"/>
+  <path class="rg-shroom-glow" fill="#fff" fill-opacity="0.3" d="M-22-50C-20-62-8-68 2-67C-8-63-16-58-22-50Z"/>
+  <g class="rg-shroom-glow rg-shroom-spot"><circle cx="-12" cy="-55" r="6.5"/><circle cx="14" cy="-59" r="5.5"/><circle cx="1" cy="-43" r="3"/><circle cx="-25" cy="-44" r="2.5"/><circle cx="25" cy="-45" r="2.5"/></g>`,
 ];
 const MUSHROOM_ODDS = [0.45, 0.75, 1];
 
-/** A tuft of mushrooms on the card's edge: where round it, and when it goes. */
-type Tuft = { t: number; el: HTMLElement; until: number };
+/** Their colours, a cap with spots and gills that glow against it: fluo green, teal, electric blue. */
+const SHROOM_COLOURS = [
+  { cap: "#5cff2e", spot: "#d6fffb", gill: "#7ffff0" },
+  { cap: "#14e3c0", spot: "#e6ff6b", gill: "#c3ff6a" },
+  { cap: "#1fa8ff", spot: "#d2ff5a", gill: "#6dfff0" },
+];
+
+/** A tuft of mushrooms on the card's edge: where round it, when it goes, and where its caps are, for the spores. */
+type Tuft = { t: number; el: HTMLElement; until: number; x: number; y: number; dx: number; dy: number; tall: number };
 
 /**
  * A tuft of one to three mushrooms of a kind, sprouting out of the box's
  * edge at `t` (round it from the top left, clockwise) and growing in, stem
  * first, the cap landing with a squash; after `delay`, one after another.
+ * Each glows in its colour and sways on its foot, like a game's enemies.
  */
-function sprout(layer: HTMLElement, t: number, delay: number, small: boolean): HTMLElement {
+function sprout(layer: HTMLElement, t: number, delay: number, small: boolean): Omit<Tuft, "t" | "until"> {
   const p = round(t, layer.clientWidth, layer.clientHeight, 0);
   // Upright on the bottom edge, upside down on the top, on its side on the others: always growing in.
   const turn = p.ny < 0 ? 180 : p.nx > 0 ? -90 : p.ny > 0 ? 0 : 90;
@@ -887,6 +907,7 @@ function sprout(layer: HTMLElement, t: number, delay: number, small: boolean): H
   tuft.style.transform = `translate(${p.x + p.nx * 2}px, ${p.y + p.ny * 2}px) rotate(${turn}deg)`;
   const pick = Math.random();
   const kind = MUSHROOMS[MUSHROOM_ODDS.findIndex((o) => pick < o)];
+  const colour = SHROOM_COLOURS[Math.floor(Math.random() * SHROOM_COLOURS.length)];
   // Mostly small and middling, now and then a big one; smaller in a narrow card, as on a phone.
   const fit = Math.min(1, Math.max(0.6, layer.clientWidth / 900));
   const tall = small ? between(10, 18) : (24 + Math.random() ** 2 * 52) * fit;
@@ -901,9 +922,14 @@ function sprout(layer: HTMLElement, t: number, delay: number, small: boolean): H
     el.style.top = `${-m.tall}px`;
     el.style.width = el.style.height = `${m.tall}px`;
     el.style.rotate = `${between(-14, 14) + m.along * 0.4}deg`;
+    el.style.setProperty("--rg-cap", colour.cap);
+    el.style.setProperty("--rg-spot", colour.spot);
+    el.style.setProperty("--rg-gill", colour.gill);
+    // Each sways and pulses in its own time.
+    el.style.setProperty("--rg-sway", `${between(-1.6, 0).toFixed(2)}s`);
     // Some face the other way.
     const flip = Math.random() < 0.5 ? ' transform="scale(-1 1)"' : "";
-    el.innerHTML = `<svg viewBox="-50 -100 100 102"><g${flip}>${kind}</g></svg>`;
+    el.innerHTML = `<span class="rg-shroom-aura"></span><svg viewBox="-50 -100 100 102"><g${flip}>${kind}</g></svg>`;
     tuft.append(el);
     el.animate(
       [
@@ -916,7 +942,36 @@ function sprout(layer: HTMLElement, t: number, delay: number, small: boolean): H
     );
   });
   layer.append(tuft);
-  return tuft;
+  return { el: tuft, x: p.x, y: p.y, dx: -p.nx, dy: -p.ny, tall };
+}
+
+/**
+ * A spore off a tuft's caps, a glowing speck like the Colossus's: it floats
+ * on into the card, wavering, and fades.
+ */
+function spore(layer: HTMLElement, f: Tuft, small: boolean) {
+  const el = document.createElement("span");
+  el.className = `rg-spore ${Math.random() < 0.3 ? "rg-spore-blue" : ""}`;
+  const size = small ? between(1.5, 3) : between(2.5, 5);
+  el.style.width = el.style.height = `${size}px`;
+  // Off the cap: as far in as the mushroom is tall, a little to one side or the other.
+  const sideways = between(-0.4, 0.4) * f.tall;
+  const x = f.x + f.dx * f.tall * 0.75 - f.dy * sideways;
+  const y = f.y + f.dy * f.tall * 0.75 + f.dx * sideways;
+  el.style.left = `${x - size / 2}px`;
+  el.style.top = `${y - size / 2}px`;
+  layer.append(el);
+  const far = (small ? between(10, 24) : between(30, 80)) * (0.6 + f.tall / 80);
+  const waver = between(-1, 1) * (small ? 8 : 22);
+  el.animate(
+    [
+      { transform: "translate(0, 0) scale(0.4)", opacity: 0 },
+      { opacity: 1, offset: 0.2 },
+      { transform: `translate(${f.dx * far * 0.5 - f.dy * waver}px, ${f.dy * far * 0.5 + f.dx * waver}px) scale(1)`, opacity: 0.9, offset: 0.55 },
+      { transform: `translate(${f.dx * far + f.dy * waver * 0.5}px, ${f.dy * far - f.dx * waver * 0.5}px) scale(0.6)`, opacity: 0 },
+    ],
+    { duration: between(1400, 2600), easing: "ease-out" },
+  ).finished.finally(() => el.remove());
 }
 
 /** A tuft going back into the edge it came out of, then gone. */
@@ -935,7 +990,8 @@ function wither(tuft: HTMLElement) {
 /**
  * Demetrio Morselli's mushrooms, sprouting all round his first card: as
  * it opens, one tuft after another clockwise from the top left, then tufts
- * going back in here and coming up there, for as long as it's on screen.
+ * going back in here and coming up there, glowing and letting off spores,
+ * for as long as it's on screen.
  * Behind its text, clipped by it. `soft`, in the standings, small ones
  * round his row while it's pointed at. Nothing for reduced motion.
  */
@@ -971,7 +1027,7 @@ function Shrooms({ soft, children }: { soft: boolean; children: ReactNode }) {
     const life = () => (soft ? between(1800, 4000) : between(2500, 6500));
 
     const grow = (t: number, delay: number) =>
-      tufts.push({ t, el: sprout(layer, t, delay, soft), until: performance.now() + delay + life() });
+      tufts.push({ t, ...sprout(layer, t, delay, soft), until: performance.now() + delay + life() });
     // As it opens: once round, from the top left, clockwise.
     const ring = () => {
       const n = wanted();
@@ -986,6 +1042,8 @@ function Shrooms({ soft, children }: { soft: boolean; children: ReactNode }) {
       if (document.hidden) return;
       const now = performance.now();
       tufts = tufts.filter((f) => f.until > now || (wither(f.el), false));
+      // A spore or two off the caps, now and then.
+      for (const f of tufts) if (Math.random() < (soft ? 0.05 : 0.07)) spore(layer, f, soft);
       if (tufts.length >= wanted() || Math.random() < 0.4) return;
       for (let k = 0; k < 10; k++) {
         const t = Math.random();
