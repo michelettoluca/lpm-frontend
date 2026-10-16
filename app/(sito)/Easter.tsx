@@ -330,13 +330,10 @@ const PEACHES: Spot[] = [
   { x: 0.22, y: 1.06, size: 0.3, tilt: 16, front: false },
 ];
 
-/** Lisa Coronini's lobster: just one, big, at the end of her name, over it. */
-const LOBSTERS: Spot[] = [{ x: 1.06, y: 0.62, size: 0.8, tilt: 16, front: true }];
-
 /**
  * Stickers stuck around the name, Arturo Precioso's peaches of different
- * sizes, some behind the letters and some over them, or Lisa Coronini's one
- * lobster, popping on one after another as the page opens.
+ * sizes, some behind the letters and some over them, popping on one after
+ * another as the page opens.
  */
 function Stickers({ emoji, spots, children }: { emoji: string; spots: Spot[]; children: ReactNode }) {
   return (
@@ -1501,6 +1498,30 @@ const SPREAD = 28;
 const turnOf = (i: number) => -SPREAD + (2 * SPREAD * i) / (HAND.length - 1);
 
 /**
+ * Lisa Coronini's lobster, of comic size: one huge one on the right of her
+ * first card, turned, cut off by its right edge; it comes in from the
+ * right as the page opens, a jerky step at a time, turning right and left,
+ * strikes a pose, then sways a little (sito.css). Behind the text, so the
+ * numbers it reaches on a phone stay readable.
+ */
+function Lobster({ children }: { children: ReactNode }) {
+  const el = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const host = el.current?.closest<HTMLElement>(".rg-panel");
+    if (!host) return;
+    const lobster = document.createElement("span");
+    lobster.className = "rg-lobster";
+    lobster.setAttribute("aria-hidden", "true");
+    lobster.textContent = LOBSTER;
+    host.append(lobster);
+    return () => lobster.remove();
+  }, []);
+
+  return <span ref={el}>{children}</span>;
+}
+
+/**
  * Tommaso Cavallini's hand of cards, fanned out in the bottom right corner
  * of his first card as if held just under it: dealt in one after another
  * from under its edge as the page opens, then rocking a little in the hand
@@ -1637,7 +1658,7 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   // The stickers in the standings are by the name, put there by `EasterMark`.
   if (!effect || effect === "napoletano" || ((effect === "pesca" || effect === "aragosta") && soft)) return <>{children}</>;
   if (effect === "pesca") return <Stickers emoji={PEACH} spots={PEACHES}>{children}</Stickers>;
-  if (effect === "aragosta") return <Stickers emoji={LOBSTER} spots={LOBSTERS}>{children}</Stickers>;
+  if (effect === "aragosta") return <Lobster>{children}</Lobster>;
   if (effect === "copione") return soft ? <CopioneRow>{children}</CopioneRow> : <Copione>{children}</Copione>;
   if (effect === "fulmini") return <Electric soft={soft}>{children}</Electric>;
   if (effect === "fumetto") return <Comic soft={soft}>{children}</Comic>;

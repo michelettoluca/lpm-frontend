@@ -19,7 +19,7 @@ export const EFFECT_LABELS: Record<Effect, string> = {
   infezione: "Radici radioattive che partono dal nome e si mangiano la card",
   ventaglio: "Una mano di Great Furnace e Goblin Tomb Raider a ventaglio nella card",
   cintura: "La cintura da campione del Paupergeddon Pisa 2024, che piomba sulla card",
-  aragosta: "Un'aragosta attaccata al nome come sticker",
+  aragosta: "Un'aragosta gigante sul lato destro della card",
 };
 
 export const EASTER_EGGS: { playerId: number; name: string; effect: Effect }[] = [

@@ -1897,3 +1897,93 @@ body:has(.lpm)::before {
     animation: rg-belt-glint 1.6s ease-in-out 0.2s infinite;
   }
 }
+
+/* The easter eggs' lobster (Easter.tsx): Lisa Coronini's, of comic size, on
+   the right of her first card, turned, cut off by the card's right edge.
+   Behind the text. It comes in from the right a step at a time, jerkily,
+   turning right and left at each, strikes a pose, then sways a little. */
+.lpm .rg-lobster {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  right: -0.14em;
+  font-size: clamp(190px, 30vw + 80px, 440px);
+  line-height: 1;
+  pointer-events: none;
+  user-select: none;
+  translate: 0 -50%;
+  rotate: -16deg;
+  filter: drop-shadow(0 0.03em 0.05em rgb(0 0 0 / 0.35));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lpm .rg-lobster {
+    animation:
+      rg-lobster-in 2.8s linear 0.3s both,
+      rg-lobster-sway 3.2s ease-in-out 3.1s infinite alternate;
+  }
+}
+/* Each step a quick lurch, turned one way then the other, then a moment
+   still; at the end, a little swell as it strikes its pose. */
+@keyframes rg-lobster-in {
+  0% {
+    translate: 100% -50%;
+    rotate: -16deg;
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  9%,
+  13% {
+    translate: 84% -50%;
+    rotate: 0deg;
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  22%,
+  26% {
+    translate: 68% -50%;
+    rotate: -32deg;
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  35%,
+  39% {
+    translate: 52% -50%;
+    rotate: 0deg;
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  48%,
+  52% {
+    translate: 37% -50%;
+    rotate: -32deg;
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  61%,
+  65% {
+    translate: 23% -50%;
+    rotate: 0deg;
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  74%,
+  78% {
+    translate: 10% -50%;
+    rotate: -30deg;
+    scale: 1;
+    animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+  88% {
+    translate: 0 -50%;
+    rotate: -16deg;
+    scale: 1.08;
+    animation-timing-function: ease-in-out;
+  }
+  100% {
+    translate: 0 -50%;
+    rotate: -16deg;
+    scale: 1;
+  }
+}
+@keyframes rg-lobster-sway {
+  from {
+    rotate: -16deg;
+  }
+  to {
+    rotate: -10deg;
+  }
+}
