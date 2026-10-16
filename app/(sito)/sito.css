@@ -1486,10 +1486,11 @@ body:has(.lpm)::before {
   mask-image: linear-gradient(to bottom, transparent, #000 70%);
 }
 
-/* The easter eggs' comic bursts (Easter.tsx): a spiky white burst with a fat
-   black edge and a yellow one under it, off to the side, the words in a
-   goofy hand, jiggling while they're up. The same on light and dark, like a
-   page of comics. */
+/* The easter eggs' comic lines (Easter.tsx): Matteo Conte's lines by his
+   name, in one of four looks, the same on light and dark like a page of
+   comics: a spiky white burst with a fat edge over a yellow one; a speech
+   bubble drawn by hand; meme lettering, white with a black edge; a red
+   marker scrawl with a loop round it. */
 .lpm .rg-comic {
   position: fixed;
   z-index: 110;
@@ -1500,12 +1501,24 @@ body:has(.lpm)::before {
   user-select: none;
   will-change: transform, opacity;
 }
-.lpm .rg-comic-burst {
+.lpm .rg-comic-shape {
   position: absolute;
-  inset: -6px;
-  width: calc(100% + 12px);
-  height: calc(100% + 12px);
+  top: -8px;
+  left: -8px;
+  width: calc(100% + 16px);
   overflow: visible;
+}
+.lpm .rg-comic-words {
+  position: relative;
+  font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Marker Felt", cursive;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  color: #141a24;
+}
+.lpm .rg-comic-scoppio .rg-comic-words,
+.lpm .rg-comic-nuvola .rg-comic-words {
+  text-transform: uppercase;
 }
 .lpm .rg-comic-shadow {
   fill: #ffd23f;
@@ -1520,23 +1533,40 @@ body:has(.lpm)::before {
   stroke-width: 3px;
   stroke-linejoin: round;
 }
-.lpm .rg-comic-words {
-  position: relative;
-  font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Marker Felt", cursive;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
-  color: #141a24;
+.lpm .rg-comic-nuvola .rg-comic-fill {
+  stroke-width: 2.5px;
+  filter: url(#rg-w2);
+}
+.lpm .rg-comic-meme .rg-comic-words {
+  font-family: Impact, "Anton", "Haettenschweiler", "Arial Narrow Bold", sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.02em;
   text-transform: uppercase;
+  color: #fff;
+  -webkit-text-stroke: 0.14em #000;
+  paint-order: stroke fill;
+  text-shadow: 0 0.08em 0 #000;
+}
+.lpm .rg-comic-pennarello .rg-comic-words {
+  font-family: "Marker Felt", "Chalkboard SE", "Comic Sans MS", cursive;
+  font-weight: 700;
+  color: var(--rg-o);
+}
+.lpm .rg-comic-loop {
+  fill: none;
+  stroke: var(--rg-o);
+  stroke-width: 2.5px;
+  stroke-linecap: round;
+  filter: url(#rg-w1);
 }
 @media (prefers-reduced-motion: no-preference) {
-  .lpm .rg-comic-words {
-    animation: rg-comic-jiggle 0.22s steps(1) infinite;
+  .lpm .rg-comic-scoppio .rg-comic-words,
+  .lpm .rg-comic-meme .rg-comic-words {
+    animation: rg-comic-jiggle 0.3s steps(1) infinite;
   }
 }
 @keyframes rg-comic-jiggle {
   50% {
-    transform: rotate(-2deg) skewX(-4deg) translateY(-1px);
+    transform: rotate(-1.5deg) translateY(-1px);
   }
 }

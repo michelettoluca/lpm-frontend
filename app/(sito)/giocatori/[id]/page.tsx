@@ -9,6 +9,7 @@ import { ColHeads, Head, MarkerCircle, PixelStar, Section, plural } from "../../
 import { FaceOff } from "./FaceOff";
 import { DeckTag } from "../../DeckTag";
 import { Easter } from "../../Easter";
+import { COMIC_LOOKS } from "@/app/lib/easter";
 import { Drift } from "../../Drift";
 import type { TeamLogo } from "@/app/lib/api";
 
@@ -42,7 +43,9 @@ function logoOf(logo: TeamLogo) {
 
 export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
   const { id } = await props.params;
-  const { stagione } = await props.searchParams;
+  const { stagione, nuvola } = await props.searchParams;
+  // Matteo Conte's bursts, their looks compared for now.
+  const look = COMIC_LOOKS.find((l) => l === nuvola) ?? "scoppio";
   const [p, d] = await Promise.all([getPlayerData(id), getPlayerDecksData(id, stagione)]);
   if (!p) notFound();
   const deckSeason = d.choice.seasons.find((x) => x.id === d.choice.selected);
@@ -60,7 +63,7 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
         </Link>
         {p.season && <p className="rg-eyebrow mt-4">stagione {p.season.name.toLowerCase()}</p>}
         <h1 className="rg-display rg-tight mt-2 text-[48px] leading-[0.95] break-words sm:text-[72px] lg:text-[104px]">
-          <Easter playerId={id}>
+          <Easter playerId={id} look={look}>
             {p.first}
             {p.last && (
               <>
