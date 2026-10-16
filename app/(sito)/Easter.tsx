@@ -481,7 +481,7 @@ function CopioneRow({ children }: { children: ReactNode }) {
 }
 
 /** Matteo Conte's lines, one at a time. */
-const FUMETTI = ["Skibidi!", "Sleep del panzone!", "Faccio pippa!"];
+const FUMETTI = ["Skibidi!", "Sleep del panzone!", "Faccio pippa!", "Perfora cazzeggio!", "Sarà per sempre sium!"];
 
 /** A speech bubble, w by h, round-ended, its tail at the bottom on the given side. */
 function bubblePath(w: number, h: number, tail: "left" | "right" | "middle"): string {
