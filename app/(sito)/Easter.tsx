@@ -1925,6 +1925,495 @@ function Tug({ soft, children }: { soft: boolean; children: ReactNode }) {
 }
 
 /**
+ * The beer's colours: an amber lager, golden at its top and deeper at its
+ * foot, see-through so the card's text shows under it, the
+ * head near white. The head a little dimmer in the dark theme.
+ */
+const BEER = {
+  light: {
+    top: "rgba(240, 168, 36, 0.6)",
+    mid: "rgba(222, 136, 16, 0.66)",
+    foot: "rgba(172, 92, 6, 0.74)",
+    foamTop: "#ffffff",
+    foamFoot: "#f6efd8",
+    cell: "rgba(168, 156, 128, 0.32)",
+    bubble: "rgba(255, 252, 235, 0.75)",
+  },
+  dark: {
+    top: "rgba(238, 162, 30, 0.64)",
+    mid: "rgba(216, 128, 12, 0.7)",
+    foot: "rgba(164, 86, 4, 0.78)",
+    foamTop: "#f2efe6",
+    foamFoot: "#ddd2b4",
+    cell: "rgba(120, 108, 80, 0.4)",
+    bubble: "rgba(255, 244, 210, 0.6)",
+  },
+};
+type BeerColours = (typeof BEER)["light"];
+
+const isDark = () => {
+  const picked = document.documentElement.dataset.theme;
+  return picked === "dark" || (picked !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+};
+
+/** A canvas `w` by `h` at the screen's density, its drawing in px. */
+function sheet(w: number, h: number, dpr: number): [HTMLCanvasElement, CanvasRenderingContext2D | null] {
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(w * dpr));
+  c.height = Math.max(1, Math.round(h * dpr));
+  const x = c.getContext("2d");
+  x?.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return [c, x];
+}
+
+/**
+ * The head's texture, `w` by `h`: near white, creamier at its foot, packed
+ * with little bubbles, bigger towards the top, finer as it meets the beer.
+ */
+function foamTexture(w: number, h: number, dpr: number, c: BeerColours, scale: number): HTMLCanvasElement {
+  const [tex, x] = sheet(w, h, dpr);
+  if (!x) return tex;
+  const base = x.createLinearGradient(0, 0, 0, h);
+  base.addColorStop(0, c.foamTop);
+  base.addColorStop(0.55, c.foamTop);
+  base.addColorStop(1, c.foamFoot);
+  x.fillStyle = base;
+  x.fillRect(0, 0, w, h);
+  const n = Math.round((w * h) / (9 * scale));
+  for (let i = 0; i < n; i++) {
+    const y = h * Math.random() ** 0.8;
+    const up = 1 - y / h;
+    const r = (0.5 + 2.6 * up * Math.random()) * scale;
+    const cx = Math.random() * w;
+    x.beginPath();
+    x.arc(cx, y, r, 0, 6.283);
+    x.strokeStyle = c.cell;
+    x.lineWidth = 0.6;
+    x.stroke();
+    if (r > 1.2) {
+      x.beginPath();
+      x.arc(cx - r * 0.3, y - r * 0.3, r * 0.3, 0, 6.283);
+      x.fillStyle = "rgba(255, 255, 255, 0.85)";
+      x.fill();
+    }
+  }
+  return tex;
+}
+
+/**
+ * The condensation on a cold glass, `w` by `h`: a fine mist, and drops of
+ * every size, each darker at its rim and lit at the top, as glass bends
+ * the light through it.
+ */
+function dewTexture(w: number, h: number, dpr: number, scale: number): HTMLCanvasElement {
+  const [tex, x] = sheet(w, h, dpr);
+  if (!x) return tex;
+  for (let i = 0, n = Math.round((w * h) / 70); i < n; i++) {
+    x.beginPath();
+    x.arc(Math.random() * w, Math.random() * h, between(0.3, 0.8) * scale, 0, 6.283);
+    x.fillStyle = `rgba(255, 255, 255, ${between(0.12, 0.3).toFixed(2)})`;
+    x.fill();
+  }
+  const big: { x: number; y: number; r: number }[] = [];
+  for (let i = 0, n = Math.round((w * h) / 340); i < n; i++) {
+    const k = Math.random();
+    const r = (k < 0.7 ? between(0.8, 2.4) : k < 0.95 ? between(2.4, 5) : between(5, 8.5)) * scale;
+    const cx = Math.random() * w;
+    const cy = Math.random() * h;
+    if (r > 2.4 && big.some((b) => Math.hypot(b.x - cx, b.y - cy) < b.r + r + 1)) continue;
+    if (r > 2.4) big.push({ x: cx, y: cy, r });
+    const ry = r * between(0.85, 1.08);
+    const body = x.createRadialGradient(cx - r * 0.3, cy - r * 0.35, r * 0.1, cx, cy, r);
+    body.addColorStop(0, "rgba(255, 255, 255, 0.6)");
+    body.addColorStop(0.4, "rgba(255, 250, 230, 0.16)");
+    body.addColorStop(0.8, "rgba(120, 70, 0, 0.18)");
+    body.addColorStop(1, "rgba(70, 38, 0, 0.55)");
+    x.beginPath();
+    x.ellipse(cx, cy, r, ry, 0, 0, 6.283);
+    x.fillStyle = body;
+    x.fill();
+    if (r > 1.4) {
+      x.beginPath();
+      x.arc(cx - r * 0.35, cy - ry * 0.42, r * 0.22, 0, 6.283);
+      x.fillStyle = "rgba(255, 255, 255, 0.95)";
+      x.fill();
+      // The light coming through, bright along its foot.
+      x.beginPath();
+      x.ellipse(cx, cy, r * 0.72, ry * 0.72, 0, 0.6, 2.5);
+      x.strokeStyle = "rgba(255, 255, 255, 0.4)";
+      x.lineWidth = Math.max(0.6, r * 0.14);
+      x.stroke();
+    }
+  }
+  return tex;
+}
+
+type Bubble = { x: number; y: number; r: number; v: number; sway: number; ph: number };
+type Runner = { x: number; y: number; y0: number; r: number; v: number };
+
+/**
+ * Alessandro Saponara's card filling up with beer, as in iBeer: once it's
+ * on screen a light lager rises from its foot to just under his name,
+ * over the card's text like glass, see-through so it shows under it, a thick head of foam forming on it, uneven along the top,
+ * bubbles going up through it in trails. Then the card sweats like a cold
+ * glass: a mist and drops come up over the beer, and now and then a drop
+ * runs down, leaving its trail. The surface sways a little. On a phone that
+ * tells us which way it's held, the beer keeps level as it's tilted.
+ * `soft`, in the standings, his row fills quickly while it's pointed at and
+ * empties when it's left. Drawn on a canvas over the card, only while
+ * it's on screen. Nothing for reduced motion.
+ */
+function Beer({ soft, children }: { soft: boolean; children: ReactNode }) {
+  const el = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const host = el.current?.closest<HTMLElement>(soft ? ".rg-row" : ".rg-panel");
+    if (!host || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const canvas = document.createElement("canvas");
+    canvas.className = "rg-beer";
+    canvas.setAttribute("aria-hidden", "true");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    host.classList.add("rg-beer-host");
+    host.prepend(canvas);
+
+    // Everything smaller in a row.
+    const S = soft ? 0.45 : 1;
+    const HEAD = soft ? 9 : 38;
+    // Room over the head's texture for the bubbles standing up out of its top, so they're foam all through.
+    const ROOM = 24;
+    let W = 0;
+    let H = 0;
+    let dpr = 1;
+    let dark = isDark();
+    let foam: HTMLCanvasElement | null = null;
+    let dew: HTMLCanvasElement | null = null;
+    // The head's top edge: a slow unevenness, and the bubbles it's made of,
+    // in rows, mostly small, now and then a big one, each set its own way.
+    let phases: number[] = [];
+    let crest: { x: number; r: number; sink: number; glint: boolean }[] = [];
+    let sites: number[] = [];
+    const paint = () => {
+      const c = dark ? BEER.dark : BEER.light;
+      foam = foamTexture(W, HEAD * 1.6 + ROOM * S, dpr, c, S);
+      dew = dewTexture(W, H, dpr, S);
+    };
+    const fit = () => {
+      dpr = Math.min(2, window.devicePixelRatio || 1);
+      W = host.clientWidth;
+      H = host.clientHeight;
+      canvas.width = Math.round(W * dpr);
+      canvas.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      phases = Array.from({ length: 3 }, () => between(0, 6.3));
+      crest = [];
+      for (let row = 0; row < 3; row++) {
+        for (let x = -8; x < W + 8; x += between(1.5, 4.5) * S + 0.8) {
+          const k = Math.random();
+          const r = (k < 0.6 ? between(1.2, 2.8) : k < 0.93 ? between(2.8, 5) : between(5, 8.5)) * S + 0.5;
+          crest.push({ x: x + between(-1, 1), r, sink: row * 0.4 + between(0, 0.55), glint: Math.random() < 0.75 });
+        }
+      }
+      // The deepest first, so those nearer the top sit over them.
+      crest.sort((a, b) => b.sink - a.sink);
+      sites = Array.from({ length: soft ? 6 : 12 }, () => between(0.03, 0.97) * W);
+      paint();
+    };
+    fit();
+
+    // How high the beer is to stand, in px from the foot: on his page, just under his name, head and all.
+    const full = () => {
+      if (soft) return H * 0.66;
+      const name = el.current?.getBoundingClientRect();
+      const box = host.getBoundingClientRect();
+      return name ? Math.max(0, box.bottom - name.bottom - 18 - HEAD) : H * 0.5;
+    };
+
+    let level = 0;
+    let move = { from: 0, to: 0, t0: 0, time: 1 };
+    let head = 0;
+    let amp = 0;
+    let tilt = 0;
+    let tiltTo = 0;
+    // How far the card has sweated, 0 to 1, and the drops running down it.
+    let sweat = 0;
+    const runners: Runner[] = [];
+    let nextRun = 0;
+    const bubbles: Bubble[] = [];
+    let frame = 0;
+    let last = 0;
+
+    const riseTo = (to: number, time: number) => {
+      move = { from: level, to, t0: performance.now(), time };
+    };
+    // The surface's height at `x`, `t` seconds in: level, tilted, swaying.
+    const surface = (x: number, t: number) =>
+      H - level + Math.tan(tilt) * (x - W / 2) + amp * (0.6 * Math.sin(x * 0.018 + t * 1.4) + 0.4 * Math.sin(x * 0.041 - t * 2.1));
+    // The head's thickness at `x`: uneven, more in some places than others.
+    const thick = (x: number) =>
+      head * (0.78 + 0.24 * Math.sin(x / 83 + phases[0]) + 0.12 * Math.sin(x / 31 + phases[1]) + 0.06 * Math.sin(x / 11 + phases[2]));
+    const along = (y: (x: number) => number, from: number, to: number) => {
+      const step = from < to ? 6 : -6;
+      for (let x = from; step > 0 ? x <= to : x >= to; x += step) ctx.lineTo(x, y(x));
+    };
+
+    const draw = (now: number) => {
+      const dt = Math.min(0.05, (now - (last || now)) / 1000);
+      last = now;
+      const t = now / 1000;
+      if (isDark() !== dark) {
+        dark = !dark;
+        paint();
+      }
+      const c = dark ? BEER.dark : BEER.light;
+
+      const k = Math.min(1, (now - move.t0) / 1000 / move.time);
+      level = move.from + (move.to - move.from) * (1 - (1 - k) ** 3);
+      const rising = k < 1 && move.to > move.from;
+      const share = Math.min(1, level / (move.to || 1));
+      head += ((rising ? HEAD * 1.25 : HEAD) * (move.to ? share : level / (move.from || 1)) - head) * Math.min(1, dt * 2.5);
+      amp += ((k < 1 ? 3 * S + 0.5 : 1 * S + 0.3) - amp) * Math.min(1, dt * 1.2);
+      tilt += (tiltTo - tilt) * Math.min(1, dt * 4);
+      sweat = Math.max(0, Math.min(1, sweat + (move.to && k >= 1 ? dt / 3 : -dt * 3)));
+
+      // New bubbles, mostly in trails from their spots, more while it fills.
+      if (level > 2) {
+        let n = (((rising ? 220 : 70) * W) / 800) * dt;
+        while (n > 0 && Math.random() < n) {
+          n--;
+          const trail = Math.random() < 0.75;
+          const x = trail ? sites[Math.floor(Math.random() * sites.length)] + between(-1.2, 1.2) : between(0, W);
+          bubbles.push({ x, y: H + 2, r: between(0.5, trail ? 1.3 : 2) * (S + 0.35), v: between(12, 30), sway: between(1, 6), ph: between(0, 6.3) });
+        }
+      }
+      for (const b of bubbles) {
+        b.v += 36 * dt;
+        b.y -= b.v * dt;
+        b.x += Math.sin(b.ph + b.y * 0.06) * b.sway * dt;
+      }
+      for (let i = bubbles.length - 1; i >= 0; i--) if (bubbles[i].y < surface(bubbles[i].x, t) + 1) bubbles.splice(i, 1);
+
+      // Now and then a drop runs down the sweating glass.
+      if (!soft && sweat > 0.9 && now > nextRun) {
+        nextRun = now + between(2500, 6000);
+        const y = H - level + between(12, 60);
+        runners.push({ x: between(0.05, 0.95) * W, y, y0: y, r: between(3, 4.6), v: 0 });
+      }
+      for (const r of runners) {
+        r.v = Math.min(40, r.v + 14 * dt);
+        r.y += r.v * dt;
+        r.x += Math.sin(r.y * 0.08) * 4 * dt;
+      }
+      for (let i = runners.length - 1; i >= 0; i--) if (runners[i].y > H + 20) runners.splice(i, 1);
+
+      ctx.clearRect(0, 0, W, H);
+      if (level < 0.5) {
+        if (move.to === 0 && k >= 1) {
+          frame = 0;
+          bubbles.length = 0;
+          head = 0;
+          return;
+        }
+        frame = requestAnimationFrame(draw);
+        return;
+      }
+
+      // The beer.
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(0, surface(0, t));
+      along((x) => surface(x, t), 0, W + 6);
+      ctx.lineTo(W, H);
+      ctx.lineTo(0, H);
+      ctx.closePath();
+      const deep = ctx.createLinearGradient(0, H - level - 10, 0, H);
+      deep.addColorStop(0, c.top);
+      deep.addColorStop(0.4, c.mid);
+      deep.addColorStop(1, c.foot);
+      ctx.fillStyle = deep;
+      ctx.fill();
+      ctx.clip();
+      // Light through it: brighter across the middle, a glow up from its foot, the sides deeper.
+      const glow = ctx.createLinearGradient(0, 0, W, 0);
+      glow.addColorStop(0, "rgba(120, 60, 0, 0.16)");
+      glow.addColorStop(0.3, "rgba(255, 245, 190, 0.1)");
+      glow.addColorStop(0.55, "rgba(255, 250, 210, 0.16)");
+      glow.addColorStop(1, "rgba(120, 60, 0, 0.2)");
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, W, H);
+      // The bubbles, each a bright speck, the bigger ones with a glint.
+      ctx.fillStyle = c.bubble;
+      for (const b of bubbles) {
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.r, 0, 6.283);
+        ctx.fill();
+      }
+      ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+      for (const b of bubbles) {
+        if (b.r < 1.1) continue;
+        ctx.beginPath();
+        ctx.arc(b.x - b.r * 0.35, b.y - b.r * 0.35, b.r * 0.35, 0, 6.283);
+        ctx.fill();
+      }
+      // Under the head, a haze of fine bubbles going into the beer.
+      const haze = ctx.createLinearGradient(0, H - level - 4, 0, H - level + 16 * S + 6);
+      haze.addColorStop(0, "rgba(255, 250, 230, 0.7)");
+      haze.addColorStop(1, "rgba(255, 250, 230, 0)");
+      ctx.fillStyle = haze;
+      ctx.fillRect(0, H - level - 30, W, 16 * S + 40);
+      // The glass sweating where the cold beer is.
+      if (dew && sweat > 0) {
+        ctx.globalAlpha = sweat;
+        ctx.drawImage(dew, 0, 0, W, H);
+        ctx.globalAlpha = 1;
+      }
+      // Drops running down, wiping a clear trail behind them.
+      for (const r of runners) {
+        const trail = ctx.createLinearGradient(0, r.y0, 0, r.y);
+        trail.addColorStop(0, "rgba(255, 255, 255, 0)");
+        trail.addColorStop(1, "rgba(255, 255, 255, 0.22)");
+        ctx.strokeStyle = trail;
+        ctx.lineWidth = r.r * 1.1;
+        ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(r.x, r.y0);
+        ctx.lineTo(r.x, r.y);
+        ctx.stroke();
+        const body = ctx.createRadialGradient(r.x - r.r * 0.3, r.y - r.r * 0.3, r.r * 0.1, r.x, r.y, r.r * 1.15);
+        body.addColorStop(0, "rgba(255, 255, 255, 0.6)");
+        body.addColorStop(0.75, "rgba(255, 250, 230, 0.12)");
+        body.addColorStop(1, "rgba(80, 45, 0, 0.45)");
+        ctx.fillStyle = body;
+        ctx.beginPath();
+        ctx.ellipse(r.x, r.y, r.r, r.r * 1.15, 0, 0, 6.283);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(r.x - r.r * 0.35, r.y - r.r * 0.45, r.r * 0.22, 0, 6.283);
+        ctx.fillStyle = "rgba(255, 255, 255, 0.95)";
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // The head: foam over the surface, its top lumpy with bubbles, swaying with it.
+      if (head > 0.5 && foam) {
+        const pattern = ctx.createPattern(foam, "repeat");
+        const top = H - level - head * 1.1 - ROOM * S;
+        pattern?.setTransform(new DOMMatrix().translate(Math.sin(t * 0.5) * 3, top).scale(1 / dpr));
+        ctx.fillStyle = pattern ?? c.foamTop;
+        // Near solid: it covers what's under it, just.
+        ctx.globalAlpha = 0.97;
+        // The body of it, a little under its edge: the bubbles make the edge.
+        ctx.beginPath();
+        ctx.moveTo(-6, surface(-6, t) + 3);
+        along((x) => surface(x, t) + 3, -6, W + 6);
+        along((x) => surface(x, t) - thick(x) + 3, W + 6, -6);
+        ctx.closePath();
+        ctx.fill();
+        // The bubbles along its top, each filled with foam, ringed, lit.
+        const swell = Math.min(1.2, head / HEAD);
+        ctx.lineWidth = 0.6;
+        ctx.strokeStyle = c.cell;
+        for (const b of crest) {
+          const r = b.r * swell;
+          const y = surface(b.x, t) - thick(b.x) + r * (b.sink * 2 - 0.3);
+          ctx.fillStyle = pattern ?? c.foamTop;
+          ctx.beginPath();
+          ctx.arc(b.x, y, r, 0, 6.283);
+          ctx.fill();
+          ctx.stroke();
+          if (b.glint && r > 1.6) {
+            ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+            ctx.beginPath();
+            ctx.arc(b.x - r * 0.35, y - r * 0.38, r * 0.28, 0, 6.283);
+            ctx.fill();
+          }
+        }
+        ctx.globalAlpha = 1;
+        // A soft shadow low in the head, so its top reads round.
+        ctx.save();
+        ctx.globalCompositeOperation = "source-atop";
+        const shade = ctx.createLinearGradient(0, top, 0, H - level + 3);
+        shade.addColorStop(0, "rgba(255, 255, 255, 0)");
+        shade.addColorStop(0.7, "rgba(0, 0, 0, 0)");
+        shade.addColorStop(1, "rgba(150, 110, 30, 0.18)");
+        ctx.fillStyle = shade;
+        ctx.fillRect(0, top - 20, W, head * 2 + 30);
+        ctx.restore();
+      }
+      frame = requestAnimationFrame(draw);
+    };
+    const run = () => {
+      if (frame) return;
+      last = 0;
+      frame = requestAnimationFrame(draw);
+    };
+    const halt = () => {
+      cancelAnimationFrame(frame);
+      frame = 0;
+    };
+
+    // Level as the phone is tilted, where it says so without asking.
+    const tilted = (e: DeviceOrientationEvent) => {
+      if (e.gamma !== null) tiltTo = (Math.max(-25, Math.min(25, -e.gamma)) * Math.PI) / 180;
+    };
+    const asks = typeof (DeviceOrientationEvent as unknown as { requestPermission?: unknown }).requestPermission === "function";
+    if (!soft && !asks) window.addEventListener("deviceorientation", tilted);
+    const resized = new ResizeObserver(() => {
+      if (host.clientWidth === W && host.clientHeight === H) return;
+      fit();
+      if (!soft && move.to) {
+        const to = full();
+        level = to;
+        move = { from: to, to, t0: 0, time: 1 };
+      }
+    });
+    resized.observe(host);
+
+    const cleanup = () => {
+      halt();
+      resized.disconnect();
+      window.removeEventListener("deviceorientation", tilted);
+      host.classList.remove("rg-beer-host");
+      canvas.remove();
+    };
+
+    if (soft) {
+      const off = whilePointedAt(
+        host,
+        () => {
+          riseTo(full(), 0.8);
+          run();
+        },
+        () => riseTo(0, 0.5),
+      );
+      return () => {
+        off();
+        cleanup();
+      };
+    }
+    let timer = 0;
+    let started = false;
+    const seen = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return halt();
+      if (started) return run();
+      started = true;
+      timer = window.setTimeout(() => {
+        riseTo(full(), 2.8);
+        run();
+      }, 800);
+    });
+    seen.observe(host);
+    return () => {
+      seen.disconnect();
+      window.clearTimeout(timer);
+      cleanup();
+    };
+  }, [soft]);
+
+  return <span ref={el}>{children}</span>;
+}
+
+/**
  * A player's name with their easter egg, if they have one: a charge of
  * lightning round it, a mist drifting past, peaches stuck on like stickers,
  * an infection eating the card's edge, or a chat of his messages piling up
@@ -1941,6 +2430,7 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   if (effect === "pesca") return <Stickers emoji={PEACH} spots={PEACHES}>{children}</Stickers>;
   if (effect === "aragosta") return <Lobster>{children}</Lobster>;
   if (effect === "maglietta") return <Tug soft={soft}>{children}</Tug>;
+  if (effect === "birra") return <Beer soft={soft}>{children}</Beer>;
   if (effect === "copione") return soft ? <CopioneRow>{children}</CopioneRow> : <Copione>{children}</Copione>;
   if (effect === "fulmini") return <Electric soft={soft}>{children}</Electric>;
   if (effect === "fumetto") return <Comic soft={soft}>{children}</Comic>;
