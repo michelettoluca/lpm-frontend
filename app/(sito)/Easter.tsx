@@ -616,63 +616,14 @@ function Comic({ soft, children }: { soft: boolean; children: ReactNode }) {
   return <span ref={el}>{children}</span>;
 }
 
-/** Gummy bear colours, as the bag pours them: yellow, green, orange, red and the milky white one. */
-const BEAR_COLOURS = ["#f6d21a", "#5bcf1f", "#ff981c", "#e5141f", "#efe8d2"];
-
-let bears = 0;
-
-/**
- * A gummy bear in a 40 by 56 box, drawn as a soft jelly: a wide head with
- * two ears, a full body with its arms tucked in, stubby legs; lighter where
- * the jelly is thick, deeper at the rim, two glossy lights on top and a
- * little shadow under it. A plain gummy bear, nobody's own design.
- */
-function bear(colour: string, tall: number): SVGSVGElement {
-  const id = `rg-bear-${bears++}`;
-  const svg = document.createElementNS(SVG, "svg");
-  svg.setAttribute("viewBox", "0 0 40 56");
-  svg.setAttribute("width", String((tall * 40) / 56));
-  svg.setAttribute("height", String(tall));
-  svg.setAttribute("class", "rg-bear");
-  // Lighter or deeper shades of the colour, worked out here: not every browser takes color-mix in an SVG.
-  const mix = (towards: string, pct: number) => {
-    const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
-    const [a, b] = [rgb(colour), rgb(towards)];
-    return `rgb(${a.map((v, i) => Math.round(v + ((b[i] - v) * pct) / 100)).join(" ")})`;
-  };
-  svg.innerHTML = `
-    <defs>
-      <radialGradient id="${id}-jelly" gradientUnits="userSpaceOnUse" cx="17" cy="24" r="30">
-        <stop offset="0" stop-color="${mix("#ffffff", 28)}"/>
-        <stop offset="0.55" stop-color="${colour}"/>
-        <stop offset="1" stop-color="${mix("#000000", 28)}"/>
-      </radialGradient>
-      <radialGradient id="${id}-light">
-        <stop offset="0" stop-color="#fff" stop-opacity="0.85"/>
-        <stop offset="1" stop-color="#fff" stop-opacity="0"/>
-      </radialGradient>
-    </defs>
-    <g fill="url(#${id}-jelly)">
-      <ellipse cx="10.5" cy="5.5" rx="4.6" ry="4.4"/>
-      <ellipse cx="29.5" cy="5.5" rx="4.6" ry="4.4"/>
-      <ellipse cx="20" cy="13" rx="11.5" ry="10"/>
-      <rect x="7.5" y="18" width="25" height="28" rx="11"/>
-      <ellipse cx="7.5" cy="28" rx="5" ry="6.2"/>
-      <ellipse cx="32.5" cy="28" rx="5" ry="6.2"/>
-      <ellipse cx="11.5" cy="47.5" rx="7.2" ry="7.4"/>
-      <ellipse cx="28.5" cy="47.5" rx="7.2" ry="7.4"/>
-    </g>
-    <ellipse cx="14.5" cy="9.5" rx="4" ry="2.6" fill="url(#${id}-light)"/>
-    <ellipse cx="14" cy="28" rx="3.6" ry="7" fill="url(#${id}-light)" opacity="0.7"/>
-    <ellipse cx="25.5" cy="45" rx="2.6" ry="2" fill="url(#${id}-light)" opacity="0.6"/>`;
-  return svg;
-}
-
-/**
- * The gummy bears lifted out of the photo, each its own picture with its
- * size; until they are here, the drawn ones fall instead.
- */
-const BEAR_PICTURES: { src: string; w: number; h: number }[] = [];
+/** The gummy bears lifted out of the photo Andrea Forti's easter egg was asked with, each its own picture with its size. */
+const BEAR_PICTURES: { src: string; w: number; h: number }[] = [
+  { src: "/easter/orsetti/1.png", w: 97, h: 140 },
+  { src: "/easter/orsetti/2.png", w: 140, h: 108 },
+  { src: "/easter/orsetti/3.png", w: 101, h: 140 },
+  { src: "/easter/orsetti/4.png", w: 102, h: 140 },
+  { src: "/easter/orsetti/5.png", w: 140, h: 130 },
+];
 
 /**
  * One gummy bear falling through a box like rain: in at the top, turning
@@ -684,22 +635,14 @@ function rainBear(back: HTMLElement, front: HTMLElement, small: boolean) {
   const H = back.clientHeight;
   const tall = small ? between(10, 18) : between(18, 46);
   const ahead = Math.random() < 0.33;
-  let el: HTMLElement | SVGSVGElement;
-  let wide: number;
-  if (BEAR_PICTURES.length) {
-    const pic = BEAR_PICTURES[Math.floor(Math.random() * BEAR_PICTURES.length)];
-    const img = document.createElement("img");
-    img.src = pic.src;
-    img.alt = "";
-    wide = (tall * pic.w) / pic.h;
-    img.style.width = `${wide}px`;
-    img.style.height = `${tall}px`;
-    img.className = "rg-bear";
-    el = img;
-  } else {
-    el = bear(BEAR_COLOURS[Math.floor(Math.random() * BEAR_COLOURS.length)], tall);
-    wide = (tall * 40) / 56;
-  }
+  const pic = BEAR_PICTURES[Math.floor(Math.random() * BEAR_PICTURES.length)];
+  const el = document.createElement("img");
+  el.src = pic.src;
+  el.alt = "";
+  const wide = (tall * pic.w) / pic.h;
+  el.style.width = `${wide}px`;
+  el.style.height = `${tall}px`;
+  el.className = "rg-bear";
   if (!ahead) el.classList.add("rg-bear-back");
   el.style.left = `${between(-wide * 0.3, W - wide * 0.7)}px`;
   el.style.top = `${-tall * 1.5}px`;
