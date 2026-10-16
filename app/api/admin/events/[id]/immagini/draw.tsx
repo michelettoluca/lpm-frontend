@@ -11,7 +11,8 @@ import { MANA_FILL, STAR, manaGlyph, plural, weekday } from "@/app/(sito)/ui";
 import { ROGUE, archetypeLabel } from "@/app/lib/decks";
 import { CUP_PATH, scatter } from "@/app/(sito)/Drift";
 import { CROWN_PATH, CROWN_VIEWBOX, EMBLEM_PATH, EMBLEM_VIEWBOX } from "@/app/lib/emblem";
-import type { Deck, EventData } from "@/app/lib/site";
+import { settledRuns } from "@/app/lib/potential";
+import { TOP_ZONE, type Deck, type EventData, type Verdict } from "@/app/lib/site";
 import { undefeated, type ImageKind } from "./kinds";
 
 /* The light theme's colours, as sito.css sets them. */
@@ -214,7 +215,8 @@ function Grain({ height }: { height: number }) {
 
 /** The page every image shares: the league's name, the tappa, a title, the content, and the site's address. */
 function Frame({
-  e,
+  top,
+  corner,
   label,
   title,
   meta,
@@ -223,7 +225,10 @@ function Frame({
   seed,
   children,
 }: {
-  e: EventData;
+  /** The header's note at the right: the tappa's date, or the season. */
+  top: string;
+  /** The big red figure beside the title, with its word: the tappa's number, or the tappe played. */
+  corner: { label: string; value: string };
   label?: string;
   title: string;
   /** The footer's note on the left, if any. */
@@ -255,7 +260,7 @@ function Frame({
           <Badge size={52} />
           <div style={{ ...STRONG, fontSize: 28, lineHeight: 1 }}>Lega Pauper Milano</div>
         </div>
-        <div style={{ ...EYEBROW, fontSize: 18 }}>{`${weekday(e.event.played_at)} ${e.date}`}</div>
+        <div style={{ ...EYEBROW, fontSize: 18 }}>{top}</div>
       </div>
 
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: 44, height: 124 }}>
@@ -264,8 +269,8 @@ function Frame({
           <div style={{ ...DISPLAY, fontSize: title.length > 16 ? 62 : 76, letterSpacing: "-0.035em", lineHeight: 1, marginTop: 10 }}>{title}</div>
         </div>
         <div style={{ display: "flex", alignItems: "flex-end", gap: 10, flexShrink: 0, marginLeft: 32 }}>
-          <div style={{ ...EYEBROW, paddingBottom: 12 }}>tappa</div>
-          <div style={{ ...STRONG, fontSize: 124, lineHeight: 0.8, color: RED }}>{String(e.number ?? "?")}</div>
+          <div style={{ ...EYEBROW, paddingBottom: 12 }}>{corner.label}</div>
+          <div style={{ ...STRONG, fontSize: 124, lineHeight: 0.8, color: RED }}>{corner.value}</div>
         </div>
       </div>
 
@@ -293,6 +298,12 @@ function Frame({
     </div>
   );
 }
+
+/** A tappa's header: its date, and its number in the corner. */
+const tappa = (e: EventData) => ({
+  top: `${weekday(e.event.played_at)} ${e.date}`,
+  corner: { label: "tappa", value: String(e.number ?? "?") },
+});
 
 const playersAndRounds = (e: EventData) =>
   `${plural(e.standings.length, "giocatore", "giocatori")} · ${plural(e.rounds, "turno", "turni")} di svizzera`;
@@ -495,6 +506,196 @@ function Imbattuti({ rows }: { rows: Row[] }) {
 }
 
 /* ------------------------------------------------------------------ */
+/* The season's standings                                              */
+/* ------------------------------------------------------------------ */
+
+/**
+ * The tallest WhatsApp keeps whole when sent in HD; in standard quality it
+ * shrinks any long image to some 1600px, too small to read a hundred names.
+ */
+const HD_HEIGHT = 5120;
+const ZONE = 46;
+/** Every other row on a faint band, so the eye keeps its line from name to points once zoomed in. */
+const BAND = "rgba(232,236,242,0.6)";
+/* The site's grey rule and badge, for the lines of what is already settled. */
+const RULE = "#c9d0da";
+const PILL = "#e8ecf1";
+
+export type SeasonRow = { rank: number; id: number; name: string; points: number; played: number; verdict?: Verdict };
+
+export type SeasonImage = {
+  season: string;
+  rows: SeasonRow[];
+  /** The latest tappa played, for the corner. */
+  last: number;
+  played: number;
+  total: number;
+  counted: number | null;
+};
+
+/** A line across the table, drawn before the row at `at`. */
+type ZoneMark = { at: number; label: string; up: boolean; red: boolean };
+
+/**
+ * The race for the top 8, as the site's classifica draws it: a grey line
+ * under those already certain of it, the red line under the top 8, a grey
+ * line over those already out of the running.
+ */
+function zones(rows: SeasonRow[]): { marks: ZoneMark[]; certain: number; outFrom: number } {
+  const { certain, outFrom } = settledRuns(rows.map((r) => r.verdict), TOP_ZONE);
+  const marks: ZoneMark[] = [];
+  if (certain > 0 && certain < Math.min(TOP_ZONE, rows.length)) {
+    marks.push({ at: certain, label: `già certi della top ${TOP_ZONE}`, up: true, red: false });
+  }
+  if (rows.length > TOP_ZONE) {
+    const label = certain === TOP_ZONE ? `top ${TOP_ZONE} decisa` : `top ${TOP_ZONE}, per ora`;
+    marks.push({ at: TOP_ZONE, label, up: true, red: true });
+  }
+  if (outFrom < rows.length) {
+    marks.push({ at: outFrom, label: `fuori dalla corsa alla top ${TOP_ZONE}`, up: false, red: false });
+  }
+  return { marks, certain, outFrom };
+}
+
+/** Rows as tall as a hundred names allow inside the HD frame, rounded down to stay in it, never too thin to read. */
+const seasonRow = (s: SeasonImage) =>
+  Math.min(64, Math.max(40, Math.floor((HD_HEIGHT - CHROME - COL_HEADS - zones(s.rows).marks.length * ZONE) / Math.max(1, s.rows.length))));
+
+/** An arrow up or down, for the lines' labels: the fonts have no arrows. */
+function Arrow({ up, size, color }: { up: boolean; size: number; color: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16">
+      <path d={up ? "M8 13.5v-11M3.5 7 8 2.5 12.5 7" : "M8 2.5v11M3.5 9 8 13.5 12.5 9"} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ZoneLine({ mark }: { mark: ZoneMark }) {
+  const ink = mark.red ? "#fff" : INK;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 14, height: ZONE }}>
+      <div style={{ display: "flex", flex: 1, height: mark.red ? 3 : 2, borderRadius: 2, background: mark.red ? RED : RULE }} />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          color: ink,
+          background: mark.red ? RED : PILL,
+          borderRadius: 999,
+          padding: "5px 14px 5px 10px",
+          fontSize: 17,
+          fontWeight: 600,
+          lineHeight: 1.2,
+        }}
+      >
+        <Arrow up={mark.up} size={15} color={ink} />
+        {mark.label}
+      </div>
+    </div>
+  );
+}
+
+/** A settled place the lines cannot show, beside the name, as on the site. */
+function VerdictPill({ verdict, size }: { verdict: Verdict; size: number }) {
+  const dentro = verdict === "dentro";
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexShrink: 0,
+        color: dentro ? "#fff" : MUTE,
+        background: dentro ? INK : PILL,
+        borderRadius: 999,
+        padding: "3px 10px",
+        fontSize: size,
+        fontWeight: 600,
+        lineHeight: 1.2,
+      }}
+    >
+      {dentro ? `top ${TOP_ZONE}` : "fuori"}
+    </div>
+  );
+}
+
+/** The season so far, every player in one column, with the race for the top 8 drawn across it. */
+function Generale({ s }: { s: SeasonImage }) {
+  const row = seasonRow(s);
+  const name = Math.round(Math.min(28, Math.max(20, row * 0.47)));
+  const figure = Math.round(name * 1.1);
+  const { marks, certain, outFrom } = zones(s.rows);
+  const line = (r: SeasonRow, i: number) => {
+    // Inside a run the line already says it; elsewhere a badge does.
+    const badge = r.verdict && i >= certain && i < outFrom ? r.verdict : undefined;
+    return (
+      <div
+        key={r.id}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          height: row,
+          padding: "0 14px",
+          borderRadius: 8,
+          // The bands count the whole table, so they alternate across the lines too.
+          background: i % 2 ? BAND : "transparent",
+        }}
+      >
+        <div style={{ ...DISPLAY, width: 56, fontSize: figure, color: r.rank === 1 ? RED : MUTE, flexShrink: 0 }}>{String(r.rank)}</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+          <div style={{ ...CLIP, fontSize: name, fontWeight: 700, lineHeight: 1.15 }}>{r.name}</div>
+          {badge && <VerdictPill verdict={badge} size={Math.round(name * 0.62)} />}
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", width: 90, color: MUTE, fontSize: name - 2, fontWeight: 600 }}>
+          {String(r.played)}
+        </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", width: 90, ...STRONG, fontSize: figure, lineHeight: 1 }}>
+          {String(r.points)}
+        </div>
+      </div>
+    );
+  };
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", gap: 16, padding: "0 14px", ...EYEBROW, fontSize: 14, height: COL_HEADS }}>
+        <div style={{ width: 56 }}>pos.</div>
+        <div style={{ flex: 1 }}>nome</div>
+        <div style={{ display: "flex", justifyContent: "flex-end", width: 90 }}>tappe</div>
+        <div style={{ display: "flex", justifyContent: "flex-end", width: 90 }}>punti</div>
+      </div>
+      {s.rows.flatMap((r, i) => [
+        ...marks.filter((m) => m.at === i).map((m) => <ZoneLine key={`${m.label}`} mark={m} />),
+        line(r, i),
+      ])}
+    </div>
+  );
+}
+
+const generaleHeight = (s: SeasonImage) =>
+  CHROME + COL_HEADS + zones(s.rows).marks.length * ZONE + s.rows.length * seasonRow(s);
+
+/** The season's standings as one long image, or null before anyone has points. */
+export async function drawSeasonImage(s: SeasonImage): Promise<ImageResponse | null> {
+  if (s.rows.length === 0) return null;
+  const height = Math.max(PORTRAIT, generaleHeight(s));
+  const counted = s.counted === null || s.counted >= s.total ? "contano tutte" : `contano le migliori ${s.counted}`;
+  return new ImageResponse(
+    <Frame
+      top={`stagione ${s.season}`}
+      corner={{ label: "tappa", value: String(s.last) }}
+      title="Classifica generale"
+      meta={`${plural(s.rows.length, "giocatore", "giocatori")} · ${plural(s.played, "tappa", "tappe")} su ${s.total} · ${counted}`}
+      icon={CUP}
+      height={height}
+      seed={13}
+    >
+      <Generale s={s} />
+    </Frame>,
+    { width: WIDTH, height, fonts: await loadFonts() },
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /* Entry point                                                         */
 /* ------------------------------------------------------------------ */
 
@@ -506,7 +707,7 @@ export async function drawImage(e: EventData, kind: ImageKind): Promise<ImageRes
     case "classifica":
       height = Math.max(PORTRAIT, classificaHeight(e));
       body = (
-        <Frame e={e} title="Classifica" meta={playersAndRounds(e)} icon={CUP} height={height} seed={23}>
+        <Frame {...tappa(e)} title="Classifica" meta={playersAndRounds(e)} icon={CUP} height={height} seed={23}>
           <Classifica e={e} />
         </Frame>
       );
@@ -515,7 +716,7 @@ export async function drawImage(e: EventData, kind: ImageKind): Promise<ImageRes
       if (!e.metagame) return null;
       height = Math.max(PORTRAIT, mazziHeight(e));
       body = (
-        <Frame e={e} title="Metagame" meta={playersAndRounds(e)} icon={EMBLEM} height={height} seed={7}>
+        <Frame {...tappa(e)} title="Metagame" meta={playersAndRounds(e)} icon={EMBLEM} height={height} seed={7}>
           <Mazzi e={e} />
         </Frame>
       );
@@ -526,7 +727,7 @@ export async function drawImage(e: EventData, kind: ImageKind): Promise<ImageRes
       if (rows.length === 0) return null;
       height = Math.max(SQUARE, CHROME + rows.length * unbeatenRow(rows));
       body = (
-        <Frame e={e} title="Imbattuti" icon={EMBLEM} height={height} seed={41}>
+        <Frame {...tappa(e)} title="Imbattuti" icon={EMBLEM} height={height} seed={41}>
           <Imbattuti rows={rows} />
         </Frame>
       );

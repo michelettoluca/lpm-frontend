@@ -19,6 +19,11 @@ export function fingerprint(e: EventData): string {
     standings: e.standings.map((s) => [s.player_id, s.player_name, s.rank, s.points, s.wins, s.losses, s.draws, s.byes, s.deck?.id ?? null, s.deck?.name ?? null, s.deck?.colors ?? null]),
     metagame: e.metagame,
   };
+  return digest(data);
+}
+
+/** A fingerprint of anything an image is drawn from. */
+export function digest(data: unknown): string {
   return createHash("sha1").update(JSON.stringify(data)).digest("hex");
 }
 

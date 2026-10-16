@@ -9,6 +9,7 @@ import { ConfirmResetDialog } from "./ConfirmResetDialog";
 import { ErrorPanel } from "./ErrorPanel";
 import { EventDialog } from "./EventDialog";
 import { SeasonDialog } from "./SeasonDialog";
+import { SeasonImage } from "./SeasonImage";
 import {
   BUTTON,
   BUTTON_PRIMARY,
@@ -263,6 +264,9 @@ function Overview({ season, noneActive, liveName }: { season: Season; noneActive
           </div>
         </div>
       )}
+
+      {/* The image is the site's classifica, so only the active season has one. */}
+      {season.is_active && imported > 0 && <SeasonImage />}
 
       {modal === "edit-season" && (
         <SeasonDialog

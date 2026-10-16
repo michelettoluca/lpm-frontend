@@ -17,6 +17,11 @@ function canShareFiles() {
 }
 const never = () => () => {};
 
+/** Whether the share sheet can take a PNG here: false on the server and the first paint. */
+export function useCanShare() {
+  return useSyncExternalStore(never, canShareFiles, () => false);
+}
+
 const LABELS: Record<ShareImage["kind"], string> = {
   classifica: "Classifica finale",
   mazzi: "Metagame",
@@ -35,7 +40,7 @@ export function EventImages({ eventId }: { eventId: number }) {
   const [images, setImages] = useState<ShareImage[] | null>(null);
   const [error, setError] = useState<AdminError | null>(null);
   const [wanted, setWanted] = useState(false);
-  const canShare = useSyncExternalStore(never, canShareFiles, () => false);
+  const canShare = useCanShare();
 
   useEffect(() => {
     let live = true;
@@ -79,7 +84,7 @@ export function EventImages({ eventId }: { eventId: number }) {
       {images && images.length > 0 && (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {images.map((img) => (
-            <Card key={img.kind} img={img} wanted={wanted} canShare={canShare} />
+            <Card key={img.kind} img={img} label={LABELS[img.kind]} wanted={wanted} canShare={canShare} />
           ))}
         </ul>
       )}
@@ -87,7 +92,20 @@ export function EventImages({ eventId }: { eventId: number }) {
   );
 }
 
-function Card({ img, wanted, canShare }: { img: ShareImage; wanted: boolean; canShare: boolean }) {
+/** One image: its preview once wanted, and the button that shares or saves it. A tall one is previewed from the top. */
+export function Card({
+  img,
+  label,
+  wanted,
+  canShare,
+  tall = false,
+}: {
+  img: Pick<ShareImage, "href" | "file" | "title">;
+  label: string;
+  wanted: boolean;
+  canShare: boolean;
+  tall?: boolean;
+}) {
   const [loaded, setLoaded] = useState(false);
   const [state, setState] = useState<"idle" | "busy" | "failed">("idle");
 
@@ -116,7 +134,9 @@ function Card({ img, wanted, canShare }: { img: ShareImage; wanted: boolean; can
               src={img.href}
               alt={img.title}
               onLoad={() => setLoaded(true)}
-              className={`block h-auto w-full rounded-lg border border-ink/8 ${loaded ? "" : "aspect-[4/5]"}`}
+              className={`block w-full rounded-lg border border-ink/8 ${loaded ? "" : "aspect-[4/5]"} ${
+                tall ? "max-h-[560px] object-cover object-top" : "h-auto"
+              }`}
             />
             {!loaded && (
               <span className="absolute inset-0 flex items-center justify-center text-[13px] text-ink/50">Un attimo…</span>
@@ -124,12 +144,12 @@ function Card({ img, wanted, canShare }: { img: ShareImage; wanted: boolean; can
           </a>
         ) : (
           <div className="flex aspect-[4/5] items-center justify-center rounded-lg border border-dashed border-ink/15 text-[13px] text-ink/40">
-            {LABELS[img.kind]}
+            {label}
           </div>
         )}
       </div>
       <div className="flex items-center justify-between gap-3 px-4 py-3">
-        <span className="text-[13px] font-semibold">{LABELS[img.kind]}</span>
+        <span className="text-[13px] font-semibold">{label}</span>
         {canShare ? (
           <button type="button" onClick={share} disabled={!loaded || state === "busy"} className={BUTTON_PRIMARY}>
             {state === "busy" ? "Un attimo…" : "Condividi"}
