@@ -1485,3 +1485,58 @@ body:has(.lpm)::before {
   font-size: 10.5px;
   mask-image: linear-gradient(to bottom, transparent, #000 70%);
 }
+
+/* The easter eggs' comic bursts (Easter.tsx): a spiky white burst with a fat
+   black edge and a yellow one under it, off to the side, the words in a
+   goofy hand, jiggling while they're up. The same on light and dark, like a
+   page of comics. */
+.lpm .rg-comic {
+  position: fixed;
+  z-index: 110;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  user-select: none;
+  will-change: transform, opacity;
+}
+.lpm .rg-comic-burst {
+  position: absolute;
+  inset: -6px;
+  width: calc(100% + 12px);
+  height: calc(100% + 12px);
+  overflow: visible;
+}
+.lpm .rg-comic-shadow {
+  fill: #ffd23f;
+  stroke: #141a24;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  transform: translate(5px, 5px);
+}
+.lpm .rg-comic-fill {
+  fill: #fff;
+  stroke: #141a24;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+.lpm .rg-comic-words {
+  position: relative;
+  font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Marker Felt", cursive;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  color: #141a24;
+  text-transform: uppercase;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lpm .rg-comic-words {
+    animation: rg-comic-jiggle 0.22s steps(1) infinite;
+  }
+}
+@keyframes rg-comic-jiggle {
+  50% {
+    transform: rotate(-2deg) skewX(-4deg) translateY(-1px);
+  }
+}

@@ -464,6 +464,143 @@ function CopioneRow({ children }: { children: ReactNode }) {
   return <span ref={el}>{children}</span>;
 }
 
+/** Matteo Conte's lines, a burst each. */
+const FUMETTI = ["Skibidi!", "Slip del panzone!", "Forza Dio!", "Faccio pippa!"];
+
+/** The spiky edge of a comic burst, in a w by h box: points in and out, never even. */
+function burstPath(w: number, h: number): string {
+  const spikes = Math.round(between(13, 18));
+  const pts: string[] = [];
+  for (let i = 0; i < spikes * 2; i++) {
+    const a = (i / (spikes * 2)) * Math.PI * 2 + between(-0.08, 0.08);
+    const r = i % 2 ? between(0.72, 0.8) : between(0.94, 1.08);
+    pts.push(`${(w / 2 + Math.cos(a) * (w / 2) * r).toFixed(1)} ${(h / 2 + Math.sin(a) * (h / 2) * r).toFixed(1)}`);
+  }
+  return `M${pts.join(" L")}Z`;
+}
+
+/**
+ * A comic burst by the name, a line of his in a goofy hand, landing with a
+ * splat, squashed flat on the screen and springing back, then jiggling
+ * where it is until told to go. Fixed on the screen, so no row or panel
+ * clips it; beside the name, or above it. Returns what pops it off.
+ */
+function burst(box: DOMRect, text: string, small: boolean): (() => void) | null {
+  const site = document.querySelector<HTMLElement>(".lpm");
+  if (!site) return null;
+  const size = small ? 13 : between(16, 21);
+  const w = Math.max(90, text.length * size * 0.62 + size * 2.6);
+  const h = size * 3.4;
+  // Off one end of the name or over it, somewhere along it.
+  const side = Math.random();
+  const x =
+    side < 0.35 ? box.left - w * between(0.55, 0.85) : side < 0.7 ? box.right - w * between(0.15, 0.45) : between(box.left - w * 0.2, box.right - w * 0.8);
+  const y = side < 0.7 ? box.top + box.height / 2 - h * between(0.5, 1.1) : box.top - h * between(0.75, 1);
+  const tilt = between(-14, 14);
+
+  const el = document.createElement("div");
+  el.className = "rg-comic";
+  el.setAttribute("aria-hidden", "true");
+  el.style.left = `${Math.max(4, Math.min(window.innerWidth - w - 4, x))}px`;
+  el.style.top = `${y}px`;
+  el.style.width = `${w}px`;
+  el.style.height = `${h}px`;
+  el.style.fontSize = `${size}px`;
+  const shape = burstPath(w, h);
+  const svg = document.createElementNS(SVG, "svg");
+  svg.setAttribute("viewBox", `-6 -6 ${w + 12} ${h + 12}`);
+  svg.setAttribute("class", "rg-comic-burst");
+  for (const cls of ["rg-comic-shadow", "rg-comic-fill"]) {
+    const path = document.createElementNS(SVG, "path");
+    path.setAttribute("d", shape);
+    path.setAttribute("class", cls);
+    svg.append(path);
+  }
+  const words = document.createElement("span");
+  words.className = "rg-comic-words";
+  words.textContent = text;
+  el.append(svg, words);
+  site.append(el);
+
+  // Splat: hits the screen squashed wide, springs tall, settles.
+  el.animate(
+    [
+      { transform: `rotate(${tilt}deg) scale(2.2, 0.25)`, opacity: 0 },
+      { transform: `rotate(${tilt}deg) scale(1.45, 0.6)`, opacity: 1, offset: 0.25 },
+      { transform: `rotate(${tilt}deg) scale(0.82, 1.22)`, offset: 0.5 },
+      { transform: `rotate(${tilt}deg) scale(1.08, 0.94)`, offset: 0.75 },
+      { transform: `rotate(${tilt}deg) scale(1)` },
+    ],
+    { duration: 380, easing: "cubic-bezier(0.2, 0.8, 0.3, 1)", fill: "forwards" },
+  );
+  return () => {
+    el.animate(
+      [
+        { transform: `rotate(${tilt}deg) scale(1)`, opacity: 1 },
+        { transform: `rotate(${tilt + 10}deg) scale(0.3)`, opacity: 0 },
+      ],
+      { duration: 160, easing: "ease-in", fill: "forwards" },
+    );
+    // Gone by then even where the animation is held, as in a hidden tab.
+    window.setTimeout(() => el.remove(), 200);
+  };
+}
+
+/**
+ * Matteo Conte's name, saying things: comic bursts by it, one at a time,
+ * each new line landing as the last one pops. On his page from when it opens, while the name is on
+ * screen; `soft`, in the standings, one at a time while the row is pointed at.
+ */
+function Comic({ soft, children }: { soft: boolean; children: ReactNode }) {
+  const el = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const name = el.current;
+    if (!name || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let n = Math.floor(Math.random() * FUMETTI.length);
+    let timer: number | null = null;
+    // One at a time: the new one lands as the old one pops.
+    let off: (() => void) | null = null;
+    const say = () => {
+      off?.();
+      // Nobody to talk to in a tab out of sight.
+      off = document.hidden ? null : burst(name.getBoundingClientRect(), FUMETTI[n++ % FUMETTI.length], soft);
+    };
+    const start = () => {
+      if (timer !== null) return;
+      say();
+      timer = window.setInterval(say, soft ? 1300 : 1100);
+    };
+    const stop = () => {
+      if (timer !== null) window.clearInterval(timer);
+      timer = null;
+      off?.();
+      off = null;
+    };
+    if (soft) {
+      const row = name.closest<HTMLElement>(".rg-row") ?? name;
+      row.addEventListener("pointerenter", start);
+      row.addEventListener("pointerleave", stop);
+      row.addEventListener("pointercancel", stop);
+      return () => {
+        row.removeEventListener("pointerenter", start);
+        row.removeEventListener("pointerleave", stop);
+        row.removeEventListener("pointercancel", stop);
+        stop();
+      };
+    }
+    const seen = new IntersectionObserver(([entry]) => (entry.isIntersecting ? start() : stop()));
+    const t = window.setTimeout(() => seen.observe(name), 400);
+    return () => {
+      window.clearTimeout(t);
+      seen.disconnect();
+      stop();
+    };
+  }, [soft]);
+
+  return <span ref={el}>{children}</span>;
+}
+
 /**
  * A player's name with their easter egg, if they have one: a charge of
  * lightning round it, a mist drifting past, peaches stuck on like stickers, or a
@@ -478,6 +615,7 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   if (effect === "pesca") return <Peaches>{children}</Peaches>;
   if (effect === "copione") return soft ? <CopioneRow>{children}</CopioneRow> : <Copione>{children}</Copione>;
   if (effect === "fulmini") return <Electric soft={soft}>{children}</Electric>;
+  if (effect === "fumetto") return <Comic soft={soft}>{children}</Comic>;
   return (
     <Burst effect={effect} soft={soft}>
       {children}
