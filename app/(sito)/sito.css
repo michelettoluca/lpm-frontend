@@ -1589,10 +1589,10 @@ body:has(.lpm)::before {
   will-change: transform;
 }
 
-/* The easter eggs' infection (Easter.tsx): two canvases in the card (or
-   the row), behind its text, clipped by it, round corners and all: the
-   colonies' glow, breathing, and the colonies over it. In a row it fades
-   in and out with the pointer. */
+/* The easter eggs' infection (Easter.tsx): canvases in the card (or the
+   row), behind its text, clipped by it, round corners and all: the rot's
+   stains and roots, the colonies' glow, breathing, and the colonies over
+   it. In a row it fades in and out with the pointer. */
 .lpm .rg-mold-host {
   position: relative;
   isolation: isolate;
