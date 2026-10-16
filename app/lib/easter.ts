@@ -4,7 +4,7 @@
  * back office: this list is the record of who has what (the team page shows
  * it, read only).
  */
-export type Effect = "fulmini" | "nebbia" | "pesca" | "copione" | "fumetto" | "orsetti" | "peek" | "napoletano" | "infezione" | "ventaglio" | "cintura" | "aragosta" | "maglietta" | "ratteo" | "birra";
+export type Effect = "fulmini" | "nebbia" | "pesca" | "copione" | "fumetto" | "orsetti" | "peek" | "napoletano" | "infezione" | "ventaglio" | "cintura" | "aragosta" | "maglietta" | "ratteo" | "birra" | "dinosauro";
 
 /** What each effect looks like, for the list. "fulmini" is kept for whoever gets it next: nobody has it now. */
 export const EFFECT_LABELS: Record<Effect, string> = {
@@ -23,11 +23,13 @@ export const EFFECT_LABELS: Record<Effect, string> = {
   maglietta: "La card tirata da un angolo come la sua maglietta",
   ratteo: "Iniziali di nome e cognome scambiate, e un topo: Ratteo",
   birra: "La card che si riempie di birra, come iBeer",
+  dinosauro: "Un dinosauro attraversa la card: orme, scosse di terremoto e crepe",
 };
 
 export const EASTER_EGGS: { playerId: number; name: string; effect: Effect }[] = [
   { playerId: 1, name: "Lodovico De Jaegher", effect: "copione" },
   { playerId: 6, name: "Davide Rapacciuolo", effect: "napoletano" },
+  { playerId: 9, name: "Nicolò Morselli", effect: "dinosauro" },
   { playerId: 13, name: "Demetrio Morselli", effect: "infezione" },
   { playerId: 15, name: "Filippo Pezza", effect: "cintura" },
   { playerId: 20, name: "Tommaso Cavallini", effect: "ventaglio" },
