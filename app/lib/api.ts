@@ -56,10 +56,17 @@ export type EventDetail = {
   standings: Standing[];
 };
 
+/** A team's logo: the shapes of an SVG, as path data, in their own box. */
+export type TeamLogo = { view_box: string; path: string };
+
+export type PlayerTeam = { id: number; name: string; logo: TeamLogo };
+
 export type Player = {
   id: number;
   external_id: number;
   display_name: string;
+  /** The player's team, whose logo is their page's watermark, or null. */
+  team: PlayerTeam | null;
 };
 
 export type PlayerEventEntry = {

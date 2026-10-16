@@ -7,6 +7,7 @@ import { useAdmin } from "../AdminShell";
 const SECTIONS = [
   { href: "/admin/seasons", label: "Stagioni" },
   { href: "/admin/lpi", label: "Archetipi" },
+  { href: "/admin/team", label: "Team", superOnly: true },
   { href: "/admin/admins", label: "Amministratori", superOnly: true },
   { href: "/admin/advanced", label: "Avanzate" },
 ];

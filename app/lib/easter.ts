@@ -1,15 +1,24 @@
 /**
  * The site's easter eggs: a few players whose name does something on their
- * own page. For now set here, by player id; later from the back office, for
- * the super admins only.
+ * own page and, softly, in the standings. Set here by hand, not from the
+ * back office: this list is the record of who has what (the team page shows
+ * it, read only).
  */
-/** The effects there are. "fulmini", a charge crackling round the name, is kept for whoever gets it next: nobody has it now. */
 export type Effect = "fulmini" | "nebbia" | "pesca" | "copione";
 
-const EFFECTS: Record<number, Effect> = {
-  1: "copione", // Lodovico De Jaegher
-  28: "pesca", // Arturo Precioso
-  87: "nebbia", // Matteo Strazzera
+/** What each effect looks like, for the list. "fulmini" is kept for whoever gets it next: nobody has it now. */
+export const EFFECT_LABELS: Record<Effect, string> = {
+  fulmini: "Scarica elettrica intorno al nome",
+  nebbia: "Nebbia che passa davanti e dietro il nome",
+  pesca: "Pesche attaccate al nome come sticker",
+  copione: "Chat a raffica dietro la card, sulla Ruby Storm",
 };
 
-export const effectOf = (playerId: number | string): Effect | undefined => EFFECTS[Number(playerId)];
+export const EASTER_EGGS: { playerId: number; name: string; effect: Effect }[] = [
+  { playerId: 1, name: "Lodovico De Jaegher", effect: "copione" },
+  { playerId: 28, name: "Arturo Precioso", effect: "pesca" },
+  { playerId: 87, name: "Matteo Strazzera", effect: "nebbia" },
+];
+
+export const effectOf = (playerId: number | string): Effect | undefined =>
+  EASTER_EGGS.find((e) => e.playerId === Number(playerId))?.effect;

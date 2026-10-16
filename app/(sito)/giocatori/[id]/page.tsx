@@ -10,7 +10,7 @@ import { FaceOff } from "./FaceOff";
 import { DeckTag } from "../../DeckTag";
 import { Easter } from "../../Easter";
 import { Drift } from "../../Drift";
-import { teamOf } from "@/app/lib/teams";
+import type { TeamLogo } from "@/app/lib/api";
 
 
 export async function generateMetadata(props: PageProps<"/giocatori/[id]">) {
@@ -30,6 +30,16 @@ function Big({ label, children }: { label: string; children: ReactNode }) {
 
 const TCOLS = "grid-cols-[3rem_1fr_auto] gap-3 sm:grid-cols-[4rem_1fr_auto]";
 
+/** A team's logo as an icon to scatter, drawn in the current colour. */
+function logoOf(logo: TeamLogo) {
+  const Logo = ({ className }: { className?: string }) => (
+    <svg viewBox={logo.view_box} aria-hidden="true" className={className}>
+      <path fill="currentColor" fillRule="evenodd" d={logo.path} />
+    </svg>
+  );
+  return Logo;
+}
+
 export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
   const { id } = await props.params;
   const { stagione } = await props.searchParams;
@@ -37,7 +47,6 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
   if (!p) notFound();
   const deckSeason = d.choice.seasons.find((x) => x.id === d.choice.selected);
   const within = deckSeason ? `nella ${deckSeason.name}` : "in tutte le stagioni";
-  const team = teamOf(id);
 
 
   return (
@@ -45,7 +54,7 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
       {/* ---------------- hero ---------------- */}
       <section className="rg-panel">
         {/* The player's team, if any: its logo scattered behind the card, like the league's on the home. */}
-        {team && <Drift icon={team.logo} cols={5} rows={3} seed={Number(id) * 7 + 3} />}
+        {p.team && <Drift icon={logoOf(p.team.logo)} cols={5} rows={3} seed={p.team.id * 7 + 3} />}
         <Link href="/classifica" className="rg-textlink -ml-1 inline-flex min-h-11 items-center px-1 text-[15px]">
           ← la classifica
         </Link>
