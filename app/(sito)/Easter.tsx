@@ -1671,13 +1671,15 @@ const MARK_LOBSTER: Spot[] = [{ x: 0.5, y: 0.5, size: 1.1, tilt: 14 }];
  * his name, popping on one after another while the row is pointed at
  * (sito.css). Its own element beside the name, not in it: a name cut short
  * with an ellipsis would cut them off too. Lisa Coronini's one lobster,
- * Tommaso Cavallini's hand of cards and Filippo Pezza's belt's plate go
- * there the same way.
+ * Tommaso Cavallini's hand of cards and Filippo Pezza's belt, slung aslant,
+ * go there the same way.
  */
 export function EasterMark({ playerId }: { playerId: number | string }) {
   const effect = effectOf(playerId);
   if (effect === "ventaglio") return <FanMark />;
-  if (effect === "cintura") return <span aria-hidden="true" className="rg-belt-mark" dangerouslySetInnerHTML={{ __html: BELT_PLATE }} />;
+  // His belt slung aslant just after his name in the standings.
+  if (effect === "cintura")
+    return <span aria-hidden="true" className="rg-belt-mark" dangerouslySetInnerHTML={{ __html: `<span class="rg-belt-mark-strap"></span>${BELT_PLATE}` }} />;
   if (effect !== "pesca" && effect !== "aragosta") return null;
   const lobster = effect === "aragosta";
   return (
