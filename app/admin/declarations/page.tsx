@@ -3,10 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { ErrorPanel } from "../ErrorPanel";
-import { BUTTON, BUTTON_PRIMARY, PageHeader, Segmented } from "../dashboardUi";
+import { BUTTON_PRIMARY, PageHeader, Segmented } from "../dashboardUi";
 import {
   DeckPickerDialog,
-  exportCsv,
   PlayersTable,
   Stat,
   TappaSelect,
@@ -43,17 +42,11 @@ export default function DeclarationsPage() {
         title="Torneo in corso"
         meta="Il mazzo di ogni giocatore del torneo di stasera: i giocatori lo indicano da /mazzo, tu completi i mancanti."
         actions={
-          t && (
-            <>
-              <button type="button" className={BUTTON} onClick={() => exportCsv(view)}>
-                Esporta CSV
-              </button>
-              {walk.length > 0 && (
-                <Link href="/admin/declarations/tavoli" className={BUTTON_PRIMARY}>
-                  Inserisci ai tavoli
-                </Link>
-              )}
-            </>
+          t &&
+          walk.length > 0 && (
+            <Link href="/admin/declarations/tavoli" className={BUTTON_PRIMARY}>
+              Inserisci ai tavoli
+            </Link>
           )
         }
       />

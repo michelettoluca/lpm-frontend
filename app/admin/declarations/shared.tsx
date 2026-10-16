@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { AdminError } from "@/app/lib/adminTypes";
 import { ArchetypePicker, ManaCost } from "@/app/components/ArchetypePicker";
-import { archetypeLabel, normalize, UNAVAILABLE, type Archetype } from "@/app/lib/decks";
+import { archetypeLabel, normalize, type Archetype } from "@/app/lib/decks";
 import { useAdmin } from "../AdminShell";
 import {
   Badge,
@@ -690,28 +690,4 @@ export function TappaSelect({
       {children}
     </section>
   );
-}
-
-/** Every registered player with their archetype; missing ones are Non Disponibile. */
-export function exportCsv(view: View) {
-  const quote = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
-  const rows = [
-    ["Giocatore", "Username Melee", "ID registrazione", "Archetipo", "ID archetipo LPI", "Fonte", "Ritirato"],
-    ...view.players.map((p) => [
-      p.name,
-      p.username,
-      p.registration_id,
-      p.declaration?.archetype_name ?? UNAVAILABLE,
-      p.declaration?.archetype_id ?? "",
-      p.declaration ? (p.declaration.source === "player" ? "giocatore" : "admin") : "",
-      p.dropped ? "sì" : "",
-    ]),
-  ];
-  const csv = rows.map((r) => r.map(quote).join(",")).join("\r\n");
-  const url = URL.createObjectURL(new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" }));
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `mazzi-${view.tournament?.id ?? "torneo"}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
 }
