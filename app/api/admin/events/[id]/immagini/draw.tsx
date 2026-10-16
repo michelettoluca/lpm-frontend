@@ -506,7 +506,7 @@ export async function drawImage(e: EventData, kind: ImageKind): Promise<ImageRes
     case "classifica":
       height = Math.max(PORTRAIT, classificaHeight(e));
       body = (
-        <Frame e={e} title="classifica" meta={playersAndRounds(e)} icon={CUP} height={height} seed={23}>
+        <Frame e={e} title="Classifica" meta={playersAndRounds(e)} icon={CUP} height={height} seed={23}>
           <Classifica e={e} />
         </Frame>
       );
@@ -515,7 +515,7 @@ export async function drawImage(e: EventData, kind: ImageKind): Promise<ImageRes
       if (!e.metagame) return null;
       height = Math.max(PORTRAIT, mazziHeight(e));
       body = (
-        <Frame e={e} title="metagame" meta={playersAndRounds(e)} icon={EMBLEM} height={height} seed={7}>
+        <Frame e={e} title="Metagame" meta={playersAndRounds(e)} icon={EMBLEM} height={height} seed={7}>
           <Mazzi e={e} />
         </Frame>
       );
@@ -526,7 +526,7 @@ export async function drawImage(e: EventData, kind: ImageKind): Promise<ImageRes
       if (rows.length === 0) return null;
       height = Math.max(SQUARE, CHROME + rows.length * unbeatenRow(rows));
       body = (
-        <Frame e={e} title="imbattuti" icon={EMBLEM} height={height} seed={41}>
+        <Frame e={e} title="Imbattuti" icon={EMBLEM} height={height} seed={41}>
           <Imbattuti rows={rows} />
         </Frame>
       );
