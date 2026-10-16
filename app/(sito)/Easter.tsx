@@ -833,25 +833,31 @@ function Peek({ children }: { children: ReactNode }) {
       // Where on the edge: a point, the picture standing on it, turned.
       const vw = window.innerWidth;
       const vh = window.innerHeight;
-      const along = between(0.25, 0.75);
+      // Near a corner of that edge, one end or the other.
+      const along = Math.random() < 0.5 ? between(0.08, 0.2) : between(0.8, 0.92);
       const [px, py] =
         side === "left" ? [0, vh * along] : side === "right" ? [vw, vh * along] : side === "top" ? [vw * along, 0] : [vw * along, vh];
-      // How far in he comes: his head and the top of his chest, peekaboo.
+      // How far in he comes: at first a bit of his head, in the end his head and chest.
+      const peep = H * 0.12;
       const deep = H * 0.38;
-      const at = (d: number, wobble: number) =>
+      const at = (d: number, wobble = 0) =>
         `translate(${px}px, ${py}px) rotate(${angle + wobble}deg) translate(${-W / 2}px, ${-d}px)`;
-      const look = between(6, 10);
+      // Unsure: a little of his head, back a bit, a little more; then out he
+      // pops all at once, has a quick look and is gone as fast.
       who
         .animate(
           [
-            { transform: at(0, 0) },
-            { transform: at(deep, 0), offset: 0.22 },
-            { transform: at(deep, -look), offset: 0.42 },
-            { transform: at(deep, look), offset: 0.64 },
-            { transform: at(deep, 0), offset: 0.78 },
-            { transform: at(0, 0) },
+            { transform: at(0), easing: "ease-out" },
+            { transform: at(peep), offset: 0.2, easing: "ease-in-out" },
+            { transform: at(peep * 0.45, -3), offset: 0.32, easing: "ease-in-out" },
+            { transform: at(peep * 1.3, 2), offset: 0.48, easing: "ease-in-out" },
+            { transform: at(peep * 1.2), offset: 0.58, easing: "cubic-bezier(0.2, 0.9, 0.3, 1.4)" },
+            { transform: at(deep, 4), offset: 0.66, easing: "ease-in-out" },
+            { transform: at(deep, -3), offset: 0.76, easing: "ease-in-out" },
+            { transform: at(deep), offset: 0.82, easing: "cubic-bezier(0.6, 0, 0.9, 0.4)" },
+            { transform: at(0) },
           ],
-          { duration: 3000, easing: "ease-in-out", fill: "forwards" },
+          { duration: 3400, fill: "forwards" },
         )
         .finished.then(() => {
           if (on) timer = window.setTimeout(peek, 1400);
