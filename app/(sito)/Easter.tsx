@@ -850,243 +850,254 @@ function Peek({ soft, children }: { soft: boolean; children: ReactNode }) {
   return <span ref={el}>{children}</span>;
 }
 
-/**
- * The mushrooms Demetrio Morselli's card grows, after the Fungal Colossus:
- * alien, glowing in the dark, more game than real, and not to be eaten.
- * Drawn upright with the foot of the stem at 0 0, 100 tall, on a dark
- * teal stem: a dome whose rim hooks down into fangs, a tall spire whose tip
- * curls over like a claw, a scalloped bulb; two mean eyes glowing under the
- * caps of the first and the last.
- * The cap, its spots and its gills take their colours from `--rg-cap`,
- * `--rg-spot` and `--rg-gill`; what glows has no ink round it.
- */
-const MUSHROOMS = [
-  `<path fill="#0d3d48" d="M-10 0C-14-12-12-30-8-44H8C12-30 14-12 10 0Z"/>
-  <path class="rg-shroom-glow" fill="#eaff5a" d="M-8-37L-2-34L-3-30L-8-32Z M8-37L2-34L3-30L8-32Z"/>
-  <path class="rg-shroom-cap" d="M-44-36C-50-44-50-56-42-66C-30-86 30-86 42-66C50-56 50-44 44-36C40-42 36-44 30-44C20-38 12-46 0-42C-12-46-20-38-30-44C-36-44-40-42-44-36Z"/>
-  <path class="rg-shroom-glow rg-shroom-gill" d="M-30-44C-20-38-12-46 0-42C12-46 20-38 30-44C20-49-20-49-30-44Z"/>
-  <path class="rg-shroom-glow" fill="#fff" fill-opacity="0.3" d="M-34-60C-30-74-14-80 0-80C-12-75-26-68-34-60Z"/>
-  <g class="rg-shroom-glow rg-shroom-spot"><circle cx="-22" cy="-63" r="5"/><circle cx="6" cy="-71" r="5"/><circle cx="25" cy="-61" r="4.5"/><circle cx="-7" cy="-53" r="3"/><circle cx="14" cy="-51" r="2.5"/><circle cx="-38" cy="-50" r="2.5"/></g>`,
-  `<path fill="#0d3d48" d="M-6 0C-9-20-4-40-5-56H5C6-40 9-20 6 0Z"/>
-  <path class="rg-shroom-cap" d="M-24-54C-20-70-8-84 2-92C10-98 18-96 20-89C14-92 10-90 8-86C14-76 20-66 24-54C12-50-12-50-24-54Z"/>
-  <path class="rg-shroom-glow rg-shroom-gill" d="M-20-54C-8-50 8-50 20-54C8-56-8-56-20-54Z"/>
-  <path class="rg-shroom-glow" fill="#fff" fill-opacity="0.3" d="M-15-60C-12-70-6-78 0-84C-4-74-9-67-15-60Z"/>
-  <g class="rg-shroom-glow rg-shroom-spot"><circle cx="-8" cy="-64" r="3.5"/><circle cx="9" cy="-69" r="3"/><circle cx="1" cy="-79" r="2.5"/><circle cx="15" cy="-58" r="2"/></g>`,
-  `<path fill="#0d3d48" d="M-12 0C-14-12-13-26-10-38H10C13-26 14-12 12 0Z"/>
-  <path class="rg-shroom-glow" fill="#eaff5a" d="M-8-29L-2-26L-3-22L-8-24Z M8-29L2-26L3-22L8-24Z"/>
-  <path class="rg-shroom-cap" d="M-32-36C-38-82 38-82 32-36C24-30 18-38 10-32C4-38-4-38-10-32C-18-38-24-30-32-36Z"/>
-  <path class="rg-shroom-glow rg-shroom-gill" d="M-28-36C-22-32-16-38-10-34C-4-38 4-38 10-34C16-38 22-32 28-36C16-41-16-41-28-36Z"/>
-  <path class="rg-shroom-glow" fill="#fff" fill-opacity="0.3" d="M-22-50C-20-62-8-68 2-67C-8-63-16-58-22-50Z"/>
-  <g class="rg-shroom-glow rg-shroom-spot"><circle cx="-12" cy="-55" r="6.5"/><circle cx="14" cy="-59" r="5.5"/><circle cx="1" cy="-43" r="3"/><circle cx="-25" cy="-44" r="2.5"/><circle cx="25" cy="-45" r="2.5"/></g>`,
-];
-const MUSHROOM_ODDS = [0.45, 0.75, 1];
-
-/** Their colours, a cap with spots and gills that glow against it: fluo green, teal, electric blue. */
-const SHROOM_COLOURS = [
-  { cap: "#5cff2e", spot: "#d6fffb", gill: "#7ffff0" },
-  { cap: "#14e3c0", spot: "#e6ff6b", gill: "#c3ff6a" },
-  { cap: "#1fa8ff", spot: "#d2ff5a", gill: "#6dfff0" },
-];
-
-/** A tuft of mushrooms on the card's edge: where round it, when it goes, and where its caps are, for the spores. */
-type Tuft = { t: number; el: HTMLElement; until: number; x: number; y: number; dx: number; dy: number; tall: number };
+/** The infection's colours, after the Fungal Colossus: fluo green, teal, electric blue; and the dark of a colony's body. */
+const MOLD = ["#6dff3a", "#19e6c4", "#2aa8ff"];
+const MOLD_BODY = "#0b2f36";
 
 /**
- * A tuft of one to three mushrooms of a kind, sprouting out of the box's
- * edge at `t` (round it from the top left, clockwise) and growing in, stem
- * first, the cap landing with a squash; after `delay`, one after another.
- * Each glows in its colour and sways on its foot, like a game's enemies.
+ * One colony of the infection: where, how big, when it comes up and how
+ * long it takes to; a cell (a dark body ringed in colour, with a nucleus),
+ * a bubble (just the ring) or a speck; and its colour.
  */
-function sprout(layer: HTMLElement, t: number, delay: number, small: boolean): Omit<Tuft, "t" | "until"> {
-  const p = round(t, layer.clientWidth, layer.clientHeight, 0);
-  // Upright on the bottom edge, upside down on the top, on its side on the others: always growing in.
-  const turn = p.ny < 0 ? 180 : p.nx > 0 ? -90 : p.ny > 0 ? 0 : 90;
-  const tuft = document.createElement("div");
-  tuft.className = "rg-shroom-tuft";
-  // Its foot a little past the edge, so it comes up out of it.
-  tuft.style.transform = `translate(${p.x + p.nx * 2}px, ${p.y + p.ny * 2}px) rotate(${turn}deg)`;
-  const pick = Math.random();
-  const kind = MUSHROOMS[MUSHROOM_ODDS.findIndex((o) => pick < o)];
-  const colour = SHROOM_COLOURS[Math.floor(Math.random() * SHROOM_COLOURS.length)];
-  // Mostly small and middling, now and then a big one; smaller in a narrow card, as on a phone.
-  const fit = Math.min(1, Math.max(0.6, layer.clientWidth / 900));
-  const tall = small ? between(10, 18) : (24 + Math.random() ** 2 * 52) * fit;
-  const side = Math.random() < 0.5 ? -1 : 1;
-  const crowd = [{ along: 0, tall }];
-  if (Math.random() < 0.45) crowd.push({ along: side * tall * between(0.45, 0.65), tall: tall * between(0.45, 0.7) });
-  if (Math.random() < 0.2) crowd.push({ along: -side * tall * between(0.4, 0.55), tall: tall * between(0.35, 0.55) });
-  crowd.forEach((m, k) => {
-    const el = document.createElement("div");
-    el.className = "rg-shroom";
-    el.style.left = `${m.along - m.tall / 2}px`;
-    el.style.top = `${-m.tall}px`;
-    el.style.width = el.style.height = `${m.tall}px`;
-    el.style.rotate = `${between(-14, 14) + m.along * 0.4}deg`;
-    el.style.setProperty("--rg-cap", colour.cap);
-    el.style.setProperty("--rg-spot", colour.spot);
-    el.style.setProperty("--rg-gill", colour.gill);
-    // Each sways and pulses in its own time.
-    el.style.setProperty("--rg-sway", `${between(-1.6, 0).toFixed(2)}s`);
-    // Some face the other way.
-    const flip = Math.random() < 0.5 ? ' transform="scale(-1 1)"' : "";
-    el.innerHTML = `<span class="rg-shroom-aura"></span><svg viewBox="-50 -100 100 102"><g${flip}>${kind}</g></svg>`;
-    tuft.append(el);
-    el.animate(
-      [
-        { transform: "scale(0.4, 0)" },
-        { transform: "scale(0.85, 1.15)", offset: 0.5 },
-        { transform: "scale(1.1, 0.9)", offset: 0.75 },
-        { transform: "scale(1)" },
-      ],
-      { duration: between(520, 720), delay: delay + k * between(80, 160), easing: "ease-out", fill: "backwards" },
-    );
+type Colony = { x: number; y: number; r: number; at: number; grow: number; kind: "cell" | "bubble" | "speck"; hue: number };
+
+/** A soft round glow of each colour, drawn once, to stamp under the colonies. */
+function halos(): HTMLCanvasElement[] {
+  return MOLD.map((c) => {
+    const el = document.createElement("canvas");
+    el.width = el.height = 64;
+    const ctx = el.getContext("2d");
+    if (!ctx) return el;
+    const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    g.addColorStop(0, `${c}cc`);
+    g.addColorStop(0.4, `${c}55`);
+    g.addColorStop(1, `${c}00`);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 64, 64);
+    return el;
   });
-  layer.append(tuft);
-  return { el: tuft, x: p.x, y: p.y, dx: -p.nx, dy: -p.ny, tall };
 }
+
+/** A slow wobble along the edge, -1 to 1, its shape set by three phases. */
+const wobble = (u: number, ph: number[]) =>
+  (Math.sin(u / 97 + ph[0]) + 0.6 * Math.sin(u / 41 + ph[1]) + 0.8 * Math.sin(u / 211 + ph[2])) / 2.4;
 
 /**
- * A spore off a tuft's caps, a glowing speck like the Colossus's: it floats
- * on into the card, wavering, and fades.
+ * Where the colonies of an infection of a box w by h are, and when each
+ * comes up: it starts in corner `from` (0 the top left, then clockwise) and
+ * eats its way along the edge both ways, reaching the far corner after
+ * `time` ms, its front ragged; a thick crust along the edge, its thickness
+ * wandering, then smaller cells and bubbles, then specks further in, each
+ * coming a while after the edge beside it, as if creeping in. In patches of
+ * one colour and another. In the order they come up.
  */
-function spore(layer: HTMLElement, f: Tuft, small: boolean) {
-  const el = document.createElement("span");
-  el.className = `rg-spore ${Math.random() < 0.3 ? "rg-spore-blue" : ""}`;
-  const size = small ? between(1.5, 3) : between(2.5, 5);
-  el.style.width = el.style.height = `${size}px`;
-  // Off the cap: as far in as the mushroom is tall, a little to one side or the other.
-  const sideways = between(-0.4, 0.4) * f.tall;
-  const x = f.x + f.dx * f.tall * 0.75 - f.dy * sideways;
-  const y = f.y + f.dy * f.tall * 0.75 + f.dx * sideways;
-  el.style.left = `${x - size / 2}px`;
-  el.style.top = `${y - size / 2}px`;
-  layer.append(el);
-  const far = (small ? between(10, 24) : between(30, 80)) * (0.6 + f.tall / 80);
-  const waver = between(-1, 1) * (small ? 8 : 22);
-  el.animate(
-    [
-      { transform: "translate(0, 0) scale(0.4)", opacity: 0 },
-      { opacity: 1, offset: 0.2 },
-      { transform: `translate(${f.dx * far * 0.5 - f.dy * waver}px, ${f.dy * far * 0.5 + f.dx * waver}px) scale(1)`, opacity: 0.9, offset: 0.55 },
-      { transform: `translate(${f.dx * far + f.dy * waver * 0.5}px, ${f.dy * far - f.dx * waver * 0.5}px) scale(0.6)`, opacity: 0 },
-    ],
-    { duration: between(1400, 2600), easing: "ease-out" },
-  ).finished.finally(() => el.remove());
-}
-
-/** A tuft going back into the edge it came out of, then gone. */
-function wither(tuft: HTMLElement) {
-  for (const el of tuft.children) {
-    el.animate([{ transform: "scale(1)" }, { transform: "scale(1.08, 0.9)", offset: 0.3 }, { transform: "scale(0.5, 0)" }], {
-      duration: between(300, 420),
-      easing: "ease-in",
-      fill: "forwards",
+function infect(w: number, h: number, from: number, time: number, small: boolean): Colony[] {
+  const P = 2 * (w + h);
+  const start = [0, w, w + h, 2 * w + h][from];
+  const ph = Array.from({ length: 9 }, () => between(0, 2 * Math.PI));
+  // Smaller in a narrow card, as on a phone; much smaller round a row.
+  const scale = small ? 0.38 : Math.min(1, Math.max(0.5, w / 900));
+  const speed = P / 2 / time;
+  const creep = small ? 0.04 : 0.016;
+  const out: Colony[] = [];
+  const add = (u: number, depth: number, r: number, kind: Colony["kind"], spread = 3) => {
+    const p = round(u / P, w, h, 0);
+    const side = between(-spread, spread);
+    const far = Math.min(Math.abs(u - start), P - Math.abs(u - start));
+    out.push({
+      x: p.x - p.nx * depth - p.ny * side,
+      y: p.y - p.ny * depth + p.nx * side,
+      r,
+      at: (far / speed) * (1 + 0.3 * wobble(u, ph.slice(3))) + depth / creep + between(0, 300),
+      grow: between(500, 900),
+      kind,
+      hue: Math.min(MOLD.length - 1, Math.floor(((wobble(u * 0.6, ph.slice(6)) + 1) / 2) * MOLD.length)),
     });
+  };
+  const thick = (u: number) => (small ? 7 : 30 * scale) * (0.5 + 0.5 * (wobble(u, ph) + 1));
+  for (let u = 0; u < P; u += between(4, 8) * scale) {
+    const t = thick(u);
+    const depth = Math.random() ** 1.5 * t;
+    add(u, depth, between(3, 10) * scale * (1 - (depth / t) * 0.5), Math.random() < 0.75 ? "cell" : "bubble");
   }
-  // Gone by then even where the animation is held, as in a hidden tab.
-  window.setTimeout(() => tuft.remove(), 450);
+  for (let u = 0; u < P; u += between(10, 18) * scale) {
+    const t = thick(u);
+    add(u, t * 0.6 + Math.random() ** 1.4 * t * 1.6, between(1.5, 5) * scale, Math.random() < 0.5 ? "cell" : "bubble", 6);
+  }
+  for (let u = 0; u < P; u += between(12, 22) * scale) {
+    const t = thick(u);
+    // Round a row, not so far in: it's low.
+    add(u, t + Math.random() ** 2 * t * (small ? 1.4 : 3), Math.max(0.7, between(0.8, 2) * scale), "speck", 8);
+  }
+  // The corners' rounding, filled in from the corner itself.
+  for (const u of [0, w, w + h, 2 * w + h]) {
+    for (let k = 0; k < 24; k++) {
+      const a = Math.random() ** 0.8 * (small ? 10 : 46 * scale);
+      add(u + between(-1, 1) * a, a * between(0.5, 1), between(2.5, 9) * scale, Math.random() < 0.75 ? "cell" : "bubble", 2);
+    }
+  }
+  return out.sort((x, y) => x.at - y.at);
+}
+
+/** The infection at `now` ms: each colony come up so far, swelling in with a little overshoot. */
+function paintMold(glow: CanvasRenderingContext2D, body: CanvasRenderingContext2D, colonies: Colony[], now: number, halo: HTMLCanvasElement[]) {
+  for (const ctx of [glow, body]) ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+  for (const c of colonies) {
+    const k = (now - c.at) / c.grow;
+    if (k <= 0) break;
+    const e = k >= 1 ? 1 : 1 + 2.7 * (k - 1) ** 3 + 1.7 * (k - 1) ** 2;
+    const r = c.r * e;
+    const colour = MOLD[c.hue];
+    glow.drawImage(halo[c.hue], c.x - r * 2.6, c.y - r * 2.6, r * 5.2, r * 5.2);
+    body.beginPath();
+    if (c.kind === "speck") {
+      body.fillStyle = colour;
+      body.arc(c.x, c.y, r, 0, 2 * Math.PI);
+      body.fill();
+      continue;
+    }
+    if (c.kind === "cell") {
+      body.fillStyle = MOLD_BODY;
+      body.arc(c.x, c.y, r, 0, 2 * Math.PI);
+      body.fill();
+      body.beginPath();
+    }
+    body.strokeStyle = colour;
+    body.lineWidth = Math.max(0.8, r * (c.kind === "cell" ? 0.24 : 0.3));
+    body.arc(c.x, c.y, r * 0.82, 0, 2 * Math.PI);
+    body.stroke();
+    if (c.kind === "cell") {
+      body.beginPath();
+      body.fillStyle = colour;
+      body.arc(c.x - r * 0.2, c.y - r * 0.15, r * 0.3, 0, 2 * Math.PI);
+      body.fill();
+    }
+  }
 }
 
 /**
- * Demetrio Morselli's mushrooms, sprouting all round his first card: as
- * it opens, one tuft after another clockwise from the top left, then tufts
- * going back in here and coming up there, glowing and letting off spores,
- * for as long as it's on screen.
- * Behind its text, clipped by it. `soft`, in the standings, small ones
- * round his row while it's pointed at. Nothing for reduced motion.
+ * Demetrio Morselli's infection: out of a corner of his first card, a
+ * different one each time, colonies of glowing circles eat their way along
+ * its edge both ways and creep in from it, slowly, until they've taken the
+ * whole of its edge; then it stays, glowing. From when the card is on
+ * screen, its clock stopped while it isn't. Behind its text, clipped by it.
+ * `soft`, in the standings, quick and small round his row while it's
+ * pointed at. For reduced motion, the card already taken, still; nothing in
+ * the row.
  */
-function Shrooms({ soft, children }: { soft: boolean; children: ReactNode }) {
+function Mold({ soft, children }: { soft: boolean; children: ReactNode }) {
   const el = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     const name = el.current;
     const host = soft ? name?.closest<HTMLElement>(".rg-row") : name?.closest<HTMLElement>(".rg-panel");
-    if (!name || !host || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!name || !host || (still && soft)) return;
     const layer = document.createElement("div");
-    layer.className = "rg-shrooms";
+    layer.className = "rg-mold";
     layer.setAttribute("aria-hidden", "true");
-    host.classList.add("rg-shrooms-host");
+    const glowEl = document.createElement("canvas");
+    glowEl.className = "rg-mold-glow";
+    const bodyEl = document.createElement("canvas");
+    layer.append(glowEl, bodyEl);
+    host.classList.add("rg-mold-host");
     host.append(layer);
+    const glow = glowEl.getContext("2d");
+    const body = bodyEl.getContext("2d");
+    if (!glow || !body) return () => layer.remove();
+    const halo = halos();
 
-    // How far apart tufts keep at least, and off the rounded corners, in px.
-    const gap = soft ? 56 : 66;
-    const corner = soft ? 14 : 40;
-    let tufts: Tuft[] = [];
-    let timer: number | null = null;
+    const time = soft ? 900 : 9000;
+    let from = Math.floor(Math.random() * 4);
+    let colonies: Colony[] = [];
+    let end = 0;
+    // How far along it is, in ms, and when that clock started, while it runs.
+    let elapsed = 0;
+    let since: number | null = null;
+    let frame = 0;
 
-    const fits = (t: number) => {
-      const w = layer.clientWidth;
-      const h = layer.clientHeight;
-      const p = round(t, w, h, 0);
-      const clear = p.ny ? p.x > corner && p.x < w - corner : p.y > corner && p.y < h - corner;
-      const apart = gap / (2 * (w + h));
-      return clear && tufts.every((f) => Math.min(Math.abs(f.t - t), 1 - Math.abs(f.t - t)) > apart);
-    };
-    // About as many as fit with room to come and go.
-    const wanted = () => Math.round(((2 * (layer.clientWidth + layer.clientHeight)) / gap) * 0.75);
-    const life = () => (soft ? between(1800, 4000) : between(2500, 6500));
-
-    const grow = (t: number, delay: number) =>
-      tufts.push({ t, ...sprout(layer, t, delay, soft), until: performance.now() + delay + life() });
-    // As it opens: once round, from the top left, clockwise.
-    const ring = () => {
-      const n = wanted();
-      const time = soft ? 500 : 1600;
-      for (let i = 0; i < n; i++) {
-        const t = ((i + between(-0.3, 0.3)) / n + 1) % 1;
-        if (fits(t)) grow(t, (i / n) * time);
+    const fit = () => {
+      const w = host.clientWidth;
+      const h = host.clientHeight;
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      for (const c of [glowEl, bodyEl]) {
+        c.width = Math.round(w * dpr);
+        c.height = Math.round(h * dpr);
+        c.getContext("2d")?.setTransform(dpr, 0, 0, dpr, 0, 0);
       }
+      colonies = infect(w, h, from, time, soft);
+      end = colonies.reduce((m, c) => Math.max(m, c.at + c.grow), 0);
     };
-    // Then the ones whose time is up go back in, and new ones come up where there's room.
+    const now = () => (since === null ? elapsed : elapsed + performance.now() - since);
     const tick = () => {
-      if (document.hidden) return;
-      const now = performance.now();
-      tufts = tufts.filter((f) => f.until > now || (wither(f.el), false));
-      // A spore or two off the caps, now and then.
-      for (const f of tufts) if (Math.random() < (soft ? 0.05 : 0.07)) spore(layer, f, soft);
-      if (tufts.length >= wanted() || Math.random() < 0.4) return;
-      for (let k = 0; k < 10; k++) {
-        const t = Math.random();
-        if (fits(t)) return void grow(t, 0);
-      }
+      const t = now();
+      paintMold(glow, body, colonies, t, halo);
+      frame = t < end ? requestAnimationFrame(tick) : 0;
     };
     const start = () => {
-      if (timer !== null) return;
-      if (!tufts.length) ring();
-      timer = window.setInterval(tick, 220);
+      if (since !== null || elapsed >= end) return;
+      since = performance.now();
+      frame = requestAnimationFrame(tick);
     };
     const stop = () => {
-      if (timer !== null) window.clearInterval(timer);
-      timer = null;
+      elapsed = now();
+      since = null;
+      cancelAnimationFrame(frame);
+      frame = 0;
     };
-    const cleanup = () => {
-      stop();
-      layer.remove();
-    };
+    // A card that changes size is laid out again, as far along as it was.
+    const resized = new ResizeObserver(() => {
+      fit();
+      paintMold(glow, body, colonies, now(), halo);
+    });
+    resized.observe(host);
 
-    if (soft) {
-      const end = () => {
-        stop();
-        tufts.forEach((f) => wither(f.el));
-        tufts = [];
-      };
-      host.addEventListener("pointerenter", start);
-      host.addEventListener("pointerleave", end);
-      host.addEventListener("pointercancel", end);
+    if (still) {
+      fit();
+      elapsed = end;
+      paintMold(glow, body, colonies, end, halo);
       return () => {
-        host.removeEventListener("pointerenter", start);
-        host.removeEventListener("pointerleave", end);
-        host.removeEventListener("pointercancel", end);
-        cleanup();
+        resized.disconnect();
+        layer.remove();
       };
     }
+
+    if (soft) {
+      const enter = () => {
+        // A fresh one each time, from another corner.
+        stop();
+        from = Math.floor(Math.random() * 4);
+        elapsed = 0;
+        fit();
+        layer.classList.add("rg-mold-on");
+        start();
+      };
+      const leave = () => {
+        stop();
+        layer.classList.remove("rg-mold-on");
+      };
+      host.addEventListener("pointerenter", enter);
+      host.addEventListener("pointerleave", leave);
+      host.addEventListener("pointercancel", leave);
+      return () => {
+        host.removeEventListener("pointerenter", enter);
+        host.removeEventListener("pointerleave", leave);
+        host.removeEventListener("pointercancel", leave);
+        stop();
+        resized.disconnect();
+        layer.remove();
+      };
+    }
+    layer.classList.add("rg-mold-on");
     const seen = new IntersectionObserver(([entry]) => (entry.isIntersecting ? start() : stop()));
-    // A moment after the page opens, so the card is there to grow out of.
+    // A moment after the page opens, so the card is there to take.
     const t = window.setTimeout(() => seen.observe(host), 300);
     return () => {
       window.clearTimeout(t);
       seen.disconnect();
-      cleanup();
+      stop();
+      resized.disconnect();
+      layer.remove();
     };
   }, [soft]);
 
@@ -1096,7 +1107,7 @@ function Shrooms({ soft, children }: { soft: boolean; children: ReactNode }) {
 /**
  * A player's name with their easter egg, if they have one: a charge of
  * lightning round it, a mist drifting past, peaches stuck on like stickers,
- * mushrooms sprouting round the card, or a chat of his messages piling up
+ * an infection eating the card's edge, or a chat of his messages piling up
  * behind it. On
  * the player's own page in full; `soft` in the standings, fewer and smaller,
  * where the peach is a single one, put after the name by `EasterMark`.
@@ -1111,7 +1122,7 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   if (effect === "fumetto") return <Comic soft={soft}>{children}</Comic>;
   if (effect === "orsetti") return <Bears soft={soft}>{children}</Bears>;
   if (effect === "peek") return <Peek soft={soft}>{children}</Peek>;
-  if (effect === "funghi") return <Shrooms soft={soft}>{children}</Shrooms>;
+  if (effect === "infezione") return <Mold soft={soft}>{children}</Mold>;
   return (
     <Burst effect={effect} soft={soft}>
       {children}

@@ -1589,111 +1589,43 @@ body:has(.lpm)::before {
   will-change: transform;
 }
 
-/* The easter eggs' mushrooms (Easter.tsx): a layer in the card (or the
-   row) they sprout into from its edges, behind its text, clipped by it. Each
-   tuft is a point on the edge, turned to face in; its mushrooms stand on it
-   and grow from their foot. Inked like the bubbles, glowing in their own
-   colour through an aura that breathes, swaying on their foot; the same on
-   light and dark. */
-.lpm .rg-shrooms-host {
+/* The easter eggs' infection (Easter.tsx): two canvases in the card (or
+   the row), behind its text, clipped by it, round corners and all: the
+   colonies' glow, breathing, and the colonies over it. In a row it fades
+   in and out with the pointer. */
+.lpm .rg-mold-host {
   position: relative;
   isolation: isolate;
   overflow: clip;
 }
-.lpm .rg-shrooms {
+.lpm .rg-mold {
   position: absolute;
   inset: 0;
   z-index: -1;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
-.lpm .rg-shroom-tuft {
+.lpm .rg-mold.rg-mold-on {
+  opacity: 1;
+  transition-duration: 0.1s;
+}
+.lpm .rg-mold canvas {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 0;
-  height: 0;
-}
-.lpm .rg-shroom {
-  position: absolute;
-  transform-origin: 50% 100%;
-  will-change: transform;
-}
-.lpm .rg-shroom svg {
-  position: relative;
-  display: block;
+  inset: 0;
   width: 100%;
   height: 100%;
-  overflow: visible;
-  transform-origin: 50% 100%;
-  filter: drop-shadow(0 0 2px var(--rg-cap)) drop-shadow(0 0 6px color-mix(in srgb, var(--rg-cap) 60%, transparent));
-  animation: rg-shroom-sway 1.6s ease-in-out var(--rg-sway, 0s) infinite alternate;
 }
-.lpm .rg-shroom path {
-  stroke: #071a20;
-  stroke-width: 1.5px;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-}
-.lpm .rg-shroom .rg-shroom-cap {
-  fill: var(--rg-cap);
-}
-.lpm .rg-shroom .rg-shroom-spot {
-  fill: var(--rg-spot);
-}
-.lpm .rg-shroom .rg-shroom-gill {
-  fill: var(--rg-gill);
-}
-.lpm .rg-shroom .rg-shroom-glow,
-.lpm .rg-shroom .rg-shroom-glow * {
-  stroke: none;
-}
-/* The aura: a haze of its colour round the cap, breathing. */
-.lpm .rg-shroom-aura {
-  position: absolute;
-  top: 40%;
-  left: 50%;
-  width: 190%;
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  border-radius: 50%;
-  background: radial-gradient(
-    closest-side,
-    color-mix(in srgb, var(--rg-cap) 55%, transparent),
-    color-mix(in srgb, var(--rg-cap) 16%, transparent) 55%,
-    transparent
-  );
-  animation: rg-shroom-aura 2.2s ease-in-out var(--rg-sway, 0s) infinite alternate;
-}
-@keyframes rg-shroom-sway {
-  from {
-    transform: rotate(-4deg) scale(1.04, 0.96);
-  }
-  to {
-    transform: rotate(4deg) scale(0.97, 1.04);
+@media (prefers-reduced-motion: no-preference) {
+  .lpm .rg-mold-glow {
+    animation: rg-mold-breathe 2.6s ease-in-out infinite alternate;
   }
 }
-@keyframes rg-shroom-aura {
+@keyframes rg-mold-breathe {
   from {
-    opacity: 0.45;
-    scale: 0.85;
+    opacity: 0.55;
   }
   to {
     opacity: 1;
-    scale: 1.1;
   }
-}
-/* Their spores: glowing specks, lime or now and then blue. */
-.lpm .rg-spore {
-  position: absolute;
-  border-radius: 50%;
-  background: #eaff7a;
-  box-shadow:
-    0 0 4px 1px #b8ff3a,
-    0 0 10px 2px rgb(120 255 60 / 0.5);
-}
-.lpm .rg-spore-blue {
-  background: #c8fbff;
-  box-shadow:
-    0 0 4px 1px #3ae8ff,
-    0 0 10px 2px rgb(40 180 255 / 0.5);
 }
