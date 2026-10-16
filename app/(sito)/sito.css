@@ -122,6 +122,20 @@ body:has(.lpm)::before {
     padding: 48px;
   }
 }
+/* Where the browser can draw it, a squircle instead of a circle's quarter:
+   the curve starts sooner and eases into the side, so it takes a larger
+   radius to look as round. Elsewhere the plain corners above stay. */
+@supports (corner-shape: squircle) {
+  .lpm .rg-panel {
+    corner-shape: squircle;
+    border-radius: 44px;
+  }
+  @media (min-width: 1024px) {
+    .lpm .rg-panel {
+      border-radius: 64px;
+    }
+  }
+}
 /* Text on red is white, like the buttons. */
 @media (min-width: 1024px) {
   .lpm .rg-panel-tight {
