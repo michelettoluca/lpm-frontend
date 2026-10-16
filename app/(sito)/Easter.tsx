@@ -8,6 +8,43 @@ const between = (a: number, b: number) => a + Math.random() * (b - a);
 
 const SVG = "http://www.w3.org/2000/svg";
 
+/** Where the mouse last was on the screen: "" before anyone looks, " " before it first moves. */
+let mouseAt = "";
+
+/**
+ * In the standings, `start` once a mouse moves over `host`, `stop` when it
+ * leaves. Not on entering: a row scrolled under a still pointer, or a finger
+ * scrolling the page across it, enters it too, and that isn't pointing at it.
+ * Returns the undo.
+ */
+function whilePointedAt(host: HTMLElement, start: () => void, stop: () => void): () => void {
+  if (!mouseAt) {
+    // On the window, so after the rows: they compare against the move before.
+    mouseAt = " ";
+    window.addEventListener("pointermove", (e) => e.pointerType === "mouse" && (mouseAt = `${e.screenX},${e.screenY}`), { passive: true });
+  }
+  let on = false;
+  const move = (e: PointerEvent) => {
+    if (on || e.pointerType !== "mouse") return;
+    // The mouse hasn't moved on the screen: the page has, under it.
+    if (!e.movementX && !e.movementY && (mouseAt === " " || mouseAt === `${e.screenX},${e.screenY}`)) return;
+    on = true;
+    start();
+  };
+  const leave = () => {
+    on = false;
+    stop();
+  };
+  host.addEventListener("pointermove", move);
+  host.addEventListener("pointerleave", leave);
+  host.addEventListener("pointercancel", leave);
+  return () => {
+    host.removeEventListener("pointermove", move);
+    host.removeEventListener("pointerleave", leave);
+    host.removeEventListener("pointercancel", leave);
+  };
+}
+
 /**
  * A puff of mist, drifting past the name and thinning out, or lying low
  * along its foot. Behind ones blend so the letters stay crisp over them
@@ -98,13 +135,9 @@ function Burst({ effect, soft, children }: { effect: keyof typeof PLAY; soft: bo
     if (soft) {
       // In the standings, while the player's row (or the name) is pointed at.
       const row = name.closest<HTMLElement>(".rg-row") ?? name;
-      row.addEventListener("pointerenter", start);
-      row.addEventListener("pointerleave", stop);
-      row.addEventListener("pointercancel", stop);
+      const off = whilePointedAt(row, start, stop);
       return () => {
-        row.removeEventListener("pointerenter", start);
-        row.removeEventListener("pointerleave", stop);
-        row.removeEventListener("pointercancel", stop);
+        off();
         stop();
       };
     }
@@ -244,13 +277,9 @@ function Electric({ soft, children }: { soft: boolean; children: ReactNode }) {
         stop = null;
         svg = null;
       };
-      row.addEventListener("pointerenter", start);
-      row.addEventListener("pointerleave", end);
-      row.addEventListener("pointercancel", end);
+      const off = whilePointedAt(row, start, end);
       return () => {
-        row.removeEventListener("pointerenter", start);
-        row.removeEventListener("pointerleave", end);
-        row.removeEventListener("pointercancel", end);
+        off();
         end();
       };
     }
@@ -467,13 +496,9 @@ function CopioneRow({ children }: { children: ReactNode }) {
       shown.page.remove();
       shown = null;
     };
-    row.addEventListener("pointerenter", start);
-    row.addEventListener("pointerleave", stop);
-    row.addEventListener("pointercancel", stop);
+    const off = whilePointedAt(row, start, stop);
     return () => {
-      row.removeEventListener("pointerenter", start);
-      row.removeEventListener("pointerleave", stop);
-      row.removeEventListener("pointercancel", stop);
+      off();
       stop();
     };
   }, []);
@@ -594,13 +619,9 @@ function Comic({ soft, children }: { soft: boolean; children: ReactNode }) {
     };
     if (soft) {
       const row = name.closest<HTMLElement>(".rg-row") ?? name;
-      row.addEventListener("pointerenter", start);
-      row.addEventListener("pointerleave", stop);
-      row.addEventListener("pointercancel", stop);
+      const off = whilePointedAt(row, start, stop);
       return () => {
-        row.removeEventListener("pointerenter", start);
-        row.removeEventListener("pointerleave", stop);
-        row.removeEventListener("pointercancel", stop);
+        off();
         stop();
       };
     }
@@ -707,13 +728,9 @@ function Bears({ soft, children }: { soft: boolean; children: ReactNode }) {
         back.replaceChildren();
         front.replaceChildren();
       };
-      host.addEventListener("pointerenter", rain);
-      host.addEventListener("pointerleave", end);
-      host.addEventListener("pointercancel", end);
+      const off = whilePointedAt(host, rain, end);
       return () => {
-        host.removeEventListener("pointerenter", rain);
-        host.removeEventListener("pointerleave", end);
-        host.removeEventListener("pointercancel", end);
+        off();
         cleanup();
       };
     }
@@ -829,13 +846,9 @@ function Peek({ soft, children }: { soft: boolean; children: ReactNode }) {
         stop();
         who.getAnimations().forEach((a) => a.cancel());
       };
-      host.addEventListener("pointerenter", start);
-      host.addEventListener("pointerleave", end);
-      host.addEventListener("pointercancel", end);
+      const off = whilePointedAt(host, start, end);
       return () => {
-        host.removeEventListener("pointerenter", start);
-        host.removeEventListener("pointerleave", end);
-        host.removeEventListener("pointercancel", end);
+        off();
         cleanup();
       };
     }
