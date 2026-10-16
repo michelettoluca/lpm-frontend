@@ -132,35 +132,32 @@ function round(t: number, w: number, h: number, pad: number) {
   return { x: -pad, y: h + pad - d, nx: -1, ny: 0 };
 }
 
-/** A crackle: a jagged arc clinging to a stretch of the box, or now and then shooting out of it. */
-function arc(w: number, h: number, pad: number, amp: number): string {
-  const t = Math.random();
-  const out = Math.random() < 0.25;
-  const steps = 7;
-  const pts: string[] = [];
-  if (out) {
-    const p = round(t, w, h, pad);
-    const far = between(10, 22);
-    for (let k = 0; k <= steps; k++) {
-      const f = k / steps;
-      const jx = k && k < steps ? between(-amp, amp) : 0;
-      pts.push(`${(p.x + p.nx * far * f + p.ny * jx).toFixed(1)} ${(p.y + p.ny * far * f + p.nx * jx).toFixed(1)}`);
-    }
-  } else {
-    const span = between(0.03, 0.09);
-    for (let k = 0; k <= steps; k++) {
-      const p = round(t + (span * k) / steps, w, h, pad);
-      const j = k && k < steps ? between(-amp, amp) : 0;
-      pts.push(`${(p.x + p.nx * j).toFixed(1)} ${(p.y + p.ny * j).toFixed(1)}`);
-    }
-  }
-  return `M${pts.join(" L")}`;
+/**
+ * A crackle of static: the bolt, small, lit for a moment somewhere on the
+ * box, lying along the edge or now and then sticking out of it.
+ */
+function crackle(w: number, h: number, small: boolean): SVGPathElement {
+  const p = round(Math.random(), w, h, 3);
+  const tall = between(small ? 8 : 10, small ? 14 : 22);
+  const k = tall / BOLT_H;
+  const out = Math.random() < 0.35;
+  // Along the edge the bolt lies on it, either way; out of it, it points out.
+  const turn = (Math.atan2(p.ny, p.nx) * 180) / Math.PI + (out ? 90 : Math.random() < 0.5 ? 0 : 180) + between(-20, 20);
+  const x = p.x + p.nx * (out ? tall * 0.45 : between(-2, 2));
+  const y = p.y + p.ny * (out ? tall * 0.45 : between(-2, 2));
+  const path = document.createElementNS(SVG, "path");
+  path.setAttribute("d", BOLT);
+  path.setAttribute(
+    "transform",
+    `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${turn.toFixed(1)}) scale(${k.toFixed(4)}) translate(${-BOLT_W / 2} ${-BOLT_H / 2})`,
+  );
+  return path;
 }
 
 /**
- * Charges the name like a hero's fist in a film: crackles flickering along
- * its edges, never the same twice, and his orange bolts going round it,
- * pointing out, flickering as they go. Draws into the svg until stopped;
+ * Charges the name like a hero's fist in a film: a static of small bolts
+ * lighting up and out along its edges, never in the same places twice, and
+ * bigger ones going round it, pointing out, flickering as they go. Draws into the svg until stopped;
  * `place` puts the svg over the name each frame, where it isn't already.
  */
 function electrify(svg: SVGSVGElement, name: HTMLElement, soft: boolean, place?: (box: DOMRect) => void): () => void {
@@ -205,15 +202,9 @@ function electrify(svg: SVGSVGElement, name: HTMLElement, soft: boolean, place?:
       b.g.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${turn.toFixed(1)}) scale(${k.toFixed(3)}) translate(${-BOLT_W / 2} ${-BOLT_H / 2})`);
       b.g.setAttribute("opacity", Math.random() < 0.12 ? "0.35" : "1");
     }
-    // The crackles change every other frame: faster would only blur.
+    // The static changes every other frame: faster would only blur.
     if (n++ % 2 === 0) {
-      crackles.replaceChildren(
-        ...Array.from({ length: soft ? 3 : 5 }, () => {
-          const path = document.createElementNS(SVG, "path");
-          path.setAttribute("d", arc(w, h, 3, soft ? 3 : 5));
-          return path;
-        }),
-      );
+      crackles.replaceChildren(...Array.from({ length: soft ? 5 : 9 }, () => crackle(w, h, soft)));
     }
   };
   frame = requestAnimationFrame(tick);
