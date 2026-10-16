@@ -14,7 +14,7 @@ export const EFFECT_LABELS: Record<Effect, string> = {
   copione: "Chat a raffica dietro la card, sulla Ruby Storm",
   fumetto: "Nuvolette da fumetto con le sue frasi",
   orsetti: "Pioggia di orsetti gommosi dietro e davanti alla card",
-  peek: "Fa capolino a turno dai quattro lati dello schermo",
+  peek: "Fa capolino a turno dai quattro lati della card",
 };
 
 export const EASTER_EGGS: { playerId: number; name: string; effect: Effect }[] = [

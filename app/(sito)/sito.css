@@ -1345,16 +1345,19 @@ body:has(.lpm)::before {
   z-index: -1;
   opacity: 0.45;
 }
-/* The standings' one peach, in the line after the name, raised a little:
-   there only while the row is pointed at. Both classes, to outweigh the
-   stickers' pop below. */
-.lpm .rg-sticker.rg-sticker-inline {
+/* The standings' little bunch of peaches, in the line after the name,
+   raised a little: there only while the row is pointed at. Both classes on
+   each, to outweigh the stickers' pop below. */
+.lpm .rg-peach-mark {
   position: relative;
   display: inline-block;
   flex-shrink: 0;
-  margin-left: 0.2em;
-  font-size: 0.85em;
-  translate: 0 -0.3em;
+  width: 1.7em;
+  height: 1em;
+  margin-left: 0.25em;
+  translate: 0 -0.25em;
+}
+.lpm .rg-sticker.rg-sticker-inline {
   scale: 0;
   animation: none;
 }
@@ -1526,7 +1529,7 @@ body:has(.lpm)::before {
 }
 .lpm .rg-comic-words {
   position: relative;
-  font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Marker Felt", cursive;
+  font-family: var(--font-rg-comic), "Comic Sans MS", "Chalkboard SE", sans-serif;
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
@@ -1563,13 +1566,19 @@ body:has(.lpm)::before {
 }
 
 /* The easter eggs' peek (Easter.tsx): a picture of the player, a sticker,
-   peeking in from an edge of the screen, turned so his head comes in first;
-   where and how far is set from the script. */
+   peeking in from an edge of his card (or his row), turned so his head
+   comes in first; where and how far is set from the script. The card clips
+   him; he's over its text. */
+.lpm .rg-peek-host {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+}
 .lpm .rg-peek {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
-  z-index: 110;
+  z-index: 1;
   pointer-events: none;
   user-select: none;
   /* Turned about its own corner: the script works out where that goes. */
