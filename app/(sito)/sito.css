@@ -1543,10 +1543,111 @@ body:has(.lpm)::before {
   z-index: -1;
   pointer-events: none;
 }
+.lpm .rg-bears-front {
+  z-index: 1;
+}
 .lpm .rg-bear {
   position: absolute;
   overflow: visible;
   opacity: 0.94;
   filter: drop-shadow(0 1.5px 1.5px rgb(0 0 0 / 0.28));
   will-change: transform;
+}
+/* Behind the text, paler, so front and back read apart. */
+.lpm .rg-bear-back {
+  opacity: 0.5;
+}
+
+/* The easter eggs' peek (Easter.tsx): a picture of the player coming up out
+   of the bottom left corner of his card, tilted, having a look round with an
+   "oh, oh?" and ducking back, every eight seconds or so. In the card, which
+   clips it; over its text, since he's peeking at it. */
+.lpm .rg-peek {
+  position: absolute;
+  left: -4%;
+  bottom: 0;
+  z-index: 1;
+  width: min(46%, 230px);
+  pointer-events: none;
+  user-select: none;
+  transform-origin: 30% 100%;
+  translate: 0 52%;
+  rotate: 12deg;
+}
+.lpm .rg-peek-who {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.3));
+}
+.lpm .rg-peek-oh {
+  position: absolute;
+  top: 2%;
+  left: 62%;
+  padding: 0.3em 0.7em;
+  border: 2px solid #141a24;
+  border-radius: 1em 1em 1em 0.2em;
+  background: #fff;
+  color: #141a24;
+  font-family: "Comic Sans MS", "Chalkboard SE", "Comic Neue", "Marker Felt", cursive;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+  rotate: -12deg;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lpm .rg-peek {
+    animation: rg-peek 8s ease-in-out infinite;
+    animation-delay: 1s;
+  }
+  .lpm .rg-peek-oh {
+    animation: rg-peek-oh 8s ease-in-out infinite;
+    animation-delay: 1s;
+  }
+}
+/* Hidden under the edge; up; a look one way and the other; down. */
+@keyframes rg-peek {
+  0%,
+  22% {
+    translate: 0 100%;
+    rotate: 12deg;
+  }
+  32% {
+    translate: 0 52%;
+    rotate: 14deg;
+  }
+  44% {
+    translate: 0 50%;
+    rotate: 6deg;
+  }
+  56% {
+    translate: 0 50%;
+    rotate: 16deg;
+  }
+  64% {
+    translate: 0 52%;
+    rotate: 12deg;
+  }
+  74%,
+  100% {
+    translate: 0 100%;
+    rotate: 12deg;
+  }
+}
+@keyframes rg-peek-oh {
+  0%,
+  34% {
+    opacity: 0;
+    scale: 0.4;
+  }
+  38%,
+  60% {
+    opacity: 1;
+    scale: 1;
+  }
+  64%,
+  100% {
+    opacity: 0;
+    scale: 0.6;
+  }
 }

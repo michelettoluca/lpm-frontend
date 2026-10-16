@@ -675,7 +675,7 @@ function bear(colour: string, tall: number): SVGSVGElement {
  * so the pile grows slowly. Returns what drops one, false once the pile is
  * as high as it should go.
  */
-function bearRain(layer: HTMLElement, small: boolean) {
+function bearRain(layer: HTMLElement, front: HTMLElement, small: boolean) {
   const step = 5;
   let heap: number[] = [];
   let count = 0;
@@ -686,7 +686,9 @@ function bearRain(layer: HTMLElement, small: boolean) {
     if (heap.length !== Math.ceil(W / step)) heap = Array(Math.ceil(W / step)).fill(0);
     if (count >= max || Math.max(...heap) > H * (small ? 0.45 : 0.12)) return false;
     count++;
-    const tall = small ? between(12, 16) : between(24, 34);
+    // Big and small from the same bag; a third come down in front of the text.
+    const tall = small ? between(10, 18) : between(16, 44);
+    const ahead = Math.random() < 0.33;
     const wide = (tall * 40) / 56;
     // Mostly lying on a side, now and then on its back or face down.
     const flat = Math.random() < 0.8;
@@ -706,7 +708,8 @@ function bearRain(layer: HTMLElement, small: boolean) {
     const svg = bear(BEAR_COLOURS[Math.floor(Math.random() * BEAR_COLOURS.length)], tall);
     svg.style.left = `${cx - wide / 2}px`;
     svg.style.top = `${cy - tall / 2}px`;
-    layer.append(svg);
+    if (!ahead) svg.classList.add("rg-bear-back");
+    (ahead ? front : layer).append(svg);
     const down = `rotate(${tilt}deg)`;
     if (still) {
       svg.style.transform = down;
@@ -744,14 +747,20 @@ function Bears({ soft, children }: { soft: boolean; children: ReactNode }) {
     if (!name || !host) return;
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let layer: HTMLElement | null = null;
+    let front: HTMLElement | null = null;
     let timer: number | null = null;
     const open = () => {
+      // Two layers on one pile: behind the text, and over it.
       layer = document.createElement("div");
       layer.className = "rg-bears";
       layer.setAttribute("aria-hidden", "true");
+      front = document.createElement("div");
+      front.className = "rg-bears rg-bears-front";
+      front.setAttribute("aria-hidden", "true");
       host.classList.add("rg-bears-host");
       host.prepend(layer);
-      return bearRain(layer, soft);
+      host.append(front);
+      return bearRain(layer, front, soft);
     };
     const rain = (drop: (still?: boolean) => boolean) => {
       if (timer !== null) return;
@@ -774,6 +783,7 @@ function Bears({ soft, children }: { soft: boolean; children: ReactNode }) {
       const end = () => {
         stopRain();
         layer?.remove();
+        front?.remove();
         layer = null;
         drop = null;
       };
@@ -791,7 +801,10 @@ function Bears({ soft, children }: { soft: boolean; children: ReactNode }) {
     const drop = open();
     if (still) {
       while (drop(true));
-      return () => layer?.remove();
+      return () => {
+        layer?.remove();
+        front?.remove();
+      };
     }
     const seen = new IntersectionObserver(([entry]) => (entry.isIntersecting ? rain(drop) : stopRain()));
     const t = window.setTimeout(() => seen.observe(host), 400);
@@ -800,10 +813,31 @@ function Bears({ soft, children }: { soft: boolean; children: ReactNode }) {
       seen.disconnect();
       stopRain();
       layer?.remove();
+      front?.remove();
     };
   }, [soft]);
 
   return <span ref={el}>{children}</span>;
+}
+
+/**
+ * Stefano D'Antonio peeking: his picture comes up out of the bottom left
+ * corner of his first card, tilted, head and shoulders, has a look round
+ * with an "oh, oh?" and ducks back down, then does it again in a while
+ * (sito.css). It sits in the card, which is its own layer and clips it.
+ * Still for reduced motion: just peeking.
+ */
+function Peek({ children }: { children: ReactNode }) {
+  return (
+    <>
+      {children}
+      <span aria-hidden="true" className="rg-peek">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/easter/stefano-dantonio.png" alt="" width={355} height={420} className="rg-peek-who" />
+        <span className="rg-peek-oh">oh, oh?</span>
+      </span>
+    </>
+  );
 }
 
 /**
@@ -822,6 +856,7 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   if (effect === "fulmini") return <Electric soft={soft}>{children}</Electric>;
   if (effect === "fumetto") return <Comic soft={soft}>{children}</Comic>;
   if (effect === "orsetti") return <Bears soft={soft}>{children}</Bears>;
+  if (effect === "peek") return soft ? <>{children}</> : <Peek>{children}</Peek>;
   return (
     <Burst effect={effect} soft={soft}>
       {children}
