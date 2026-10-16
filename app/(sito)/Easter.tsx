@@ -9,19 +9,23 @@ const between = (a: number, b: number) => a + Math.random() * (b - a);
 const SVG = "http://www.w3.org/2000/svg";
 
 /**
- * A puff of mist, drifting past the name and thinning out. Behind ones blend
- * so the letters stay crisp over them (sito.css), front ones are the card's
- * paper and hide the letters in a fog. Each is fixed on the screen on its
- * own, not in a layer: a layer would blend them with nothing.
+ * A puff of mist, drifting past the name and thinning out, or lying low
+ * along its foot. Behind ones blend so the letters stay crisp over them
+ * (sito.css), front ones are the card's paper and hide the letters in a
+ * fog. Each is fixed on the screen on its own, not in a layer: a layer
+ * would blend them with nothing.
  */
-function puff(box: DOMRect, front: boolean) {
+function puff(box: DOMRect, front: boolean, ground: boolean) {
   const site = document.querySelector<HTMLElement>(".lpm");
   if (!site) return;
-  const w = between(0.5, 1.1) * Math.max(80, Math.min(box.width, 260));
-  const h = w * between(0.35, 0.55);
+  const span = Math.max(80, Math.min(box.width, 260));
+  // A ground puff is wide and low, lying along the foot of the name, under
+  // the last line, where the fog stays thick; the others drift anywhere on it.
+  const w = ground ? between(0.8, 1.4) * span : between(0.5, 1.1) * span;
+  const h = ground ? w * between(0.2, 0.3) : w * between(0.35, 0.55);
   const x = between(box.left - w * 0.3, box.right - w * 0.7);
-  const y = between(box.top - h * 0.4, box.bottom - h * 0.6);
-  const drift = between(24, 60) * (Math.random() < 0.5 ? -1 : 1);
+  const y = ground ? box.bottom - h * between(0.3, 0.7) : between(box.top - h * 0.4, box.bottom - h * 0.6);
+  const drift = (ground ? between(12, 30) : between(24, 60)) * (Math.random() < 0.5 ? -1 : 1);
 
   const el = document.createElement("div");
   el.className = `rg-mist ${front ? "rg-mist-front" : "rg-mist-back"}`;
@@ -37,16 +41,17 @@ function puff(box: DOMRect, front: boolean) {
       { transform: "translate(0, 0) scale(0.6)", opacity: 0 },
       { opacity: 1, offset: 0.3 },
       { opacity: 0.8, offset: 0.7 },
-      { transform: `translate(${drift}px, ${between(-10, 4)}px) scale(1.25)`, opacity: 0 },
+      { transform: `translate(${drift}px, ${ground ? between(-3, 2) : between(-10, 4)}px) scale(1.25)`, opacity: 0 },
     ],
-    { duration: between(2200, 3600), easing: "ease-out" },
+    { duration: ground ? between(3200, 4800) : between(2200, 3600), easing: "ease-out" },
   ).finished.finally(() => el.remove());
 }
 
 type Play = { first: number; each: number; every: number; draw: (box: DOMRect, i: number) => void };
 
-// Every other puff in front, so the name keeps sinking into the fog.
-const MIST: Play = { first: 12, each: 1, every: 420, draw: (box, i) => puff(box, i % 2 === 0) };
+// Every other puff in front, so the name keeps sinking into the fog; two in
+// three along its foot, where the fog lies thickest.
+const MIST: Play = { first: 16, each: 1, every: 340, draw: (box, i) => puff(box, i % 2 === 0, i % 3 !== 2) };
 
 /** What the mist throws as it starts, then how much and how often: the same on his page and in the standings. */
 const PLAY: Record<"nebbia", { full: Play; soft: Play }> = {
