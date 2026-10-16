@@ -1243,8 +1243,9 @@ body:has(.lpm)::before {
   background: var(--rg-ink);
 }
 
-/* The easter eggs' bolts (Easter.tsx): yellow with an inked edge, flying in a
-   layer over the whole screen, above the grain, never in the way. */
+/* The easter eggs' bolts (Easter.tsx): Diego's logo, flying in a layer over
+   the whole screen, above the grain, never in the way. Its orange stays;
+   its white is the ink, so it shows on the light paper too. */
 .lpm .rg-sparks {
   position: fixed;
   inset: 0;
@@ -1255,11 +1256,13 @@ body:has(.lpm)::before {
 .lpm .rg-spark {
   position: absolute;
   overflow: visible;
-  fill: #ffd23f;
-  stroke: var(--rg-ink);
-  stroke-width: 1.1;
-  stroke-linejoin: round;
   will-change: transform, opacity;
+}
+.lpm .rg-spark-orange {
+  fill: #f7941d;
+}
+.lpm .rg-spark-white {
+  fill: var(--rg-ink);
 }
 
 /* The easter eggs' mist (Easter.tsx): soft puffs fixed on the screen, over

@@ -4,27 +4,14 @@ import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { effectOf } from "@/app/lib/easter";
 import { COPIONE, type Battuta } from "./copione";
 
-/* A lightning bolt in a 10 by 20 box: down to the left, a step, down again. */
-const BOLT: [number, number][] = [
-  [6, 0],
-  [0.5, 11],
-  [4.6, 11],
-  [2.4, 20],
-  [9.6, 7.4],
-  [5.6, 7.4],
-  [8.4, 0],
-];
+/* Diego's bolts: his logo, an orange bolt beside a white one, traced from
+   the picture into a 338 by 580 box. */
+const BOLT_ORANGE =
+  "M39 34 41 35 41 44 22 208 34 212 72 216 76 217 77 220 41 317 40 327 45 328 87 317 91 317 93 323 73 513 71 513 73 343 66 342 13 354 9 354 7 351 47 241 47 236 44 234 6 231 0 227Z";
+const BOLT_WHITE =
+  "M26 0 229 30 227 36 200 57 164 90 236 106 238 110 157 211 94 247 92 247 94 242 169 142 176 132 176 128 91 113 91 108 147 60 151 53ZM332 204 338 204 336 207 188 254 178 259 157 343 158 346 279 325 286 325 286 327 150 392 68 580 143 271 143 268 97 268 97 266 163 226Z";
 
 const between = (a: number, b: number) => a + Math.random() * (b - a);
-
-/** A bolt as if drawn by hand: every corner nudged a little, so no two match. */
-function boltPath() {
-  return (
-    BOLT.map(([x, y], i) => `${i ? "L" : "M"}${(x + between(-0.5, 0.5)).toFixed(2)} ${(y + between(-0.5, 0.5)).toFixed(2)}`).join(
-      " ",
-    ) + " Z"
-  );
-}
 
 const SVG = "http://www.w3.org/2000/svg";
 
@@ -42,11 +29,12 @@ function layer(): HTMLElement | null {
   return el;
 }
 
-/** One bolt, flung out of the name from a point on its box, spinning, flashing and gone. */
+/** One of his bolts, flung out of the name from a point on its box, spinning, flashing and gone. */
 function spark(box: DOMRect, scale = 1) {
   const into = layer();
   if (!into) return;
-  const size = between(14, 26) * scale;
+  // Wide enough for the logo to read, a little over half as wide as tall.
+  const size = between(22, 40) * scale;
   // Somewhere on the name, a little past its edges, thrown away from its middle.
   const x = between(box.left - 6, box.right + 6);
   const y = between(box.top - 4, box.bottom + 4);
@@ -56,15 +44,21 @@ function spark(box: DOMRect, scale = 1) {
   const spin = between(-50, 50);
 
   const svg = document.createElementNS(SVG, "svg");
-  svg.setAttribute("viewBox", "-1 -1 12 22");
+  svg.setAttribute("viewBox", "0 0 338 580");
   svg.setAttribute("width", String(size));
-  svg.setAttribute("height", String(size * 2));
+  svg.setAttribute("height", String((size * 580) / 338));
   svg.classList.add("rg-spark");
   svg.style.left = `${x - size / 2}px`;
   svg.style.top = `${y - size}px`;
-  const path = document.createElementNS(SVG, "path");
-  path.setAttribute("d", boltPath());
-  svg.append(path);
+  for (const [d, part] of [
+    [BOLT_ORANGE, "rg-spark-orange"],
+    [BOLT_WHITE, "rg-spark-white"],
+  ]) {
+    const path = document.createElementNS(SVG, "path");
+    path.setAttribute("d", d);
+    path.setAttribute("class", part);
+    svg.append(path);
+  }
   into.append(svg);
 
   const dx = Math.cos(away) * far;
