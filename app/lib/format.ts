@@ -42,10 +42,10 @@ function romeParts(iso: string) {
   return { day: pick("day"), month: pick("month"), year: pick("year") };
 }
 
-/** Day + 3-letter Italian month for date tiles. */
-export function dateTile(iso: string): { day: string; mon: string } {
+/** Day + 3-letter Italian month for date tiles, and the month's number for another language's. */
+export function dateTile(iso: string): { day: string; mon: string; month: number } {
   const { day, month } = romeParts(iso);
-  return { day: String(day), mon: MONTHS[month - 1] ?? "" };
+  return { day: String(day), mon: MONTHS[month - 1] ?? "", month };
 }
 
 /** "12 set 2026" */

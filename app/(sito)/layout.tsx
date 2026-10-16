@@ -1,6 +1,6 @@
 import { Comic_Neue, Figtree } from "next/font/google";
 import { deckCollectionOpen } from "@/app/lib/api";
-import { HomeLink, Nav } from "./Nav";
+import { HomeLink, Nav, SkipLink } from "./Nav";
 import { Footer } from "./Footer";
 import { WobbleDefs } from "./ui";
 import "./sito.css";
@@ -27,9 +27,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
   return (
     <div className={`lpm ${text.variable} ${comic.variable}`}>
       <WobbleDefs />
-      <a href="#rg-main" className="rg-skip">
-        salta al contenuto
-      </a>
+      <SkipLink />
       {/* Its own layer above the page: the phone menu opens just under it, its backdrop behind the header's links. */}
       <header className="rg-wrap relative z-30 flex items-center justify-between gap-x-6 pt-3 pb-3 lg:pt-6 lg:pb-5">
         <HomeLink />
