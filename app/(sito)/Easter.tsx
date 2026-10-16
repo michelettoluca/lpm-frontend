@@ -310,13 +310,13 @@ function Electric({ soft, children }: { soft: boolean; children: ReactNode }) {
 }
 
 const PEACH = "\u{1F351}";
+const LOBSTER = "\u{1F99E}";
 
-/**
- * Where the peaches stick around the name, in its box: the centre as a share
- * of its width and height, the size in em of the name's type, the tilt, and
- * whether it sits behind the letters or over them.
- */
-const PEACHES = [
+/** A sticker by the name: its centre as a share of the name's box, its size in em of the name's type, its tilt, and whether it's over the letters. */
+type Spot = { x: number; y: number; size: number; tilt: number; front?: boolean };
+
+/** Where the peaches stick around the name, some behind the letters and some over them. */
+const PEACHES: Spot[] = [
   { x: 1.04, y: 0.62, size: 0.7, tilt: 14, front: true },
   { x: 0.86, y: 0.02, size: 0.45, tilt: -14, front: false },
   { x: 0.1, y: -0.06, size: 0.52, tilt: 9, front: false },
@@ -330,16 +330,19 @@ const PEACHES = [
   { x: 0.22, y: 1.06, size: 0.3, tilt: 16, front: false },
 ];
 
+/** Lisa Coronini's lobster: just one, big, at the end of her name, over it. */
+const LOBSTERS: Spot[] = [{ x: 1.06, y: 0.62, size: 0.8, tilt: 16, front: true }];
+
 /**
- * Peaches stuck around the name like stickers, of different sizes, some
- * behind the letters and some over them, popping on one after another as the
- * page opens.
+ * Stickers stuck around the name, Arturo Precioso's peaches of different
+ * sizes, some behind the letters and some over them, or Lisa Coronini's one
+ * lobster, popping on one after another as the page opens.
  */
-function Peaches({ children }: { children: ReactNode }) {
+function Stickers({ emoji, spots, children }: { emoji: string; spots: Spot[]; children: ReactNode }) {
   return (
     <span className="rg-peaches">
       {children}
-      {PEACHES.map((p, i) => (
+      {spots.map((p, i) => (
         <span
           key={i}
           aria-hidden="true"
@@ -354,7 +357,7 @@ function Peaches({ children }: { children: ReactNode }) {
             } as CSSProperties
           }
         >
-          {PEACH}
+          {emoji}
         </span>
       ))}
     </span>
@@ -1529,6 +1532,97 @@ function Fan({ children }: { children: ReactNode }) {
 }
 
 /**
+ * Filippo Pezza's championship belt, for winning the Paupergeddon in Pisa
+ * in 2024: its centre plate, drawn about its middle, 380 wide. Gold, its
+ * edge notched at the corners, wings onto the strap, gems at its sides; in
+ * the middle a red enamel field with PAUPERGEDDON round the top, CHAMPION
+ * across it and PISA 2024 under it; and a glint that
+ * sweeps across the gold now and then (sito.css). Its gradients are named
+ * on the page, for the side plates too.
+ */
+const PLATE_EDGE =
+  "M0 -96C40 -96 70 -84 92 -70L118 -78C138 -56 152 -30 152 0C152 30 138 56 118 78L92 70C70 84 40 96 0 96C-40 96 -70 84 -92 70L-118 78C-138 56 -152 30 -152 0C-152 -30 -138 -56 -118 -78L-92 -70C-70 -84 -40 -96 0 -96Z";
+const BELT_PLATE = `<svg class="rg-belt-plate" viewBox="-190 -126 380 226" aria-hidden="true">
+  <defs>
+    <linearGradient id="rg-belt-gold" x1="0" y1="0" x2="0.35" y2="1">
+      <stop offset="0" stop-color="#fff4c4"/><stop offset="0.22" stop-color="#f3cf5c"/><stop offset="0.45" stop-color="#b8861f"/>
+      <stop offset="0.62" stop-color="#f0cb58"/><stop offset="0.82" stop-color="#fff0b0"/><stop offset="1" stop-color="#9a6d14"/>
+    </linearGradient>
+    <linearGradient id="rg-belt-red" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff4a57"/><stop offset="0.5" stop-color="#c50f22"/><stop offset="1" stop-color="#7d0714"/>
+    </linearGradient>
+    <linearGradient id="rg-belt-glint" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.85"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="rg-belt-clip"><path d="${PLATE_EDGE}"/></clipPath>
+    <path id="rg-belt-arc" d="M-86 -2A86 46 0 0 1 86 -2"/>
+  </defs>
+  <g fill="url(#rg-belt-gold)" stroke="#6b4a0c" stroke-width="3" stroke-linejoin="round">
+    <path d="M-150 -40L-188 -30L-188 30L-150 40Z"/><path d="M150 -40L188 -30L188 30L150 40Z"/>
+    <path d="${PLATE_EDGE}"/>
+  </g>
+  <path d="${PLATE_EDGE}" transform="scale(0.9)" fill="none" stroke="#fff6cf" stroke-width="2.5"/>
+  <path d="${PLATE_EDGE}" transform="scale(0.85)" fill="none" stroke="#7a560f" stroke-width="1.5"/>
+  <ellipse rx="112" ry="66" fill="url(#rg-belt-red)" stroke="#6b4a0c" stroke-width="3"/>
+  <ellipse rx="104" ry="59" fill="none" stroke="#ffd75e" stroke-width="1.5"/>
+  <text class="rg-belt-words" font-size="19" letter-spacing="1.5" fill="#ffe27a"><textPath href="#rg-belt-arc" startOffset="50%" text-anchor="middle">PAUPERGEDDON</textPath></text>
+  <text class="rg-belt-words" y="16" font-size="28" letter-spacing="1" text-anchor="middle" fill="url(#rg-belt-gold)" stroke="#5a3c06" stroke-width="0.8">CHAMPION</text>
+  <text class="rg-belt-words" y="45" font-size="14" letter-spacing="2" text-anchor="middle" fill="#ffe27a">★ PISA 2024 ★</text>
+  <g stroke="#6b4a0c" stroke-width="2"><circle cx="-132" cy="0" r="7" fill="#c50f22"/><circle cx="132" cy="0" r="7" fill="#c50f22"/><circle cx="0" cy="83" r="6" fill="#c50f22"/></g>
+  <g fill="#fff" opacity="0.8"><circle cx="-134" cy="-2" r="2"/><circle cx="130" cy="-2" r="2"/><circle cx="-2" cy="81" r="1.6"/></g>
+  <g clip-path="url(#rg-belt-clip)"><rect class="rg-belt-glint" x="-40" y="-110" width="80" height="220" fill="url(#rg-belt-glint)"/></g>
+</svg>`;
+/** A side plate on the strap: gold, a red disc, a gold star. */
+const BELT_SIDE = `<svg class="rg-belt-side" viewBox="-40 -36 80 72" aria-hidden="true">
+  <path d="M-34 -30H34Q38 -30 38 -26V26Q38 30 34 30H-34Q-38 30 -38 26V-26Q-38 -30 -34 -30Z" fill="url(#rg-belt-gold)" stroke="#6b4a0c" stroke-width="3"/>
+  <circle r="17" fill="url(#rg-belt-red)" stroke="#6b4a0c" stroke-width="2"/>
+  <path d="M0 -11L3.2 -3.5L11 -3.4L4.8 1.6L7 9.4L0 4.8L-7 9.4L-4.8 1.6L-11 -3.4L-3.2 -3.5Z" fill="#ffe27a"/>
+</svg>`;
+
+/**
+ * Filippo Pezza's belt, slung across the top right corner of his first
+ * card, its leather strap running off the card's top and right edges: it
+ * comes slamming down onto the card as the page opens, the card shaking as
+ * it lands, then glints now and then (sito.css). Over the text.
+ */
+function Belt({ children }: { children: ReactNode }) {
+  const el = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const host = el.current?.closest<HTMLElement>(".rg-panel");
+    if (!host) return;
+    const belt = document.createElement("div");
+    belt.className = "rg-belt";
+    belt.setAttribute("aria-hidden", "true");
+    belt.innerHTML = `<div class="rg-belt-strap"></div>${BELT_SIDE}${BELT_SIDE}${BELT_PLATE}`;
+    host.append(belt);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return () => belt.remove();
+    // The card takes the blow as the belt lands (its slam, in sito.css, lands about then).
+    const t = window.setTimeout(
+      () =>
+        host.animate(
+          [
+            { translate: "0 0" },
+            { translate: "0 6px" },
+            { translate: "-3px -2px" },
+            { translate: "2px 1px" },
+            { translate: "-1px 0" },
+            { translate: "0 0" },
+          ],
+          { duration: 360, easing: "ease-out" },
+        ),
+      700,
+    );
+    return () => {
+      window.clearTimeout(t);
+      belt.remove();
+    };
+  }, []);
+
+  return <span ref={el}>{children}</span>;
+}
+
+/**
  * A player's name with their easter egg, if they have one: a charge of
  * lightning round it, a mist drifting past, peaches stuck on like stickers,
  * an infection eating the card's edge, or a chat of his messages piling up
@@ -1540,8 +1634,10 @@ function Fan({ children }: { children: ReactNode }) {
 export function Easter({ playerId, soft = false, children }: { playerId: number | string; soft?: boolean; children: ReactNode }) {
   const effect = effectOf(playerId);
   // Davide Rapacciuolo's is the words of his whole page (parole.ts), not something on his name.
-  if (!effect || effect === "napoletano" || (effect === "pesca" && soft)) return <>{children}</>;
-  if (effect === "pesca") return <Peaches>{children}</Peaches>;
+  // The stickers in the standings are by the name, put there by `EasterMark`.
+  if (!effect || effect === "napoletano" || ((effect === "pesca" || effect === "aragosta") && soft)) return <>{children}</>;
+  if (effect === "pesca") return <Stickers emoji={PEACH} spots={PEACHES}>{children}</Stickers>;
+  if (effect === "aragosta") return <Stickers emoji={LOBSTER} spots={LOBSTERS}>{children}</Stickers>;
   if (effect === "copione") return soft ? <CopioneRow>{children}</CopioneRow> : <Copione>{children}</Copione>;
   if (effect === "fulmini") return <Electric soft={soft}>{children}</Electric>;
   if (effect === "fumetto") return <Comic soft={soft}>{children}</Comic>;
@@ -1550,6 +1646,8 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   if (effect === "infezione") return <Mold soft={soft}>{children}</Mold>;
   // In the standings his hand is a little one after the name, put there by `EasterMark`.
   if (effect === "ventaglio") return soft ? <>{children}</> : <Fan>{children}</Fan>;
+  // In the standings his belt's plate is a little one after the name, put there by `EasterMark`.
+  if (effect === "cintura") return soft ? <>{children}</> : <Belt>{children}</Belt>;
   return (
     <Burst effect={effect} soft={soft}>
       {children}
@@ -1558,27 +1656,33 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
 }
 
 /** The standings' little bunch of peaches, by the name: where each sits in it, its size in em and its tilt. */
-const MARK_PEACHES = [
+const MARK_PEACHES: Spot[] = [
   { x: 0.25, y: 0.62, size: 0.95, tilt: 12 },
   { x: 0.78, y: 0.28, size: 0.62, tilt: -16 },
   { x: 1.12, y: 0.82, size: 0.72, tilt: 24 },
   { x: 0.55, y: -0.1, size: 0.5, tilt: -6 },
 ];
 
+/** Lisa Coronini's lobster in the standings, by the name: just the one. */
+const MARK_LOBSTER: Spot[] = [{ x: 0.5, y: 0.5, size: 1.1, tilt: 14 }];
+
 /**
  * Arturo Precioso's peaches in the standings: a little bunch just after
  * his name, popping on one after another while the row is pointed at
  * (sito.css). Its own element beside the name, not in it: a name cut short
- * with an ellipsis would cut them off too. Tommaso Cavallini's little hand
- * of cards goes there the same way.
+ * with an ellipsis would cut them off too. Lisa Coronini's one lobster,
+ * Tommaso Cavallini's hand of cards and Filippo Pezza's belt's plate go
+ * there the same way.
  */
 export function EasterMark({ playerId }: { playerId: number | string }) {
   const effect = effectOf(playerId);
   if (effect === "ventaglio") return <FanMark />;
-  if (effect !== "pesca") return null;
+  if (effect === "cintura") return <span aria-hidden="true" className="rg-belt-mark" dangerouslySetInnerHTML={{ __html: BELT_PLATE }} />;
+  if (effect !== "pesca" && effect !== "aragosta") return null;
+  const lobster = effect === "aragosta";
   return (
-    <span aria-hidden="true" className="rg-peach-mark">
-      {MARK_PEACHES.map((p, i) => (
+    <span aria-hidden="true" className={`rg-peach-mark ${lobster ? "rg-peach-mark-one" : ""}`}>
+      {(lobster ? MARK_LOBSTER : MARK_PEACHES).map((p, i) => (
         <span
           key={i}
           className="rg-sticker rg-sticker-inline"
@@ -1592,7 +1696,7 @@ export function EasterMark({ playerId }: { playerId: number | string }) {
             } as CSSProperties
           }
         >
-          {PEACH}
+          {lobster ? LOBSTER : PEACH}
         </span>
       ))}
     </span>

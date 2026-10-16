@@ -1357,6 +1357,10 @@ body:has(.lpm)::before {
   margin-left: 0.25em;
   translate: 0 -0.25em;
 }
+/* Lisa Coronini's one lobster takes less room. */
+.lpm .rg-peach-mark.rg-peach-mark-one {
+  width: 1.2em;
+}
 .lpm .rg-sticker.rg-sticker-inline {
   scale: 0;
   animation: none;
@@ -1726,5 +1730,142 @@ body:has(.lpm)::before {
     transition:
       translate 0.45s cubic-bezier(0.25, 1.3, 0.5, 1) var(--deal),
       rotate 0.45s cubic-bezier(0.25, 1.3, 0.5, 1) var(--deal);
+  }
+}
+
+/* The easter eggs' championship belt (Easter.tsx): Filippo Pezza's, slung
+   across the top right corner of his first card, over the text: its centre
+   plate in the corner, its strap running off the card's top and right
+   edges, which cut it off. Everything is set from the plate's width, which
+   grows with the page. It slams down as the page opens, then glints. */
+.lpm .rg-belt {
+  --pw: clamp(130px, 22vw + 48px, 300px);
+  /* The plate's drawing, wings and crown and all, a little wider than the plate. */
+  --sw: calc(var(--pw) * 1.25);
+  --tilt: 22deg;
+  position: absolute;
+  z-index: 1;
+  top: calc(var(--pw) * 0.48);
+  right: calc(var(--pw) * 0.72);
+  width: 0;
+  height: 0;
+  rotate: var(--tilt);
+  pointer-events: none;
+}
+.lpm .rg-belt-strap {
+  position: absolute;
+  left: calc(var(--pw) * -3);
+  top: calc(var(--sw) * -0.105);
+  width: calc(var(--pw) * 6);
+  height: calc(var(--sw) * 0.21);
+  border-block: 2px solid #0a0705;
+  background: linear-gradient(#33261d, #140e0a 55%, #2b1f17);
+  box-shadow: 0 6px 14px rgb(0 0 0 / 0.35);
+}
+/* Its gold stitching, along both edges. */
+.lpm .rg-belt-strap::before,
+.lpm .rg-belt-strap::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  border-top: 1.5px dashed #c9a23a;
+  opacity: 0.85;
+}
+.lpm .rg-belt-strap::before {
+  top: 14%;
+}
+.lpm .rg-belt-strap::after {
+  bottom: 14%;
+}
+.lpm .rg-belt-plate {
+  position: absolute;
+  left: calc(var(--sw) * -0.5);
+  top: calc(var(--sw) * -0.3316);
+  width: var(--sw);
+  height: calc(var(--sw) * 0.5947);
+  overflow: visible;
+  filter: drop-shadow(0 8px 12px rgb(0 0 0 / 0.4));
+}
+.lpm .rg-belt-side {
+  position: absolute;
+  top: calc(var(--sw) * -0.095);
+  left: calc(var(--sw) * 0.535);
+  width: calc(var(--sw) * 0.21);
+  height: calc(var(--sw) * 0.19);
+  filter: drop-shadow(0 3px 5px rgb(0 0 0 / 0.35));
+}
+.lpm .rg-belt-side:first-of-type {
+  left: calc(var(--sw) * -0.745);
+}
+.lpm .rg-belt-words {
+  font-family: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
+  font-weight: 800;
+}
+.lpm .rg-belt-glint {
+  translate: -260px 0;
+  rotate: 20deg;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lpm .rg-belt {
+    animation: rg-belt-slam 0.55s cubic-bezier(0.3, 1.3, 0.5, 1) 0.35s both;
+  }
+  .lpm .rg-belt-glint {
+    animation: rg-belt-glint 4.5s ease-in-out 1.2s infinite;
+  }
+}
+@keyframes rg-belt-slam {
+  from {
+    scale: 2.4;
+    opacity: 0;
+    rotate: calc(var(--tilt) - 18deg);
+  }
+  45% {
+    opacity: 1;
+  }
+}
+@keyframes rg-belt-glint {
+  from {
+    translate: -260px 0;
+  }
+  30%,
+  to {
+    translate: 260px 0;
+  }
+}
+/* In the standings, the plate just after the name, popping on and glinting
+   while the row is pointed at. */
+.lpm .rg-belt-mark {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 2.6em;
+  height: 1em;
+  margin-left: 0.25em;
+}
+.lpm .rg-belt-mark > .rg-belt-plate {
+  left: 0;
+  top: -0.35em;
+  width: 2.6em;
+  height: auto;
+  aspect-ratio: 380 / 226;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 0.35));
+  scale: 0;
+  rotate: -12deg;
+}
+.lpm .rg-row:hover .rg-belt-mark > .rg-belt-plate {
+  scale: 1;
+  rotate: 0deg;
+}
+.lpm .rg-belt-mark .rg-belt-glint {
+  animation: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lpm .rg-belt-mark > .rg-belt-plate {
+    transition:
+      scale 0.35s cubic-bezier(0.3, 1.5, 0.5, 1),
+      rotate 0.35s cubic-bezier(0.3, 1.5, 0.5, 1);
+  }
+  .lpm .rg-row:hover .rg-belt-mark .rg-belt-glint {
+    animation: rg-belt-glint 1.6s ease-in-out 0.2s infinite;
   }
 }
