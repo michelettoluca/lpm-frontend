@@ -102,7 +102,10 @@ export function Drift({
   cols: number;
   rows: number;
   seed: number;
-  /** One big one too, right of the middle, drifting slowest, over the scatter. */
+  /**
+   * One big one too, middle right, drifting slowest, as wide as a third of
+   * the panel; the others keep clear of it.
+   */
   feature?: boolean;
   /**
    * How much taller than wide the icon is. Sizes are widths, so a tall icon
@@ -112,19 +115,25 @@ export function Drift({
   tall?: number;
 }) {
   const fit = 1 / Math.sqrt(Math.max(1, tall));
-  const items = scatter(cols, rows, seed).map((it) => ({ ...it, size: it.size * fit }));
+  // The big one's place, and the room round it the others stay out of.
+  const big = { x: 0.73, y: 0.5 };
+  const clear = (it: Scattered) => !feature || Math.abs(it.x - big.x) > 0.24 || Math.abs(it.y - big.y) > 0.34;
+  const items = scatter(cols, rows, seed)
+    .filter(clear)
+    .map((it) => ({ ...it, size: it.size * fit }));
   if (feature) {
-    items.push({ key: "feature", x: 0.64, y: 0.56, size: 300 * fit, rotate: -6, opacity: 0.85, dx: 4, dy: -3, dr: 1.5, duration: 44, delay: -12 });
+    items.push({ key: "feature", ...big, size: 0, rotate: -6, opacity: 0.85, dx: 4, dy: -3, dr: 1.5, duration: 44, delay: -12 });
   }
   return (
     <div aria-hidden="true" className="rg-drift rg-watermark">
       {items.map((it) => (
         <span
           key={it.key}
-          className="rg-drift-item"
+          className={`rg-drift-item ${it.key === "feature" ? "rg-drift-feature" : ""}`}
           style={
             {
               left: `${it.x * 100}%`,
+              "--fit": fit.toFixed(3),
               top: `${it.y * 100}%`,
               "--s": it.size.toFixed(0),
               "--r": `${it.rotate.toFixed(1)}deg`,

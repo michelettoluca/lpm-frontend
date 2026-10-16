@@ -63,10 +63,10 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
         {p.team && (
           <Drift
             icon={logoOf(p.team.logo)}
-            // A tall logo, like the bolts, comes in fewer copies, so every team's card reads as full.
-            cols={tallness(p.team.logo) > 1.3 ? 5 : 6}
-            rows={tallness(p.team.logo) > 1.3 ? 3 : 4}
-            seed={p.team.id * 7 + 3}
+            // Every team's card laid out the same, its logo sized for its shape.
+            cols={6}
+            rows={4}
+            seed={17}
             tall={tallness(p.team.logo)}
             feature
           />

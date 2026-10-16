@@ -1140,6 +1140,10 @@ body:has(.lpm)::before {
   transform: translate(-50%, -50%);
   rotate: var(--r);
 }
+/* A team's big one: a third of the panel wide, less for a tall logo. */
+.lpm .rg-drift-item.rg-drift-feature {
+  width: clamp(120px, calc(34% * var(--fit)), 400px);
+}
 @media (prefers-reduced-motion: no-preference) {
   .lpm .rg-drift-item {
     animation-name: rg-drift;
