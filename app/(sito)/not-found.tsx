@@ -3,6 +3,8 @@ import { ArrowLink, Comune } from "./ui";
 export default function NotFound() {
   return (
     <section className="rg-panel grid items-center gap-6 lg:grid-cols-[auto_1fr] lg:gap-16">
+      {/* not-found has no metadata of its own: React lifts this into the head. */}
+      <title>Pagina non trovata · Lega Pauper Milano</title>
       <Comune pose="lost" className="h-[130px] w-[130px] lg:h-[200px] lg:w-[200px]" />
       <div>
         <p className="rg-eyebrow">errore 404</p>
