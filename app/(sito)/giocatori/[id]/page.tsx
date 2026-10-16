@@ -10,6 +10,7 @@ import { FaceOff } from "./FaceOff";
 import { DeckTag } from "../../DeckTag";
 import { Easter } from "../../Easter";
 import { Drift } from "../../Drift";
+import { paroleFor } from "../../parole";
 import type { TeamLogo } from "@/app/lib/api";
 
 
@@ -51,12 +52,13 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
   const { stagione } = await props.searchParams;
   const [p, d] = await Promise.all([getPlayerData(id), getPlayerDecksData(id, stagione)]);
   if (!p) notFound();
+  // Italian, or for Davide Rapacciuolo, Neapolitan (the easter eggs).
+  const w = paroleFor(id);
   const deckSeason = d.choice.seasons.find((x) => x.id === d.choice.selected);
-  const within = deckSeason ? `nella ${deckSeason.name}` : "in tutte le stagioni";
-
+  const within = w.decks.within(deckSeason?.name);
 
   return (
-    <div className="rg-stack">
+    <div className="rg-stack" lang={w.lang}>
       {/* ---------------- hero ---------------- */}
       <section className="rg-panel">
         {/* The player's team, if any: its logo scattered thick behind the card, one big in the middle. */}
@@ -72,9 +74,9 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
           />
         )}
         <Link href="/classifica" className="rg-textlink -ml-1 inline-flex min-h-11 items-center px-1 text-[15px]">
-          ← la classifica
+          {w.player.back}
         </Link>
-        {p.season && <p className="rg-eyebrow mt-4">stagione {p.season.name.toLowerCase()}</p>}
+        {p.season && <p className="rg-eyebrow mt-4">{w.player.season(p.season.name)}</p>}
         <h1 className="rg-display rg-tight mt-2 text-[48px] leading-[0.95] break-words sm:text-[72px] lg:text-[104px]">
           <Easter playerId={id}>
             {p.first}
@@ -88,7 +90,7 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
         </h1>
 
         <dl className="rg-hr mt-8 grid grid-cols-2 gap-x-6 gap-y-6 pt-6 sm:grid-cols-4 lg:mt-12 lg:pt-8">
-          <Big label="posizione">
+          <Big label={w.player.rank}>
             <span className="relative inline-block px-1">
               <span className={`rg-display rg-tight tnum text-[52px] leading-none lg:text-[68px] ${p.rank === 1 ? "text-[var(--rg-o)]" : ""}`}>
                 {p.rank ? `${p.rank}°` : "–"}
@@ -96,39 +98,38 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
               {p.rank === 1 && <MarkerCircle className="-inset-x-3 -inset-y-2 h-[calc(100%+16px)] w-[calc(100%+24px)]" />}
             </span>
           </Big>
-          <Big label="punti">
+          <Big label={w.player.points}>
             <span className="rg-display rg-tight tnum text-[52px] leading-none lg:text-[68px]">{p.points}</span>
           </Big>
-          <Big label="vinte · perse · patte">
+          <Big label={w.player.record}>
             <span className="rg-display rg-tight tnum text-[36px] leading-none lg:text-[52px]">
               {p.wins}-{p.losses}-{p.draws}
             </span>
           </Big>
-          <Big label="match vinti">
+          <Big label={w.player.winPct}>
             <span className="rg-display rg-tight tnum text-[36px] leading-none lg:text-[52px]">{p.winPct}</span>
           </Big>
         </dl>
         <p className="rg-muted mt-6 text-[15px]">
-          {plural(p.tappe.length, "tappa giocata", "tappe giocate")} su {p.playedSoFar} finora.
+          {w.player.played(p.tappe.length, p.playedSoFar)}
         </p>
       </section>
 
       {/* ---------------- tappe ---------------- */}
       <Section
-        label="storico"
-        title="Le sue tappe"
+        label={w.tappe.label}
+        title={w.tappe.title}
         aside={
           <>
-            Le più recenti in alto. <PixelStar size={12} className="inline-block text-[var(--rg-o)]" /> = 9 punti o più. Le
-            tappe scartate (oltre le migliori 8) sono in grigio: non contano per la classifica.
+            {w.tappe.asideStart} <PixelStar size={12} className="inline-block text-[var(--rg-o)]" /> {w.tappe.asideEnd}
           </>
         }
       >
         {p.tappe.length === 0 ? (
-          <p className="rg-display text-[24px]">Ancora nessuna tappa. Il primo giovedì è sempre il più bello.</p>
+          <p className="rg-display text-[24px]">{w.tappe.none}</p>
         ) : (
           <>
-            <ColHeads className={TCOLS} cols={[{ label: "tappa" }, { label: "piazzamento" }, { label: "punti", right: true }]} />
+            <ColHeads className={TCOLS} cols={[{ label: w.tappe.cols[0] }, { label: w.tappe.cols[1] }, { label: w.tappe.cols[2], right: true }]} />
             <ul>
               {p.tappe.map((t, i) => {
                 const d = dateTile(t.event.played_at);
@@ -141,13 +142,13 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
                       <span className="rg-display tnum text-[36px] leading-none">{t.number ?? "·"}</span>
                       <span className="min-w-0">
                         <span className="rg-display flex items-center gap-2 text-[20px] leading-tight">
-                          {t.rank}° posto
-                          {t.prize && <PixelStar size={14} className="text-[var(--rg-o)]" label="9 punti o più" />}
-                          {t.dropped && <span className="rg-badge ml-1">scartata</span>}
+                          {w.tappe.place(t.rank)}
+                          {t.prize && <PixelStar size={14} className="text-[var(--rg-o)]" label={w.tappe.prize} />}
+                          {t.dropped && <span className="rg-badge ml-1">{w.tappe.dropped}</span>}
                         </span>
                         <span className="rg-muted flex min-w-0 flex-wrap items-center gap-x-2 text-[14px] tnum">
                           <span>
-                            {d.day} {d.mon} · {t.wins + t.byes}-{t.losses}-{t.draws}
+                            {d.day} {w.months[d.month - 1]} · {t.wins + t.byes}-{t.losses}-{t.draws}
                             {t.byes > 0 ? ` (${plural(t.byes, "bye", "bye")})` : ""}
                           </span>
                           {t.deck && <DeckTag deck={t.deck} />}
@@ -169,20 +170,21 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
       {d.anyDeck && (
         <section className="rg-panel">
           <Head
-            label="mazzi"
-            title="Cosa ha giocato"
-            aside={`Gli archetipi giocati da ${p.first} ${within}.`}
+            label={w.decks.label}
+            title={w.decks.title}
+            aside={w.decks.aside(p.first, within)}
           />
           <div className="mt-6">
-            <SeasonPicker choice={d.choice} href={`/giocatori/${p.id}`} />
+            <SeasonPicker choice={d.choice} href={`/giocatori/${p.id}`} words={w.seasons} />
           </div>
           {d.decks.length === 0 ? (
-            <p className="rg-muted mt-6 text-[16px]">Nessun mazzo conosciuto {within}.</p>
+            <p className="rg-muted mt-6 text-[16px]">{w.decks.none(within)}</p>
           ) : (
             <>
               <div className="mt-8">
                 <ArchetypeBars
-                  countLabel="tappe"
+                  countLabel={w.decks.count}
+                  words={w.bars}
                   rows={d.decks.map((x) => ({
                     id: x.id,
                     name: x.name,
@@ -195,14 +197,15 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
 
               {d.matrix && d.matrix.cells.length > 0 && (
                 <div className="mt-12">
-                  <h3 className="rg-eyebrow">matrice dei risultati</h3>
+                  <h3 className="rg-eyebrow">{w.decks.matrix}</h3>
                   <div className="mt-4">
                     <Matrix
                       rows={d.matrix.archetypes}
                       columns={d.league?.archetypes ?? d.matrix.archetypes}
                       cells={d.matrix.cells}
                       mirror={false}
-                      label={`Matchup di ${p.name}`}
+                      label={w.decks.matrixLabel(p.name)}
+                      words={w.matrix}
                     />
                   </div>
                 </div>
@@ -214,14 +217,15 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
 
       {/* ---------------- testa a testa ---------------- */}
       <Section
-        label="confronto"
-        title="Testa a testa"
-        aside={`Scegli un avversario e guarda come è andata contro ${p.first} in questa stagione. Partite vinte, perse e patte.`}
+        label={w.faceOff.label}
+        title={w.faceOff.title}
+        aside={w.faceOff.aside(p.first)}
       >
         <FaceOff
           me={p.first}
           others={p.others}
           rows={p.headToHead.map((h) => ({ id: h.id, name: h.name, matches: h.matches, won: h.won, lost: h.lost, drawn: h.drawn }))}
+          lang={w.lang}
         />
       </Section>
     </div>

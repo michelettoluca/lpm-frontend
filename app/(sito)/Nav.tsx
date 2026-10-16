@@ -5,12 +5,23 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Crown } from "@/app/lib/emblem";
 import { MarkerUnderline } from "./ui";
+import { paroleAt } from "./parole";
 
 const LINKS = [
-  { href: "/classifica", label: "classifica" },
-  { href: "/statistiche", label: "statistiche" },
-  { href: "/regole", label: "regole" },
-];
+  { href: "/classifica", key: "classifica" },
+  { href: "/statistiche", key: "statistiche" },
+  { href: "/regole", key: "regole" },
+] as const;
+
+/** The link past the header to the page, in the page's language. */
+export function SkipLink() {
+  const w = paroleAt(usePathname());
+  return (
+    <a href="#rg-main" lang={w.lang} className="rg-skip">
+      {w.skip}
+    </a>
+  );
+}
 
 /** A little hop of the crown, for a click; nothing for those who asked for less motion. */
 function hop(crown: SVGSVGElement | null) {
@@ -32,12 +43,13 @@ function hop(crown: SVGSVGElement | null) {
  * are on the home page.
  */
 export function HomeLink() {
-  const home = usePathname() === "/";
+  const path = usePathname();
+  const home = path === "/";
   const crown = useRef<SVGSVGElement>(null);
   return (
     <Link
       href="/"
-      aria-label="LPM, Lega Pauper Milano: home"
+      aria-label={paroleAt(path).nav.home}
       aria-current={home ? "page" : undefined}
       onClick={() => hop(crown.current)}
       className="rg-home rg-display rg-strong relative flex min-h-11 items-center px-2.5 text-[24px] leading-none lg:px-0 lg:text-[26px]"
@@ -80,6 +92,7 @@ function MenuIcon() {
  */
 export function Nav({ decks }: { decks: boolean }) {
   const path = usePathname();
+  const w = paroleAt(path).nav;
   // Open for the page it was opened on: going to another page closes it.
   const [openOn, setOpenOn] = useState<string | null>(null);
   const open = openOn === path;
@@ -95,7 +108,7 @@ export function Nav({ decks }: { decks: boolean }) {
   }, [open]);
 
   return (
-    <nav aria-label="Sezioni" data-open={open} className="flex items-center gap-1 lg:gap-3">
+    <nav aria-label={w.label} lang={paroleAt(path).lang} data-open={open} className="flex items-center gap-1 lg:gap-3">
       {LINKS.map((l) => {
         const active = path === l.href;
         return (
@@ -105,7 +118,7 @@ export function Nav({ decks }: { decks: boolean }) {
             aria-current={active ? "page" : undefined}
             className="rg-nav rg-display hidden min-h-11 items-center px-2.5 text-[19px] lg:inline-flex"
           >
-            {l.label}
+            {w[l.key]}
             <MarkerUnderline className="left-2 top-[calc(50%+0.6em)] h-[7px] w-[calc(100%-16px)]" />
           </Link>
         );
@@ -116,14 +129,14 @@ export function Nav({ decks }: { decks: boolean }) {
           aria-current={path === "/mazzo" ? "page" : undefined}
           className="rg-pill rg-display rg-strong inline-flex min-h-11 items-center px-4 text-[18px] lg:ml-1 lg:px-5 lg:text-[19px]"
         >
-          il mio mazzo
+          {w.mazzo}
         </Link>
       )}
       <button
         type="button"
         aria-expanded={open}
         aria-controls="rg-menu"
-        aria-label={open ? "Chiudi il menu" : "Apri il menu"}
+        aria-label={open ? w.close : w.open}
         onClick={() => setOpenOn(open ? null : path)}
         className="rg-nav inline-flex h-11 w-11 items-center justify-center lg:hidden"
       >
@@ -149,7 +162,7 @@ export function Nav({ decks }: { decks: boolean }) {
                   className="rg-nav rg-display relative flex min-h-14 items-center text-[28px]"
                 >
                   <span className="relative">
-                    {l.label}
+                    {w[l.key]}
                     {active && <MarkerUnderline className="left-0 top-[calc(50%+0.55em)] h-[8px] w-full" />}
                   </span>
                 </Link>

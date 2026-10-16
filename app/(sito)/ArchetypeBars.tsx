@@ -1,5 +1,6 @@
 import { archetypeLabel } from "@/app/lib/decks";
 import { Mana } from "./ui";
+import { ITALIANO, type Parole } from "./parole";
 
 /** On phones the name takes its own line above the bar; from sm up it is the first column. */
 const COLS = "grid-cols-[1fr_1.5rem] gap-x-2 sm:grid-cols-[minmax(0,15rem)_1fr_1.5rem] sm:gap-x-3";
@@ -17,12 +18,21 @@ export type BarRow = {
 };
 
 /** Archetypes as a bar each, longest first: how often they were played. The matrix below has the results. */
-export function ArchetypeBars({ rows, countLabel }: { rows: BarRow[]; countLabel: string }) {
+export function ArchetypeBars({
+  rows,
+  countLabel,
+  words: w = ITALIANO.bars,
+}: {
+  rows: BarRow[];
+  countLabel: string;
+  /** Its words, for a page in another language. */
+  words?: Parole["bars"];
+}) {
   const max = Math.max(1, ...rows.map((r) => r.count));
   return (
     <>
       <div aria-hidden="true" className={`rg-colheads grid items-end ${COLS}`}>
-        <span className="hidden sm:block">archetipo</span>
+        <span className="hidden sm:block">{w.archetype}</span>
         <span className="col-span-2">{countLabel}</span>
       </div>
       <ol>

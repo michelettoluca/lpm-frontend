@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { paroleIn, type Lingua } from "../../parole";
 
 type H2H = { id: number; name: string; matches: number; won: number; lost: number; drawn: number };
 
@@ -11,7 +12,19 @@ const norm = (s: string) =>
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "");
 
-export function FaceOff({ me, others, rows }: { me: string; others: { id: number; name: string }[]; rows: H2H[] }) {
+export function FaceOff({
+  me,
+  others,
+  rows,
+  lang,
+}: {
+  me: string;
+  others: { id: number; name: string }[];
+  rows: H2H[];
+  /** The page's language. */
+  lang: Lingua;
+}) {
+  const w = paroleIn(lang).faceOff;
   const [q, setQ] = useState("");
   const [pick, setPick] = useState<{ id: number; name: string } | null>(null);
 
@@ -28,13 +41,13 @@ export function FaceOff({ me, others, rows }: { me: string; others: { id: number
   return (
     <div>
       <label htmlFor="rg-opp" className="rg-eyebrow block">
-        contro chi?
+        {w.who}
       </label>
       <input
         id="rg-opp"
         type="search"
         autoComplete="off"
-        placeholder="cerca un avversario"
+        placeholder={w.search}
         value={q}
         onChange={(e) => setQ(e.target.value)}
         className="rg-input mt-2"
@@ -43,7 +56,7 @@ export function FaceOff({ me, others, rows }: { me: string; others: { id: number
 
       {query && (
         <ul id="rg-opp-list" className="mt-2">
-          {matches.length === 0 && <li className="rg-muted py-3 text-[15px]">Nessuno con questo nome in classifica.</li>}
+          {matches.length === 0 && <li className="rg-muted py-3 text-[15px]">{w.nobody}</li>}
           {matches.map((o) => (
             <li key={o.id} className="rg-hr">
               <button
@@ -60,7 +73,7 @@ export function FaceOff({ me, others, rows }: { me: string; others: { id: number
 
       {!query && !pick && usual.length > 0 && (
         <div className="mt-6">
-          <p className="rg-muted text-[14px] font-semibold">i soliti noti</p>
+          <p className="rg-muted text-[14px] font-semibold">{w.usual}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             {usual.map((r) => (
               <button
@@ -79,7 +92,7 @@ export function FaceOff({ me, others, rows }: { me: string; others: { id: number
       {pick && !query && (
         <div className="rg-pop mt-10" aria-live="polite">
           <p className="rg-display text-[26px] leading-tight lg:text-[32px]">
-            {me} <span className="rg-muted font-[family-name:var(--font-rg-text)] text-[16px] font-semibold">contro</span>{" "}
+            {me} <span className="rg-muted font-[family-name:var(--font-rg-text)] text-[16px] font-semibold">{w.versus}</span>{" "}
             <Link href={`/giocatori/${pick.id}`} className="rg-ul">
               {pick.name}
             </Link>
@@ -88,9 +101,9 @@ export function FaceOff({ me, others, rows }: { me: string; others: { id: number
             <>
               <div className="rg-hr mt-6 grid max-w-[420px] grid-cols-3 gap-4 pt-5">
                 {[
-                  { n: result.won, l: "vinte" },
-                  { n: result.lost, l: "perse" },
-                  { n: result.drawn, l: "patte" },
+                  { n: result.won, l: w.won },
+                  { n: result.lost, l: w.lost },
+                  { n: result.drawn, l: w.drawn },
                 ].map((x) => (
                   <div key={x.l}>
                     <div className="rg-muted text-[14px] font-semibold">{x.l}</div>
@@ -100,20 +113,20 @@ export function FaceOff({ me, others, rows }: { me: string; others: { id: number
               </div>
               <p className="rg-muted mt-6 text-[15px]">
                 {result.won > result.lost
-                  ? `Finora la spunta ${me}.`
+                  ? w.ahead(me)
                   : result.lost > result.won
-                    ? `Finora la spunta ${pick.name}. Si rimescola e si riprova.`
-                    : "Pari e patta: serve la bella."}{" "}
-                {result.matches === 1 ? "Un match in tutto." : `${result.matches} match in tutto.`}
+                    ? w.behind(pick.name)
+                    : w.even}{" "}
+                {w.matches(result.matches)}
               </p>
             </>
           ) : (
             <p className="rg-display mt-6 text-[24px] leading-tight">
-              Mai seduti allo stesso tavolo. Per ora.
+              {w.never}
             </p>
           )}
           <button type="button" onClick={() => setPick(null)} className="rg-textlink mt-6 inline-flex min-h-11 items-center text-[15px]">
-            scegli un altro avversario
+            {w.again}
           </button>
         </div>
       )}

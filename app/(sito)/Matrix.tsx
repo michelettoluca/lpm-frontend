@@ -3,6 +3,7 @@ import type { MatchRecord, MatchupMatrix } from "@/app/lib/site";
 import { archetypeLabel } from "@/app/lib/decks";
 import { MatrixScroll } from "./MatrixScroll";
 import { Mana } from "./ui";
+import { ITALIANO, type Parole } from "./parole";
 
 type Archetype = MatchupMatrix["archetypes"][number];
 type Cell = MatchupMatrix["cells"][number];
@@ -34,7 +35,7 @@ function sum(records: MatchRecord[]): MatchRecord {
 
 const percent = (x: number) => Math.round(x * 100);
 const record = (r: MatchRecord) => `${r.wins}-${r.losses}-${r.draws}`;
-const describe = (r: MatchRecord) => `${record(r)} nei match, ${percent(r.wins / played(r))}% di vittorie`;
+const describe = (r: MatchRecord, w: Parole["matrix"]) => w.describe(record(r), percent(r.wins / played(r)));
 
 /**
  * A rate as the cell shows it: won-lost-drawn above, the rate large, the
@@ -82,6 +83,7 @@ export function Matrix({
   cells,
   mirror,
   label,
+  words: w = ITALIANO.matrix,
 }: {
   rows: Archetype[];
   columns: Archetype[];
@@ -89,6 +91,8 @@ export function Matrix({
   mirror: boolean;
   /** What the matrix is, for screen readers. */
   label: string;
+  /** Its words, for a page in another language. */
+  words?: Parole["matrix"];
 }) {
   const byPair = new Map(cells.map((c) => [`${c.archetype_id}-${c.opponent_archetype_id}`, c]));
 
@@ -108,7 +112,7 @@ export function Matrix({
           >
             <Columns columns={columns} />
             <thead>
-              <HeadRow columns={columns} />
+              <HeadRow columns={columns} total={w.total} />
             </thead>
           </table>
         }
@@ -122,7 +126,7 @@ export function Matrix({
         >
           <Columns columns={columns} />
           <thead className="rg-mx-sr-head">
-            <HeadRow columns={columns} />
+            <HeadRow columns={columns} total={w.total} />
           </thead>
           <tbody>
             {rows.map((r, ri) => {
@@ -146,7 +150,7 @@ export function Matrix({
                     </span>
                   </th>
                   {/* The total, first. */}
-                  <td aria-label={played(total) ? `in totale: ${describe(total)}` : "in totale: nessun match"}>
+                  <td aria-label={w.inTotal(played(total) ? describe(total, w) : w.noMatch)}>
                     {played(total) ? <Rate r={total} /> : <Empty />}
                   </td>
                   {columns.map((c) => {
@@ -165,9 +169,7 @@ export function Matrix({
                       <td
                         key={c.id}
                         aria-label={
-                          cell && played(cell)
-                            ? `contro ${archetypeLabel(c.name)}: ${describe(cell)}`
-                            : `contro ${archetypeLabel(c.name)}: mai`
+                          w.against(archetypeLabel(c.name), cell && played(cell) ? describe(cell, w) : w.never)
                         }
                       >
                         {cell && played(cell) ? <Rate r={cell} /> : <Empty />}
@@ -183,11 +185,11 @@ export function Matrix({
 
       <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[13px]">
         <span className="flex items-center gap-2">
-          <span className="rg-muted">sfavorevole</span>
+          <span className="rg-muted">{w.bad}</span>
           <span aria-hidden="true" className="rg-mx-scale block h-2.5 w-28 rounded-full" />
-          <span className="rg-muted">favorevole</span>
+          <span className="rg-muted">{w.good}</span>
         </span>
-        {mirror && <span className="rg-muted">Sulla diagonale i mirror.</span>}
+        {mirror && <span className="rg-muted">{w.mirror}</span>}
       </div>
     </div>
   );
@@ -209,13 +211,13 @@ function Columns({ columns }: { columns: Archetype[] }) {
 }
 
 /** The column names: the total, then every archetype faced. */
-function HeadRow({ columns }: { columns: Archetype[] }) {
+function HeadRow({ columns, total }: { columns: Archetype[]; total: string }) {
   return (
     <tr>
       <th className="rg-mx-corner sticky left-0 z-20 w-[var(--name)] bg-[var(--rg-paper)]" />
       {/* Grey rules between the column names, like the ones between the row names. */}
       <th scope="col" className={`${COL} border-l ${LINE} px-1 pb-2 align-bottom ${NAME}`}>
-        <span>totale</span>
+        <span>{total}</span>
       </th>
       {columns.map((c, ci) => (
         <th

@@ -8,7 +8,16 @@ import { THEME_KEY } from "@/app/lib/theme";
  * the visitor's choice. Switching back to what the system shows forgets the
  * choice: the site follows the system again.
  */
-export function ThemeToggle({ className = "" }: { className?: string }) {
+export function ThemeToggle({
+  className = "",
+  light = "tema chiaro",
+  dark = "tema scuro",
+}: {
+  className?: string;
+  /** The two labels, for a page in another language. */
+  light?: string;
+  dark?: string;
+}) {
   function toggle() {
     const root = document.documentElement;
     const system = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
@@ -44,7 +53,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
           <circle cx="12" cy="12" r="4.2" />
           <path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6" />
         </svg>
-        tema chiaro
+        {light}
       </span>
       {/* Shown on the light theme, to switch to dark. */}
       <span className="rg-theme-moon items-center gap-2">
@@ -60,7 +69,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
         >
           <path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.6Z" />
         </svg>
-        tema scuro
+        {dark}
       </span>
     </button>
   );

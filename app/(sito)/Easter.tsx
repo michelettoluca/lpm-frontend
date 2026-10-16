@@ -860,7 +860,8 @@ function Peek({ soft, children }: { soft: boolean; children: ReactNode }) {
  */
 export function Easter({ playerId, soft = false, children }: { playerId: number | string; soft?: boolean; children: ReactNode }) {
   const effect = effectOf(playerId);
-  if (!effect || (effect === "pesca" && soft)) return <>{children}</>;
+  // Davide Rapacciuolo's is the words of his whole page (parole.ts), not something on his name.
+  if (!effect || effect === "napoletano" || (effect === "pesca" && soft)) return <>{children}</>;
   if (effect === "pesca") return <Peaches>{children}</Peaches>;
   if (effect === "copione") return soft ? <CopioneRow>{children}</CopioneRow> : <Copione>{children}</Copione>;
   if (effect === "fulmini") return <Electric soft={soft}>{children}</Electric>;
