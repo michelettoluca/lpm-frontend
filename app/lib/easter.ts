@@ -4,7 +4,7 @@
  * back office: this list is the record of who has what (the team page shows
  * it, read only).
  */
-export type Effect = "fulmini" | "nebbia" | "pesca" | "copione" | "fumetto" | "orsetti" | "peek" | "napoletano" | "infezione" | "ventaglio" | "cintura" | "aragosta" | "maglietta";
+export type Effect = "fulmini" | "nebbia" | "pesca" | "copione" | "fumetto" | "orsetti" | "peek" | "napoletano" | "infezione" | "ventaglio" | "cintura" | "aragosta" | "maglietta" | "birra";
 
 /** What each effect looks like, for the list. "fulmini" is kept for whoever gets it next: nobody has it now. */
 export const EFFECT_LABELS: Record<Effect, string> = {
@@ -21,6 +21,7 @@ export const EFFECT_LABELS: Record<Effect, string> = {
   cintura: "La cintura da campione del Paupergeddon Pisa 2024, che piomba sulla card",
   aragosta: "Un'aragosta gigante sul lato destro della card",
   maglietta: "La card tirata da un angolo come la sua maglietta",
+  birra: "La card che si riempie di birra, come iBeer",
 };
 
 export const EASTER_EGGS: { playerId: number; name: string; effect: Effect }[] = [
@@ -36,6 +37,7 @@ export const EASTER_EGGS: { playerId: number; name: string; effect: Effect }[] =
   { playerId: 45, name: "Andrea Forti", effect: "orsetti" },
   { playerId: 87, name: "Matteo Strazzera", effect: "nebbia" },
   { playerId: 102, name: "Edoardo Mantovani", effect: "maglietta" },
+  { playerId: 132, name: "Alessandro Saponara", effect: "birra" },
 ];
 
 export const effectOf = (playerId: number | string): Effect | undefined =>

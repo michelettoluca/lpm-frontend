@@ -2058,3 +2058,20 @@ body:has(.lpm)::before {
   /* Wide, like the pull: the folds reach the card's left end, faint there. */
   mask-image: radial-gradient(ellipse 100% 75% at var(--x) var(--y), #000 0, rgb(0 0 0 / 0.6) 30%, transparent 100%);
 }
+
+/* The easter eggs' beer (Easter.tsx): Alessandro Saponara's card filling up
+   like iBeer, drawn on a canvas over its text, see-through, clipped by the
+   card. */
+.lpm .rg-beer-host {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+}
+.lpm .rg-beer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
