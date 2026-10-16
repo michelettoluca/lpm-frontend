@@ -84,25 +84,68 @@ function spark(box: DOMRect) {
 }
 
 /**
+ * A puff of mist, drifting past the name and thinning out. Behind ones blend
+ * so the letters stay crisp over them (sito.css), front ones veil the letters
+ * a little. Each is fixed on the screen on its own, not in a layer: a layer
+ * would blend them with nothing.
+ */
+function puff(box: DOMRect, front: boolean) {
+  const site = document.querySelector<HTMLElement>(".lpm");
+  if (!site) return;
+  const w = between(0.5, 1.1) * Math.max(80, Math.min(box.width, 260));
+  const h = w * between(0.35, 0.55);
+  const x = between(box.left - w * 0.3, box.right - w * 0.7);
+  const y = between(box.top - h * 0.4, box.bottom - h * 0.6);
+  const drift = between(24, 60) * (Math.random() < 0.5 ? -1 : 1);
+
+  const el = document.createElement("div");
+  el.className = `rg-mist ${front ? "rg-mist-front" : "rg-mist-back"}`;
+  el.setAttribute("aria-hidden", "true");
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
+  el.style.width = `${w}px`;
+  el.style.height = `${h}px`;
+  site.append(el);
+
+  el.animate(
+    [
+      { transform: "translate(0, 0) scale(0.6)", opacity: 0 },
+      { opacity: 1, offset: 0.3 },
+      { opacity: 0.8, offset: 0.7 },
+      { transform: `translate(${drift}px, ${between(-10, 4)}px) scale(1.25)`, opacity: 0 },
+    ],
+    { duration: between(2200, 3600), easing: "ease-out" },
+  ).finished.finally(() => el.remove());
+}
+
+/** What each effect throws, all at once and then while pointed at, and how often. */
+const PLAY = {
+  fulmini: { first: 3, every: 200, each: 2, greet: 10, draw: (box: DOMRect) => spark(box) },
+  nebbia: { first: 4, every: 260, each: 1, greet: 12, draw: (box: DOMRect, i: number) => puff(box, i % 3 === 0) },
+} as const;
+
+/**
  * A player's name with their easter egg, if they have one: point at it (or
- * hold a finger on it) and it throws out bolts like sparks. `greet` throws a
- * burst once when the page opens, for the player's own page. Anyone else's
- * name comes back as it is.
+ * hold a finger on it) and it plays, bolts thrown out like sparks or a mist
+ * drifting past. `greet` plays a burst once when the page opens, for the
+ * player's own page. Anyone else's name comes back as it is.
  */
 export function Easter({ playerId, greet = false, children }: { playerId: number | string; greet?: boolean; children: ReactNode }) {
   const effect = effectOf(playerId);
   const el = useRef<HTMLSpanElement>(null);
   const timer = useRef<number | null>(null);
+  const count = useRef(0);
 
   const still = () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const burst = (n: number) => {
     const box = el.current?.getBoundingClientRect();
-    if (box) for (let i = 0; i < n; i++) spark(box);
+    if (!box || !effect) return;
+    for (let i = 0; i < n; i++) PLAY[effect].draw(box, count.current++);
   };
   const start = () => {
-    if (still() || timer.current !== null) return;
-    burst(3);
-    timer.current = window.setInterval(() => burst(2), 200);
+    if (!effect || still() || timer.current !== null) return;
+    burst(PLAY[effect].first);
+    timer.current = window.setInterval(() => burst(PLAY[effect].each), PLAY[effect].every);
   };
   const stop = () => {
     if (timer.current !== null) window.clearInterval(timer.current);
@@ -110,8 +153,11 @@ export function Easter({ playerId, greet = false, children }: { playerId: number
   };
 
   useEffect(() => {
-    if (!effect || !greet || still()) return;
-    const t = window.setTimeout(() => burst(10), 400);
+    if (!effect || !greet || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const t = window.setTimeout(() => {
+      const box = el.current?.getBoundingClientRect();
+      if (box) for (let i = 0; i < PLAY[effect].greet; i++) PLAY[effect].draw(box, i);
+    }, 400);
     return () => window.clearTimeout(t);
   }, [effect, greet]);
   useEffect(() => stop, []);

@@ -1261,3 +1261,30 @@ body:has(.lpm)::before {
   stroke-linejoin: round;
   will-change: transform, opacity;
 }
+
+/* The easter eggs' mist (Easter.tsx): soft puffs fixed on the screen, over
+   the grain. The ones behind blend so only the paper takes them and the
+   letters stay crisp: darken on light, lighten on dark. The ones in front
+   simply veil, faintly. */
+.lpm .rg-mist {
+  position: fixed;
+  z-index: 105;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+.lpm .rg-mist-back {
+  background: radial-gradient(closest-side, light-dark(#c3cad5, #3c475a), transparent);
+  mix-blend-mode: darken;
+}
+.lpm .rg-mist-front {
+  background: radial-gradient(closest-side, light-dark(rgb(255 255 255 / 0.75), rgb(200 210 225 / 0.22)), transparent);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .lpm .rg-mist-back {
+    mix-blend-mode: lighten;
+  }
+}
+:root[data-theme="dark"] .lpm .rg-mist-back {
+  mix-blend-mode: lighten;
+}
