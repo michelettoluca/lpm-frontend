@@ -53,8 +53,8 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
     <div className="rg-stack">
       {/* ---------------- hero ---------------- */}
       <section className="rg-panel">
-        {/* The player's team, if any: its logo scattered behind the card, like the league's on the home. */}
-        {p.team && <Drift icon={logoOf(p.team.logo)} cols={5} rows={3} seed={p.team.id * 7 + 3} />}
+        {/* The player's team, if any: its logo scattered thick behind the card, one big in the middle. */}
+        {p.team && <Drift icon={logoOf(p.team.logo)} cols={6} rows={4} seed={p.team.id * 7 + 3} feature />}
         <Link href="/classifica" className="rg-textlink -ml-1 inline-flex min-h-11 items-center px-1 text-[15px]">
           ← la classifica
         </Link>

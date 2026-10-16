@@ -95,15 +95,22 @@ export function Drift({
   cols,
   rows,
   seed,
+  feature = false,
 }: {
   icon: ComponentType<{ className?: string }>;
   cols: number;
   rows: number;
   seed: number;
+  /** One big one too, right of the middle, drifting slowest, over the scatter. */
+  feature?: boolean;
 }) {
+  const items = scatter(cols, rows, seed);
+  if (feature) {
+    items.push({ key: "feature", x: 0.64, y: 0.56, size: 300, rotate: -6, opacity: 0.85, dx: 4, dy: -3, dr: 1.5, duration: 44, delay: -12 });
+  }
   return (
     <div aria-hidden="true" className="rg-drift rg-watermark">
-      {scatter(cols, rows, seed).map((it) => (
+      {items.map((it) => (
         <span
           key={it.key}
           className="rg-drift-item"
