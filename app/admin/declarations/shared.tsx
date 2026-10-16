@@ -683,8 +683,9 @@ export function TappaSelect({
       )}
       {missing > 0 && !current && candidates.length > 0 && (
         <p className="mt-3 text-[13px] text-ink/50">
-          {missing === 1 ? "Una tappa non ha" : `${missing} tappe non hanno`} ancora l&apos;ID Melee e non si può
-          mettere in corso.
+          {missing === 1
+            ? "Una tappa non ha ancora l'ID Melee e non si può mettere in corso."
+            : `${missing} tappe non hanno ancora l'ID Melee e non si possono mettere in corso.`}
         </p>
       )}
       {children}

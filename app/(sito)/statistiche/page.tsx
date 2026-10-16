@@ -12,7 +12,7 @@ export default async function StatsPage() {
   const { choice, matrix } = await getStatsData();
   const season = choice.seasons.find((s) => s.id === choice.selected);
   const scope = season ? season.name : "tutte le stagioni";
-  const of = season ? `della ${season.name}` : "di tutte le stagioni";
+  const of = season ? "di questa stagione" : "di tutte le stagioni";
 
   return (
     <div className="rg-stack">

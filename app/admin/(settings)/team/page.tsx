@@ -227,7 +227,7 @@ function MembersForm({
         </Field>
         <p className="text-[13px] text-ink/50">
           {chosen.size === 1 ? "1 giocatore nel team." : `${chosen.size} giocatori nel team.`} Chi è già in un altro team
-          ci passa togliendolo da lì.
+          viene spostato in questo.
         </p>
         <ul className="max-h-[50vh] overflow-y-auto rounded-xl border border-ink/10">
           {shown.map((p) => {

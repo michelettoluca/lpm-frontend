@@ -187,7 +187,7 @@ export default function EventDetailPage() {
           onConfirm={() => void remove()}
         >
           {event.has_results
-            ? "La tappa ha risultati importati: verranno eliminati anche i suoi round, match e la classifica. I giocatori restano. L'operazione non è reversibile."
+            ? "La tappa ha risultati importati: verranno eliminati anche i suoi turni, i match e la classifica. I giocatori restano. L'operazione non è reversibile."
             : "La tappa non ha ancora risultati. L'operazione non è reversibile."}
         </ConfirmDialog>
       )}

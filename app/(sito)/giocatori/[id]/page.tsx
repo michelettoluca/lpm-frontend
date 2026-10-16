@@ -172,7 +172,7 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
           <Head
             label={w.decks.label}
             title={w.decks.title}
-            aside={w.decks.aside(p.first, within)}
+            aside={w.decks.aside(p.first)}
           />
           <div className="mt-6">
             <SeasonPicker choice={d.choice} href={`/giocatori/${p.id}`} words={w.seasons} />

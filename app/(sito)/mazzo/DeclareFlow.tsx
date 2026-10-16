@@ -320,7 +320,7 @@ export function DeclareFlow({ onFindBy }: { onFindBy?: (by: FindBy) => void }) {
           tone: "error",
           text:
             table === null
-              ? "Non riusciamo a indicare il mazzo: forse la raccolta è chiusa. Se continua, avvisa un organizzatore."
+              ? "Non riusciamo a salvare il mazzo: forse la raccolta è chiusa. Se succede ancora, avvisa un organizzatore."
               : "Il turno è cambiato, o i mazzi non si possono più indicare. Reinserisci il numero del tuo tavolo attuale.",
         },
       );

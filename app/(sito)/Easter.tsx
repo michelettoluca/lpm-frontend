@@ -1646,6 +1646,214 @@ function Belt({ children }: { children: ReactNode }) {
 }
 
 /**
+ * Where Edoardo Mantovani's card is pinched, as a share of its width and
+ * height, and how far round it the pull is felt.
+ */
+const PINCH = { x: 0.72, y: 0.1, reach: 0.6 };
+/** Which way it's pulled: up, a little to the right. */
+const TUG_WAY = { x: 0.2, y: -0.98 };
+/** The map runs this far past the card each way, so the pinched cloth can be pulled out past its edge. */
+const BEYOND = 0.15;
+/** At its hardest, how far the cloth is pulled, as a share of the card's shorter side. */
+const PULL = 0.16;
+
+/** Where one tug pinches, about the usual spot, and the phases that make its pull uneven. */
+type Pinch = { x: number; y: number; ph: number[] };
+const pinchHere = (): Pinch => ({
+  x: PINCH.x + between(-0.03, 0.03),
+  y: PINCH.y + between(-0.03, 0.03),
+  ph: Array.from({ length: 3 }, () => between(0, 2 * Math.PI)),
+});
+
+/**
+ * The displacement map that pulls the card towards the pinch: for each
+ * point of the card (and a little round it), where to look for what's
+ * drawn there: away from the pinch, so the cloth gathers in to it, further
+ * out on some sides than others; and back from the way it's pulled, so
+ * it's drawn out that way, past the card's edge. Red is across, green is
+ * down, 128 is still.
+ */
+function pinchMap(p: Pinch, size = 256): string {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return "";
+  const img = ctx.createImageData(size, size);
+  const span = 1 + 2 * BEYOND;
+  for (let j = 0; j < size; j++) {
+    for (let i = 0; i < size; i++) {
+      const x = -BEYOND + ((i + 0.5) / size) * span;
+      const y = -BEYOND + ((j + 0.5) / size) * span;
+      const dx = x - p.x;
+      const dy = y - p.y;
+      const r = Math.hypot(dx, dy) || 1e-6;
+      const a = Math.atan2(dy, dx);
+      // How far the pull reaches, more on some sides than others.
+      const uneven = 0.5 * Math.sin(2 * a + p.ph[0]) + 0.3 * Math.sin(5 * a + p.ph[1]) + 0.2 * Math.sin(9 * a + p.ph[2]);
+      const reach = PINCH.reach * (1 + 0.32 * uneven);
+      // Gathered in to the pinch: strongest a little way from it, nothing at it, fading out far off.
+      const gather = Math.exp(-((r / reach) ** 2)) * Math.min(1, r / 0.06);
+      // And all of it round the pinch drawn out, down and right, past the
+      // card's edge: there, what's drawn comes from up and left of it.
+      const out = Math.exp(-((r / (reach * 0.8)) ** 2)) * 0.75;
+      // Nothing at all far off: the filter doesn't smooth what it moves, so
+      // even a hair's shift would leave the letters there ragged.
+      const k0 = Math.min(1, Math.max(0, (reach * 1.3 - r) / (reach * 0.6)));
+      const still = k0 * k0 * (3 - 2 * k0);
+      const vx = still * Math.max(-1, Math.min(1, 0.55 * (dx / r) * gather - TUG_WAY.x * out));
+      const vy = still * Math.max(-1, Math.min(1, 0.55 * (dy / r) * gather - TUG_WAY.y * out));
+      const k = (j * size + i) * 4;
+      img.data[k] = Math.round(128 + 127 * vx);
+      img.data[k + 1] = Math.round(128 + 127 * vy);
+      img.data[k + 2] = 128;
+      img.data[k + 3] = 255;
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  return canvas.toDataURL();
+}
+
+/** How hard the cloth is pulled once he's done, as it stays. */
+const HELD = 0.9;
+
+/**
+ * How hard the cloth is pulled `t` seconds into the tug, 0 to 1, slowly,
+ * the way he does it over a game: pulled up a bit and held, let go some
+ * and held, pulled up further. `null` once it's there, to stay.
+ */
+function tugAt(t: number): number | null {
+  const smooth = (k: number) => k * k * (3 - 2 * k);
+  // From one pull to another over a stretch of time, eased in and out.
+  const go = (from: number, to: number, t0: number, t1: number) => from + (to - from) * smooth(Math.min(1, Math.max(0, (t - t0) / (t1 - t0))));
+  if (t < 1) return go(0, 0.5, 0, 1);
+  if (t < 2.2) return 0.5;
+  if (t < 3) return go(0.5, 0.25, 2.2, 3);
+  if (t < 4) return 0.25;
+  if (t < 5.2) return go(0.25, HELD, 4, 5.2);
+  return null;
+}
+
+/**
+ * Edoardo Mantovani's first card, pulled like the shirt he tugs at over a
+ * game: once it's on screen something pinches it near its top and pulls it
+ * up, slowly, a bit, then less, then more, and leaves it so, the card
+ * stretched towards the pinch, unevenly, pulled out past its edge, folds
+ * spreading from the pinch. The pinch is a little different each time.
+ * An SVG filter does it, a displacement map that pulls things towards the
+ * pinch, on only once it's tugged. From when the card is on screen.
+ * Nothing for reduced motion.
+ */
+function Tug({ children }: { children: ReactNode }) {
+  const el = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const host = el.current?.closest<HTMLElement>(".rg-panel");
+    if (!host || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const id = `rg-tug-${Math.random().toString(36).slice(2, 8)}`;
+    // The filter, in its own hidden svg on the page.
+    const defs = document.createElementNS(SVG, "svg");
+    defs.setAttribute("aria-hidden", "true");
+    defs.setAttribute("class", "rg-tug-defs");
+    // In px, the browsers' surest way: set from the card's size as each tug starts.
+    defs.innerHTML = `<filter id="${id}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feImage preserveAspectRatio="none" result="map"/>
+      <feDisplacementMap in="SourceGraphic" in2="map" scale="0" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>`;
+    const filter = defs.querySelector("filter");
+    document.body.append(defs);
+    const image = defs.querySelector("feImage");
+    const displace = defs.querySelector("feDisplacementMap");
+    // The folds, rays of light and shade from the pinch, over the card and pulled with it.
+    const folds = document.createElement("div");
+    folds.className = "rg-tug-folds";
+    folds.setAttribute("aria-hidden", "true");
+    host.append(folds);
+
+    let frame = 0;
+    let timer = 0;
+    let started = 0;
+    // The card's size, and the map and the filter's room set to it, past it each way.
+    let w = 0;
+    let h = 0;
+    const fit = () => {
+      w = host.offsetWidth;
+      h = host.offsetHeight;
+      for (const [el, ...xywh] of [
+        [filter, -BEYOND * w, -BEYOND * h, (1 + 2 * BEYOND) * w, (1 + 2 * BEYOND) * h],
+        [image, -BEYOND * w, -BEYOND * h, (1 + 2 * BEYOND) * w, (1 + 2 * BEYOND) * h],
+      ] as const) {
+        ["x", "y", "width", "height"].forEach((a, i) => el?.setAttribute(a, xywh[i].toFixed(1)));
+      }
+    };
+    // Pulled this hard: the filter's pull, and the folds as strong.
+    const pullTo = (pull: number) => {
+      displace?.setAttribute("scale", (pull * PULL * Math.min(w, h)).toFixed(2));
+      folds.style.opacity = String(Math.max(0, Math.min(1, pull * 1.4)));
+    };
+    // Once it's pulled up as far as it goes, it stays so.
+    let held = false;
+    const tick = (now: number) => {
+      const pull = tugAt((now - started) / 1000);
+      if (pull === null) {
+        pullTo(HELD);
+        held = true;
+        frame = 0;
+        return;
+      }
+      pullTo(pull);
+      frame = requestAnimationFrame(tick);
+    };
+    const tug = () => {
+      timer = 0;
+      if (document.hidden) {
+        timer = window.setTimeout(tug, 1000);
+        return;
+      }
+      fit();
+      // Its own pinch: about the usual spot, its pull uneven its own way.
+      const pinch = pinchHere();
+      image?.setAttribute("href", pinchMap(pinch));
+      folds.style.setProperty("--x", `${pinch.x * 100}%`);
+      folds.style.setProperty("--y", `${pinch.y * 100}%`);
+      host.style.filter = `url(#${id})`;
+      started = performance.now();
+      frame = requestAnimationFrame(tick);
+    };
+    // Off screen before it's done: back as it was, to start again when it's seen.
+    const stop = () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+      frame = timer = 0;
+      if (held) return;
+      host.style.filter = "";
+      folds.style.opacity = "0";
+    };
+    const seen = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !frame && !timer && !held) timer = window.setTimeout(tug, 1200);
+      if (!entry.isIntersecting) stop();
+    });
+    // A card that changes size, held, keeps its pull to its size.
+    const resized = new ResizeObserver(() => {
+      if (!held) return;
+      fit();
+      pullTo(HELD);
+    });
+    resized.observe(host);
+    seen.observe(host);
+    return () => {
+      seen.disconnect();
+      resized.disconnect();
+      held = false;
+      stop();
+      folds.remove();
+      defs.remove();
+    };
+  }, []);
+
+  return <span ref={el}>{children}</span>;
+}
+
+/**
  * A player's name with their easter egg, if they have one: a charge of
  * lightning round it, a mist drifting past, peaches stuck on like stickers,
  * an infection eating the card's edge, or a chat of his messages piling up
@@ -1661,6 +1869,7 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   if (!effect || effect === "napoletano" || ((effect === "pesca" || effect === "aragosta") && soft)) return <>{children}</>;
   if (effect === "pesca") return <Stickers emoji={PEACH} spots={PEACHES}>{children}</Stickers>;
   if (effect === "aragosta") return <Lobster>{children}</Lobster>;
+  if (effect === "maglietta") return soft ? <>{children}</> : <Tug>{children}</Tug>;
   if (effect === "copione") return soft ? <CopioneRow>{children}</CopioneRow> : <Copione>{children}</Copione>;
   if (effect === "fulmini") return <Electric soft={soft}>{children}</Electric>;
   if (effect === "fumetto") return <Comic soft={soft}>{children}</Comic>;
