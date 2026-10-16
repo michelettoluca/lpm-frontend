@@ -2051,5 +2051,6 @@ body:has(.lpm)::before {
       rgb(0 0 0 / 0.35) 0deg 2deg,
       transparent 4deg 17deg
     );
-  mask-image: radial-gradient(circle at var(--x) var(--y), #000 0, rgb(0 0 0 / 0.6) 18%, transparent 55%);
+  /* Wide, like the pull: the folds reach the card's left end, faint there. */
+  mask-image: radial-gradient(ellipse 100% 75% at var(--x) var(--y), #000 0, rgb(0 0 0 / 0.6) 30%, transparent 100%);
 }

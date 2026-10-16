@@ -1647,9 +1647,11 @@ function Belt({ children }: { children: ReactNode }) {
 
 /**
  * Where Edoardo Mantovani's card is pinched, as a share of its width and
- * height, right on its top edge, and how far round it the pull is felt.
+ * height, right on its top edge, and how far round it the pull is felt:
+ * across, distances count for `across` of what they do down, so the whole
+ * top of the card is pulled, as far as its left end.
  */
-const PINCH = { x: 0.72, y: 0, reach: 0.6 };
+const PINCH = { x: 0.72, y: 0, reach: 0.6, across: 0.5 };
 /** Which way it's pulled: up, a little to the right. */
 const TUG_WAY = { x: 0.2, y: -0.98 };
 /** The map runs this far past the card each way, so the pinched cloth can be pulled out past its edge. */
@@ -1685,7 +1687,8 @@ function pinchMap(p: Pinch, size = 256): string {
     for (let i = 0; i < size; i++) {
       const x = -BEYOND + ((i + 0.5) / size) * span;
       const y = -BEYOND + ((j + 0.5) / size) * span;
-      const dx = x - p.x;
+      // Across counted short: the pull runs the card's whole width.
+      const dx = (x - p.x) * PINCH.across;
       const dy = y - p.y;
       const r = Math.hypot(dx, dy) || 1e-6;
       const a = Math.atan2(dy, dx);
@@ -1696,7 +1699,11 @@ function pinchMap(p: Pinch, size = 256): string {
       const gather = Math.exp(-((r / reach) ** 2)) * Math.min(1, r / 0.06);
       // And all of it round the pinch drawn out, down and right, past the
       // card's edge: there, what's drawn comes from up and left of it.
-      const out = Math.exp(-((r / (reach * 0.8)) ** 2)) * 0.75;
+      // Across, a peak at the pinch whose sides curve in, as cloth does,
+      // over a low swell that runs to the card's ends; down, fading as before.
+      const across = Math.abs(x - p.x);
+      const peak = 0.65 * Math.exp(-across / 0.12) + 0.35 * Math.exp(-((across / 0.9) ** 2));
+      const out = peak * Math.exp(-((dy / (reach * 0.8)) ** 2)) * 0.75;
       // Nothing at all far off: the filter doesn't smooth what it moves, so
       // even a hair's shift would leave the letters there ragged.
       const k0 = Math.min(1, Math.max(0, (reach * 1.3 - r) / (reach * 0.6)));
@@ -1718,26 +1725,29 @@ function pinchMap(p: Pinch, size = 256): string {
 const HELD = 0.9;
 
 /**
- * How hard the cloth is pulled `t` seconds into the tug, 0 to 1, slowly,
- * the way he does it over a game: pulled up a bit and held, let go some
- * and held, pulled up further. `null` once it's there, to stay.
+ * How hard the cloth is pulled `t` seconds into the tug, 0 to 1, the way he
+ * does it over a game: yanked up a bit and held, let go some, slowly, and
+ * held, yanked up further. `null` once it's there, to stay.
  */
 function tugAt(t: number): number | null {
+  const at = (t0: number, t1: number) => Math.min(1, Math.max(0, (t - t0) / (t1 - t0)));
   const smooth = (k: number) => k * k * (3 - 2 * k);
-  // From one pull to another over a stretch of time, eased in and out.
-  const go = (from: number, to: number, t0: number, t1: number) => from + (to - from) * smooth(Math.min(1, Math.max(0, (t - t0) / (t1 - t0))));
-  if (t < 1) return go(0, 0.5, 0, 1);
-  if (t < 2.2) return 0.5;
-  if (t < 3) return go(0.5, 0.25, 2.2, 3);
-  if (t < 4) return 0.25;
-  if (t < 5.2) return go(0.25, HELD, 4, 5.2);
+  // A yank: off at once, a touch too far, and back.
+  const snap = (k: number) => 1 + 2.2 * (k - 1) ** 3 + 1.2 * (k - 1) ** 2;
+  const go = (from: number, to: number, t0: number, t1: number, ease: (k: number) => number) =>
+    from + (to - from) * ease(at(t0, t1));
+  if (t < 0.34) return go(0, 0.5, 0, 0.34, snap);
+  if (t < 1.7) return 0.5;
+  if (t < 2.5) return go(0.5, 0.25, 1.7, 2.5, smooth);
+  if (t < 3.5) return 0.25;
+  if (t < 3.9) return go(0.25, HELD, 3.5, 3.9, snap);
   return null;
 }
 
 /**
  * Edoardo Mantovani's first card, pulled like the shirt he tugs at over a
  * game: once it's on screen something pinches it near its top and pulls it
- * up, slowly, a bit, then less, then more, and leaves it so, the card
+ * up, sharply, a bit, then less, then more, and leaves it so, the card
  * stretched towards the pinch, unevenly, pulled out past its edge, folds
  * spreading from the pinch. The pinch is a little different each time.
  * An SVG filter does it, a displacement map that pulls things towards the
