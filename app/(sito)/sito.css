@@ -1243,26 +1243,47 @@ body:has(.lpm)::before {
   background: var(--rg-ink);
 }
 
-/* The easter eggs' bolts (Easter.tsx): Diego's logo, flying in a layer over
-   the whole screen, above the grain, never in the way. Its orange stays;
-   its white is the ink, so it shows on the light paper too. */
-.lpm .rg-sparks {
-  position: fixed;
-  inset: 0;
-  z-index: 110;
-  overflow: hidden;
-  pointer-events: none;
+/* The easter eggs' charge (Easter.tsx): Diego's name crackling like a
+   hero's fist, arcs with an orange glow along its edges (white-hot on dark,
+   orange on the light paper), the orange bolt of his logo going round it,
+   the letters glowing a little. On his page in the name's own box; in the
+   standings over the screen. */
+.lpm .rg-charge-host {
+  position: relative;
+  display: inline-block;
 }
-.lpm .rg-spark {
+.lpm .rg-charge {
   position: absolute;
+  left: -28px;
+  top: -28px;
   overflow: visible;
-  will-change: transform, opacity;
-}
-.lpm .rg-spark-orange {
+  pointer-events: none;
   fill: #f7941d;
 }
-.lpm .rg-spark-white {
-  fill: var(--rg-ink);
+.lpm .rg-charge.rg-charge-float {
+  position: fixed;
+  z-index: 110;
+}
+.lpm .rg-crackles {
+  fill: none;
+  stroke: light-dark(#f58a07, #fff8ee);
+  stroke-width: 1.4px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 1.5px #f7941d) drop-shadow(0 0 4px #f7941d);
+}
+.lpm .rg-charged {
+  text-shadow: 0 0 0.35em rgb(247 148 29 / 0.45);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lpm .rg-charged {
+    animation: rg-charged 0.18s steps(1) infinite;
+  }
+}
+@keyframes rg-charged {
+  50% {
+    text-shadow: 0 0 0.5em rgb(247 148 29 / 0.6);
+  }
 }
 
 /* The easter eggs' mist (Easter.tsx): soft puffs fixed on the screen, over
@@ -1310,8 +1331,10 @@ body:has(.lpm)::before {
   filter: drop-shadow(0.06em 0 0 #fff) drop-shadow(-0.06em 0 0 #fff) drop-shadow(0 0.06em 0 #fff)
     drop-shadow(0 -0.06em 0 #fff) drop-shadow(0 0.08em 0.08em rgb(0 0 0 / 0.25));
 }
+/* Behind the letters, paler, so front and back read apart. */
 .lpm .rg-sticker-back {
   z-index: -1;
+  opacity: 0.45;
 }
 /* The standings' one peach, in the line after the name, raised a little:
    there only while the row is pointed at. Both classes, to outweigh the

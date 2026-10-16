@@ -4,79 +4,15 @@ import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { effectOf } from "@/app/lib/easter";
 import { COPIONE, type Battuta } from "./copione";
 
-/* Diego's bolts: his logo, an orange bolt beside a white one, traced from
-   the picture into a 338 by 580 box. */
-const BOLT_ORANGE =
-  "M39 34 41 35 41 44 22 208 34 212 72 216 76 217 77 220 41 317 40 327 45 328 87 317 91 317 93 323 73 513 71 513 73 343 66 342 13 354 9 354 7 351 47 241 47 236 44 234 6 231 0 227Z";
-const BOLT_WHITE =
-  "M26 0 229 30 227 36 200 57 164 90 236 106 238 110 157 211 94 247 92 247 94 242 169 142 176 132 176 128 91 113 91 108 147 60 151 53ZM332 204 338 204 336 207 188 254 178 259 157 343 158 346 279 325 286 325 286 327 150 392 68 580 143 271 143 268 97 268 97 266 163 226Z";
+/* Diego's bolts: the orange bolt of his logo, traced from his picture into
+   a 93 by 479 box. */
+const BOLT = "M39 0 41 1 41 10 22 174 34 178 72 182 76 183 77 186 41 283 40 293 45 294 87 283 91 283 93 289 73 479 71 479 73 309 66 308 13 320 9 320 7 317 47 207 47 202 44 200 6 197 0 193Z";
+const BOLT_W = 93;
+const BOLT_H = 479;
 
 const between = (a: number, b: number) => a + Math.random() * (b - a);
 
 const SVG = "http://www.w3.org/2000/svg";
-
-/** The layer the bolts fly in: over the whole screen, so no panel or table clips them. */
-function layer(): HTMLElement | null {
-  const site = document.querySelector<HTMLElement>(".lpm");
-  if (!site) return null;
-  let el = site.querySelector<HTMLElement>(":scope > .rg-sparks");
-  if (!el) {
-    el = document.createElement("div");
-    el.className = "rg-sparks";
-    el.setAttribute("aria-hidden", "true");
-    site.append(el);
-  }
-  return el;
-}
-
-/** One of his bolts, flung out of the name from a point on its box, spinning, flashing and gone. */
-function spark(box: DOMRect, scale = 1) {
-  const into = layer();
-  if (!into) return;
-  // Wide enough for the logo to read, a little over half as wide as tall.
-  const size = between(22, 40) * scale;
-  // Somewhere on the name, a little past its edges, thrown away from its middle.
-  const x = between(box.left - 6, box.right + 6);
-  const y = between(box.top - 4, box.bottom + 4);
-  const away = Math.atan2(y - (box.top + box.height / 2), x - (box.left + box.width / 2)) + between(-0.6, 0.6);
-  const far = between(18, 42) * scale;
-  const tilt = between(-35, 35);
-  const spin = between(-50, 50);
-
-  const svg = document.createElementNS(SVG, "svg");
-  svg.setAttribute("viewBox", "0 0 338 580");
-  svg.setAttribute("width", String(size));
-  svg.setAttribute("height", String((size * 580) / 338));
-  svg.classList.add("rg-spark");
-  svg.style.left = `${x - size / 2}px`;
-  svg.style.top = `${y - size}px`;
-  for (const [d, part] of [
-    [BOLT_ORANGE, "rg-spark-orange"],
-    [BOLT_WHITE, "rg-spark-white"],
-  ]) {
-    const path = document.createElementNS(SVG, "path");
-    path.setAttribute("d", d);
-    path.setAttribute("class", part);
-    svg.append(path);
-  }
-  into.append(svg);
-
-  const dx = Math.cos(away) * far;
-  const dy = Math.sin(away) * far;
-  svg
-    .animate(
-      [
-        { transform: `translate(0, 0) rotate(${tilt}deg) scale(0.3)`, opacity: 0 },
-        { transform: `translate(${dx * 0.45}px, ${dy * 0.45}px) rotate(${tilt + spin * 0.4}deg) scale(1.05)`, opacity: 1, offset: 0.25 },
-        // A flicker, like a spark catching.
-        { opacity: 0.35, offset: 0.4 },
-        { opacity: 1, offset: 0.5 },
-        { transform: `translate(${dx}px, ${dy}px) rotate(${tilt + spin}deg) scale(0.6)`, opacity: 0 },
-      ],
-      { duration: between(650, 1000), easing: "cubic-bezier(0.2, 0.7, 0.3, 1)" },
-    )
-    .finished.finally(() => svg.remove());
-}
 
 /**
  * A puff of mist, drifting past the name and thinning out. Behind ones blend
@@ -117,23 +53,15 @@ type Play = { first: number; each: number; every: number; draw: (box: DOMRect, i
 
 const MIST: Play = { first: 12, each: 1, every: 420, draw: (box, i) => puff(box, i % 3 === 0) };
 
-/**
- * What each effect throws as it starts, then how much and how often while the
- * name is on screen: in full on the player's page, softer in the standings,
- * where several names play at once (the mist stays as it is).
- */
-const PLAY: Record<"fulmini" | "nebbia", { full: Play; soft: Play }> = {
-  fulmini: {
-    full: { first: 10, each: 2, every: 550, draw: (box) => spark(box) },
-    soft: { first: 3, each: 1, every: 950, draw: (box) => spark(box, 0.7) },
-  },
+/** What the mist throws as it starts, then how much and how often: the same on his page and in the standings. */
+const PLAY: Record<"nebbia", { full: Play; soft: Play }> = {
   nebbia: { full: MIST, soft: MIST },
 };
 
 /**
- * Bolts or mist out of the name: on the player's page from when it opens and
- * for as long as the name is on screen; `soft`, in the standings, while its
- * row is pointed at.
+ * Mist out of the name: on the player's page from when it opens and for as
+ * long as the name is on screen; `soft`, in the standings, while its row is
+ * pointed at.
  */
 function Burst({ effect, soft, children }: { effect: keyof typeof PLAY; soft: boolean; children: ReactNode }) {
   const el = useRef<HTMLSpanElement>(null);
@@ -182,6 +110,190 @@ function Burst({ effect, soft, children }: { effect: keyof typeof PLAY; soft: bo
   }, [effect, soft]);
 
   return <span ref={el}>{children}</span>;
+}
+
+/** Room around the name for the charge, in px. */
+const AROUND = 28;
+
+/**
+ * A point on the box around the name, a little outside it, and which way is
+ * out there: `t` runs once round, from the top left, clockwise.
+ */
+function round(t: number, w: number, h: number, pad: number) {
+  const W = w + 2 * pad;
+  const H = h + 2 * pad;
+  let d = (((t % 1) + 1) % 1) * 2 * (W + H);
+  if (d < W) return { x: -pad + d, y: -pad, nx: 0, ny: -1 };
+  d -= W;
+  if (d < H) return { x: w + pad, y: -pad + d, nx: 1, ny: 0 };
+  d -= H;
+  if (d < W) return { x: w + pad - d, y: h + pad, nx: 0, ny: 1 };
+  d -= W;
+  return { x: -pad, y: h + pad - d, nx: -1, ny: 0 };
+}
+
+/** A crackle: a jagged arc clinging to a stretch of the box, or now and then shooting out of it. */
+function arc(w: number, h: number, pad: number, amp: number): string {
+  const t = Math.random();
+  const out = Math.random() < 0.25;
+  const steps = 7;
+  const pts: string[] = [];
+  if (out) {
+    const p = round(t, w, h, pad);
+    const far = between(10, 22);
+    for (let k = 0; k <= steps; k++) {
+      const f = k / steps;
+      const jx = k && k < steps ? between(-amp, amp) : 0;
+      pts.push(`${(p.x + p.nx * far * f + p.ny * jx).toFixed(1)} ${(p.y + p.ny * far * f + p.nx * jx).toFixed(1)}`);
+    }
+  } else {
+    const span = between(0.03, 0.09);
+    for (let k = 0; k <= steps; k++) {
+      const p = round(t + (span * k) / steps, w, h, pad);
+      const j = k && k < steps ? between(-amp, amp) : 0;
+      pts.push(`${(p.x + p.nx * j).toFixed(1)} ${(p.y + p.ny * j).toFixed(1)}`);
+    }
+  }
+  return `M${pts.join(" L")}`;
+}
+
+/**
+ * Charges the name like a hero's fist in a film: crackles flickering along
+ * its edges, never the same twice, and his orange bolts going round it,
+ * pointing out, flickering as they go. Draws into the svg until stopped;
+ * `place` puts the svg over the name each frame, where it isn't already.
+ */
+function electrify(svg: SVGSVGElement, name: HTMLElement, soft: boolean, place?: (box: DOMRect) => void): () => void {
+  const crackles = document.createElementNS(SVG, "g");
+  crackles.setAttribute("class", "rg-crackles");
+  svg.append(crackles);
+  const count = soft ? 3 : 4;
+  const bolts = Array.from({ length: count }, (_, i) => {
+    const g = document.createElementNS(SVG, "g");
+    const path = document.createElementNS(SVG, "path");
+    path.setAttribute("d", BOLT);
+    g.append(path);
+    svg.append(g);
+    return { g, t: i / count, speed: between(0.06, 0.1) };
+  });
+  name.classList.add("rg-charged");
+
+  let frame = 0;
+  let last = performance.now();
+  let n = 0;
+  const tick = (now: number) => {
+    frame = requestAnimationFrame(tick);
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    const box = name.getBoundingClientRect();
+    const w = box.width;
+    const h = box.height;
+    place?.(box);
+    svg.setAttribute("width", String(w + 2 * AROUND));
+    svg.setAttribute("height", String(h + 2 * AROUND));
+    svg.setAttribute("viewBox", `${-AROUND} ${-AROUND} ${w + 2 * AROUND} ${h + 2 * AROUND}`);
+
+    // As tall as a third of the name's line, in the standings a little less.
+    const tall = Math.min(soft ? 22 : 46, Math.max(16, h * (soft ? 0.7 : 0.32)));
+    const k = tall / BOLT_H;
+    for (const b of bolts) {
+      b.t = (b.t + b.speed * dt) % 1;
+      const p = round(b.t, w, h, 2);
+      const turn = (Math.atan2(p.ny, p.nx) * 180) / Math.PI + 90 + between(-12, 12);
+      const x = p.x + p.nx * tall * 0.3 + between(-1.5, 1.5);
+      const y = p.y + p.ny * tall * 0.3 + between(-1.5, 1.5);
+      b.g.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${turn.toFixed(1)}) scale(${k.toFixed(3)}) translate(${-BOLT_W / 2} ${-BOLT_H / 2})`);
+      b.g.setAttribute("opacity", Math.random() < 0.12 ? "0.35" : "1");
+    }
+    // The crackles change every other frame: faster would only blur.
+    if (n++ % 2 === 0) {
+      crackles.replaceChildren(
+        ...Array.from({ length: soft ? 3 : 5 }, () => {
+          const path = document.createElementNS(SVG, "path");
+          path.setAttribute("d", arc(w, h, 3, soft ? 3 : 5));
+          return path;
+        }),
+      );
+    }
+  };
+  frame = requestAnimationFrame(tick);
+  return () => {
+    cancelAnimationFrame(frame);
+    name.classList.remove("rg-charged");
+    svg.replaceChildren();
+  };
+}
+
+/**
+ * Diego's name, charged. On his page, from when it opens, while the name is
+ * on screen, the charge drawn in the name's own box; `soft`, in the
+ * standings, while the row is pointed at, over the screen, since a row cut
+ * short would clip it.
+ */
+function Electric({ soft, children }: { soft: boolean; children: ReactNode }) {
+  const el = useRef<HTMLSpanElement>(null);
+  const charge = useRef<SVGSVGElement>(null);
+
+  useEffect(() => {
+    const name = el.current;
+    if (!name || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (soft) {
+      const row = name.closest<HTMLElement>(".rg-row") ?? name;
+      const site = document.querySelector<HTMLElement>(".lpm");
+      let stop: (() => void) | null = null;
+      let svg: SVGSVGElement | null = null;
+      const start = () => {
+        if (stop || !site) return;
+        svg = document.createElementNS(SVG, "svg");
+        svg.setAttribute("class", "rg-charge rg-charge-float");
+        svg.setAttribute("aria-hidden", "true");
+        site.append(svg);
+        const s = svg;
+        stop = electrify(s, name, true, (box) => {
+          s.style.left = `${box.left - AROUND}px`;
+          s.style.top = `${box.top - AROUND}px`;
+        });
+      };
+      const end = () => {
+        stop?.();
+        svg?.remove();
+        stop = null;
+        svg = null;
+      };
+      row.addEventListener("pointerenter", start);
+      row.addEventListener("pointerleave", end);
+      row.addEventListener("pointercancel", end);
+      return () => {
+        row.removeEventListener("pointerenter", start);
+        row.removeEventListener("pointerleave", end);
+        row.removeEventListener("pointercancel", end);
+        end();
+      };
+    }
+    const svg = charge.current;
+    if (!svg) return;
+    let stop: (() => void) | null = null;
+    const seen = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !stop) stop = electrify(svg, name, false);
+      if (!entry.isIntersecting && stop) {
+        stop();
+        stop = null;
+      }
+    });
+    seen.observe(name);
+    return () => {
+      seen.disconnect();
+      stop?.();
+    };
+  }, [soft]);
+
+  if (soft) return <span ref={el}>{children}</span>;
+  return (
+    <span className="rg-charge-host">
+      <span ref={el}>{children}</span>
+      <svg ref={charge} aria-hidden="true" className="rg-charge" />
+    </span>
+  );
 }
 
 const PEACH = "\u{1F351}";
@@ -385,8 +497,8 @@ function CopioneRow({ children }: { children: ReactNode }) {
 }
 
 /**
- * A player's name with their easter egg, if they have one: bolts thrown out
- * like sparks, a mist drifting past, peaches stuck on like stickers, or a
+ * A player's name with their easter egg, if they have one: a charge of
+ * lightning round it, a mist drifting past, peaches stuck on like stickers, or a
  * chat of his messages piling up behind it. On
  * the player's own page in full; `soft` in the standings, fewer and smaller,
  * where the peach is a single one, put after the name by `EasterMark`.
@@ -397,6 +509,7 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   if (!effect || (effect === "pesca" && soft)) return <>{children}</>;
   if (effect === "pesca") return <Peaches>{children}</Peaches>;
   if (effect === "copione") return soft ? <CopioneRow>{children}</CopioneRow> : <Copione>{children}</Copione>;
+  if (effect === "fulmini") return <Electric soft={soft}>{children}</Electric>;
   return (
     <Burst effect={effect} soft={soft}>
       {children}
