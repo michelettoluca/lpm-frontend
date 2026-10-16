@@ -1563,13 +1563,19 @@ body:has(.lpm)::before {
 }
 
 /* The easter eggs' peek (Easter.tsx): a picture of the player, a sticker,
-   peeking in from an edge of the screen, turned so his head comes in first;
-   where and how far is set from the script. */
+   peeking in from an edge of his card (or his row), turned so his head
+   comes in first; where and how far is set from the script. The card clips
+   him; he's over its text. */
+.lpm .rg-peek-host {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+}
 .lpm .rg-peek {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
-  z-index: 110;
+  z-index: 1;
   pointer-events: none;
   user-select: none;
   /* Turned about its own corner: the script works out where that goes. */

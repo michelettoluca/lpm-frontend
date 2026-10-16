@@ -741,24 +741,26 @@ const SIDES = [
 
 /**
  * Stefano D'Antonio peeking: his picture, edged in white like a sticker,
- * comes in from the left edge of the screen as far as his chest, has a look
- * round and ducks back out, then from the right, the
- * top, the bottom, each time somewhere else along the edge, a pause between.
- * On his page, while his name is on it; nothing for reduced motion.
+ * comes in near a corner of his first card's left edge, shy at first, then
+ * all at once as far as his chest, has a quick look and is gone; then the
+ * right edge, the top, the bottom. In the card, which clips it, from when
+ * his page opens while it's on screen; `soft`, in the standings, the same
+ * in his row while it's pointed at. Nothing for reduced motion.
  */
-function Peek({ children }: { children: ReactNode }) {
+function Peek({ soft, children }: { soft: boolean; children: ReactNode }) {
   const el = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     const name = el.current;
-    const site = document.querySelector<HTMLElement>(".lpm");
-    if (!name || !site || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const host = soft ? name?.closest<HTMLElement>(".rg-row") : name?.closest<HTMLElement>(".rg-panel");
+    if (!name || !host || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const who = document.createElement("img");
     who.src = PEEKER.src;
     who.alt = "";
     who.setAttribute("aria-hidden", "true");
     who.className = "rg-peek";
-    site.append(who);
+    host.classList.add("rg-peek-host");
+    host.append(who);
 
     let turn = 0;
     let timer: number | null = null;
@@ -771,17 +773,17 @@ function Peek({ children }: { children: ReactNode }) {
         return;
       }
       const { side, turn: angle } = SIDES[turn++ % SIDES.length];
-      const H = Math.min(window.innerHeight * 0.42, 300);
+      const bw = host.clientWidth;
+      const bh = host.clientHeight;
+      // In a card about half its height at most; in a row, just his head over its edge.
+      const H = soft ? bh * 1.5 : Math.min(bh * 0.6, 300);
       const W = (H * PEEKER.w) / PEEKER.h;
       who.style.width = `${W}px`;
       who.style.height = `${H}px`;
-      // Where on the edge: a point, the picture standing on it, turned.
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
       // Near a corner of that edge, one end or the other.
       const along = Math.random() < 0.5 ? between(0.08, 0.2) : between(0.8, 0.92);
       const [px, py] =
-        side === "left" ? [0, vh * along] : side === "right" ? [vw, vh * along] : side === "top" ? [vw * along, 0] : [vw * along, vh];
+        side === "left" ? [0, bh * along] : side === "right" ? [bw, bh * along] : side === "top" ? [bw * along, 0] : [bw * along, bh];
       // How far in he comes: at first a bit of his head, in the end his head and chest.
       const peep = H * 0.12;
       const deep = H * 0.38;
@@ -805,21 +807,45 @@ function Peek({ children }: { children: ReactNode }) {
           { duration: 3400, fill: "forwards" },
         )
         .finished.then(() => {
-          if (on) timer = window.setTimeout(peek, 1400);
+          if (on) timer = window.setTimeout(peek, soft ? 500 : 1400);
         });
     };
-    const seen = new IntersectionObserver(([entry]) => {
-      on = entry.isIntersecting;
-      if (on && timer === null) timer = window.setTimeout(peek, 800);
-    });
-    seen.observe(name);
-    return () => {
-      seen.disconnect();
+    const start = () => {
+      on = true;
+      if (timer === null) timer = window.setTimeout(peek, soft ? 100 : 800);
+    };
+    const stop = () => {
       on = false;
       if (timer !== null) window.clearTimeout(timer);
+      timer = null;
+    };
+    const cleanup = () => {
+      stop();
       who.remove();
     };
-  }, []);
+
+    if (soft) {
+      const end = () => {
+        stop();
+        who.getAnimations().forEach((a) => a.cancel());
+      };
+      host.addEventListener("pointerenter", start);
+      host.addEventListener("pointerleave", end);
+      host.addEventListener("pointercancel", end);
+      return () => {
+        host.removeEventListener("pointerenter", start);
+        host.removeEventListener("pointerleave", end);
+        host.removeEventListener("pointercancel", end);
+        cleanup();
+      };
+    }
+    const seen = new IntersectionObserver(([entry]) => (entry.isIntersecting ? start() : stop()));
+    seen.observe(host);
+    return () => {
+      seen.disconnect();
+      cleanup();
+    };
+  }, [soft]);
 
   return <span ref={el}>{children}</span>;
 }
@@ -840,7 +866,7 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   if (effect === "fulmini") return <Electric soft={soft}>{children}</Electric>;
   if (effect === "fumetto") return <Comic soft={soft}>{children}</Comic>;
   if (effect === "orsetti") return <Bears soft={soft}>{children}</Bears>;
-  if (effect === "peek") return soft ? <>{children}</> : <Peek>{children}</Peek>;
+  if (effect === "peek") return <Peek soft={soft}>{children}</Peek>;
   return (
     <Burst effect={effect} soft={soft}>
       {children}
