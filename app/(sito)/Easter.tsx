@@ -874,17 +874,41 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   );
 }
 
+/** The standings' little bunch of peaches, by the name: where each sits in it, its size in em and its tilt. */
+const MARK_PEACHES = [
+  { x: 0.25, y: 0.62, size: 0.95, tilt: 12 },
+  { x: 0.78, y: 0.28, size: 0.62, tilt: -16 },
+  { x: 1.12, y: 0.82, size: 0.72, tilt: 24 },
+  { x: 0.55, y: -0.1, size: 0.5, tilt: -6 },
+];
+
 /**
- * The single peach of the standings, stuck just after the name and a little
- * above it, popping on while the row is pointed at (sito.css). Its own
- * element beside the name, not in it: a name cut short with an ellipsis
- * would cut it off too.
+ * Arturo Precioso's peaches in the standings: a little bunch just after
+ * his name, popping on one after another while the row is pointed at
+ * (sito.css). Its own element beside the name, not in it: a name cut short
+ * with an ellipsis would cut them off too.
  */
 export function EasterMark({ playerId }: { playerId: number | string }) {
   if (effectOf(playerId) !== "pesca") return null;
   return (
-    <span aria-hidden="true" className="rg-sticker rg-sticker-inline" style={{ "--tilt": "12deg" } as CSSProperties}>
-      {PEACH}
+    <span aria-hidden="true" className="rg-peach-mark">
+      {MARK_PEACHES.map((p, i) => (
+        <span
+          key={i}
+          className="rg-sticker rg-sticker-inline"
+          style={
+            {
+              left: `${p.x * 100}%`,
+              top: `${p.y * 100}%`,
+              fontSize: `${p.size}em`,
+              "--tilt": `${p.tilt}deg`,
+              animationDelay: `${i * 0.09}s`,
+            } as CSSProperties
+          }
+        >
+          {PEACH}
+        </span>
+      ))}
     </span>
   );
 }
