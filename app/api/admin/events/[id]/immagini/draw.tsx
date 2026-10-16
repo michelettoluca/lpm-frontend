@@ -226,8 +226,8 @@ function Frame({
   e: EventData;
   label?: string;
   title: string;
-  /** The footer's note on the left. */
-  meta: string;
+  /** The footer's note on the left, if any. */
+  meta?: string;
   /** The watermark, scattered behind the content. */
   icon: Icon;
   /** The image's height, for the watermark and the grain. */
@@ -275,7 +275,7 @@ function Frame({
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent: meta ? "space-between" : "flex-end",
           marginTop: 40,
           paddingTop: 20,
           borderTop: `2px solid ${LINE}`,
@@ -285,7 +285,7 @@ function Frame({
           lineHeight: 1.3,
         }}
       >
-        <div>{meta}</div>
+        {meta && <div>{meta}</div>}
         <div>legapaupermilano.it</div>
       </div>
 
@@ -524,13 +524,9 @@ export async function drawImage(e: EventData, kind: ImageKind): Promise<ImageRes
     case "imbattuti": {
       const rows = undefeated(e.standings);
       if (rows.length === 0) return null;
-      const meta =
-        rows.length === 1
-          ? `uno su ${e.standings.length} ha chiuso senza perdere`
-          : `${rows.length} su ${e.standings.length} hanno chiuso senza perdere`;
       height = Math.max(SQUARE, CHROME + rows.length * unbeatenRow(rows));
       body = (
-        <Frame e={e} title="imbattuti" meta={meta} icon={EMBLEM} height={height} seed={41}>
+        <Frame e={e} title="imbattuti" icon={EMBLEM} height={height} seed={41}>
           <Imbattuti rows={rows} />
         </Frame>
       );
