@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useDeferredValue, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import type { LeaderboardTappa, TappaResult, Verdict } from "@/app/lib/site";
 import { settledRuns } from "@/app/lib/potential";
+import { getStored } from "@/app/lib/storage";
 import { Comune, MarkerUnderline } from "../ui";
 import { Easter, EasterMark } from "../Easter";
 
@@ -84,14 +85,14 @@ const PLAYER = "flex min-w-0 items-center self-stretch";
 /* The visitor's layout, remembered between visits. The server and the first
    client render use "base"; storage can be blocked, so the choice also lives
    in memory for this visit. */
-const VIEW_KEY = "lpm-classifica-vista";
+const VIEW_KEY = "lpm-standings-view";
 let chosen: View | null = null;
 const listeners = new Set<() => void>();
 
 function readView(): View {
   if (chosen) return chosen;
   try {
-    const v = localStorage.getItem(VIEW_KEY);
+    const v = getStored(VIEW_KEY, "lpm-classifica-vista");
     return isView(v) ? v : "base";
   } catch {
     return "base";

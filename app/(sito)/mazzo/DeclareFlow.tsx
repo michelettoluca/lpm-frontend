@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { deckLabel, useArchetypeSearch } from "@/app/components/ArchetypePicker";
 import { colorsOf, ROGUE, UNAVAILABLE, type Archetype } from "@/app/lib/decks";
 import { tappaTitle } from "@/app/lib/format";
+import { getStored } from "@/app/lib/storage";
 import { Comune, Mana } from "../ui";
 
 /** How players find themselves: by their table's number, or by name. */
@@ -42,11 +43,11 @@ type Step =
 /** A message above the current step, in place of a toast. */
 type Note = { text: string; tone: "ok" | "error" };
 
-const RECEIPTS_KEY = "lpm:deck-receipts";
+const RECEIPTS_KEY = "lpm-deck-receipts";
 
 function readReceipts(): string[] {
   try {
-    const parsed: unknown = JSON.parse(localStorage.getItem(RECEIPTS_KEY) ?? "[]");
+    const parsed: unknown = JSON.parse(getStored(RECEIPTS_KEY, "lpm:deck-receipts") ?? "[]");
     return Array.isArray(parsed) ? parsed.filter((r): r is string => typeof r === "string") : [];
   } catch {
     return [];

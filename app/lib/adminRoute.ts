@@ -26,7 +26,7 @@ export function badRequest(error: AdminError): Response {
  * routes. The browser never sees it: `/api/admin/auth` sets it when a login
  * code checks out, and from then on the cookie rides along automatically.
  */
-const COOKIE = "lpm_admin_session";
+const COOKIE = "lpm-admin-session";
 const COOKIE_PATH = "/api/admin";
 
 export function readSession(request: Request): string | null {
