@@ -864,27 +864,36 @@ const haloOf = (hue: number) =>
   Math.max(0, Math.min(HALO_STEPS - 1, Math.round(((hue - MOLD_HUES[0]) / (MOLD_HUES[1] - MOLD_HUES[0])) * (HALO_STEPS - 1))));
 
 /**
- * One colony of the infection: where, how big, when it comes up and how
- * long it takes to; a cell (a dark body ringed in its green, with a
- * nucleus), a bubble (just the ring) or a speck; its green, and its glow.
+ * One growth of the infection, nothing quite round: where, how big, when it
+ * comes up and how long it takes to, its greens and its glow (-1 for none).
+ * A lump of crust, a dark knobbly body ringed in green, pocked with glowing
+ * pores; a husk, a lump gone hollow; a stalk of pin mould, bending in, its
+ * head of spores lighting up; a puff of spore dust; a tuft of fuzz. `shape`
+ * is the lump's or the husk's radius at each point round it, a share of r,
+ * from `turn`; the dust's specks as dx, dy and size; the fuzz's hairs as
+ * angle and length; the stalk's tip and bend as dx, dy. `pores` are a
+ * lump's as dx, dy and size, shares of r.
  */
-type Colony = {
+type Growth = {
+  kind: "lump" | "husk" | "stalk" | "dust" | "fuzz";
   x: number;
   y: number;
   r: number;
   at: number;
   grow: number;
-  kind: "cell" | "bubble" | "speck";
   ring: string;
   core: string;
   halo: number;
+  turn: number;
+  shape: number[];
+  pores: number[];
 };
 /** A stretch of a root of the rot, and when it's drawn. */
 type Vein = { x1: number; y1: number; x2: number; y2: number; w: number; at: number };
 /** A stain of rot soaking into the card, spreading out from where it's dropped. */
 type Stain = { x: number; y: number; r: number; at: number; grow: number; a: number };
 /** All of an infection, and when it's done. */
-type Rot = { colonies: Colony[]; veins: Vein[]; stains: Stain[]; end: number };
+type Rot = { growths: Growth[]; veins: Vein[]; stains: Stain[]; end: number };
 
 /** A soft round glow in each step of green, and the rot's stain, drawn once to stamp. */
 function sprites(): { halo: HTMLCanvasElement[]; stain: HTMLCanvasElement } {
@@ -925,9 +934,9 @@ const wobble = (u: number, ph: number[]) =>
  * An infection of a box w by h, and when each part of it comes: it starts
  * in corner `from` (0 the top left, then clockwise) and eats its way along
  * the edge both ways, reaching the far corner after `time` ms, its front
- * ragged; a thick crust along the edge, its thickness wandering, then
- * smaller cells and bubbles, then specks further in, each a while after the
- * edge beside it, as if creeping in. Stains of rot soak into the card from
+ * ragged; a thick crust of lumps and husks along the edge, fuzzy, its
+ * thickness wandering, then smaller ones and stalks of pin mould, then spore
+ * dust further in, each a while after the edge beside it, as if creeping in. Stains of rot soak into the card from
  * the edge, and roots grow in out of it, slowly, branching, wandering,
  * thinning out, staining it where they pass.
  */
@@ -939,7 +948,7 @@ function infect(w: number, h: number, from: number, time: number, small: boolean
   const scale = small ? 0.38 : Math.min(1, Math.max(0.5, w / 900));
   const speed = P / 2 / time;
   const creep = small ? 0.04 : 0.016;
-  const colonies: Colony[] = [];
+  const growths: Growth[] = [];
   const veins: Vein[] = [];
   const stains: Stain[] = [];
 
@@ -954,41 +963,73 @@ function infect(w: number, h: number, from: number, time: number, small: boolean
     return { x: p.x - p.nx * depth - p.ny * side, y: p.y - p.ny * depth + p.nx * side, p };
   };
 
-  const add = (u: number, depth: number, r: number, kind: Colony["kind"], spread = 3) => {
-    const { x, y } = at(u, depth, spread);
+  const greens = (u: number) => {
     const span = MOLD_HUES[1] - MOLD_HUES[0];
-    const hue = Math.max(MOLD_HUES[0], Math.min(MOLD_HUES[1], MOLD_HUES[0] + span * ((wobble(u * 0.5, ph.slice(6)) + 1) / 2) + between(-12, 12)));
-    colonies.push({
+    return Math.max(MOLD_HUES[0], Math.min(MOLD_HUES[1], MOLD_HUES[0] + span * ((wobble(u * 0.5, ph.slice(6)) + 1) / 2) + between(-12, 12)));
+  };
+  const add = (u: number, depth: number, r: number, kind: Growth["kind"], spread = 3) => {
+    const { x, y, p } = at(u, depth, spread);
+    const hue = greens(u);
+    // Which way is in, there.
+    const inward = Math.atan2(-p.ny, -p.nx);
+    const g: Growth = {
+      kind,
       x,
       y,
       r,
       at: arrive(u, depth),
       grow: between(500, 900),
-      kind,
-      ring: `hsl(${hue} 80% ${kind === "speck" ? 58 : 46}%)`,
-      core: `hsl(${hue + 8} 90% 66%)`,
-      halo: haloOf(hue),
-    });
+      ring: kind === "fuzz" ? `hsl(${hue} 30% 70% / 0.75)` : `hsl(${hue} 78% ${kind === "dust" ? 58 : 44}%)`,
+      core: `hsl(${hue + 8} 90% 64%)`,
+      halo: kind === "fuzz" ? -1 : haloOf(hue),
+      turn: between(0, 2 * Math.PI),
+      shape: [],
+      pores: [],
+    };
+    if (kind === "lump" || kind === "husk") {
+      // Knobbly: a radius for each point round it, each softened by its neighbours'.
+      const raw = Array.from({ length: 7 + Math.floor(Math.random() * 5) }, () => between(0.5, 1.5));
+      g.shape = raw.map((v, i) => (2 * v + raw[(i + 1) % raw.length] + raw[(i + raw.length - 1) % raw.length]) / 4);
+      if (kind === "lump") for (let k = Math.floor(Math.random() * 4); k > 0; k--) g.pores.push(between(-0.45, 0.45), between(-0.45, 0.45), between(0.1, 0.24));
+    } else if (kind === "stalk") {
+      const a = inward + between(-0.7, 0.7);
+      const len = (small ? between(3, 8) : between(8, 26)) * scale;
+      const bend = between(-0.35, 0.35) * len;
+      g.shape = [Math.cos(a) * len, Math.sin(a) * len, Math.cos(a) * len * 0.5 - Math.sin(a) * bend, Math.sin(a) * len * 0.5 + Math.cos(a) * bend];
+      g.at += between(300, 900);
+      g.grow = between(900, 1500);
+    } else if (kind === "dust") {
+      for (let k = 3 + Math.floor(Math.random() * 5); k > 0; k--) g.shape.push(between(-1, 1) * r, between(-1, 1) * r, between(0.5, 1.4) * Math.max(0.6, scale));
+    } else {
+      for (let k = 4 + Math.floor(Math.random() * 5); k > 0; k--) g.shape.push(inward + between(-1.5, 1.5), between(2, 7) * scale);
+    }
+    growths.push(g);
   };
   for (let u = 0; u < P; u += between(4, 8) * scale) {
     const t = thick(u);
     const depth = Math.random() ** 1.5 * t;
-    add(u, depth, between(3, 10) * scale * (1 - (depth / t) * 0.5), Math.random() < 0.75 ? "cell" : "bubble");
+    add(u, depth, between(3, 10) * scale * (1 - (depth / t) * 0.5), Math.random() < 0.8 ? "lump" : "husk");
   }
   for (let u = 0; u < P; u += between(10, 18) * scale) {
     const t = thick(u);
-    add(u, t * 0.6 + Math.random() ** 1.4 * t * 1.6, between(1.5, 5) * scale, Math.random() < 0.5 ? "cell" : "bubble", 6);
+    add(u, t * 0.6 + Math.random() ** 1.4 * t * 1.6, between(1.5, 5) * scale, Math.random() < 0.7 ? "lump" : "husk", 6);
+  }
+  // The fuzz on the crust.
+  for (let u = 0; u < P; u += between(3, 7) * scale) add(u, between(0, thick(u)), 0, "fuzz", 2);
+  // Pin mould at the crust's inner edge, bending in.
+  for (let u = 0; u < P; u += between(9, 22) * scale) {
+    add(u, thick(u) * between(0.4, 1.1), Math.max(0.8, between(1.2, 3) * scale), "stalk", 4);
   }
   for (let u = 0; u < P; u += between(12, 22) * scale) {
     const t = thick(u);
     // Round a row, not so far in: it's low.
-    add(u, t + Math.random() ** 2 * t * (small ? 1.4 : 3), Math.max(0.7, between(0.8, 2) * scale), "speck", 8);
+    add(u, t + Math.random() ** 2 * t * (small ? 1.4 : 3), between(2, 6) * scale, "dust", 8);
   }
   // The corners' rounding, filled in from the corner itself.
   for (const u of [0, w, w + h, 2 * w + h]) {
     for (let k = 0; k < 24; k++) {
       const a = Math.random() ** 0.8 * (small ? 10 : 46 * scale);
-      add(u + between(-1, 1) * a, a * between(0.5, 1), between(2.5, 9) * scale, Math.random() < 0.75 ? "cell" : "bubble", 2);
+      add(u + between(-1, 1) * a, a * between(0.5, 1), between(2.5, 9) * scale, Math.random() < 0.8 ? "lump" : "husk", 2);
     }
   }
 
@@ -1027,13 +1068,25 @@ function infect(w: number, h: number, from: number, time: number, small: boolean
     root(x, y, Math.atan2(-p.ny, -p.nx) + between(-0.6, 0.6), len, between(2, 4.5) * scale * (small ? 1.2 : 1), arrive(u, 0) + between(200, 1200), 0);
   }
 
-  colonies.sort((x, y) => x.at - y.at);
-  const end = Math.max(...colonies.map((c) => c.at + c.grow), ...veins.map((v) => v.at), ...stains.map((s) => s.at + s.grow));
-  return { colonies, veins, stains, end };
+  let end = 0;
+  for (const g of growths) end = Math.max(end, g.at + g.grow);
+  for (const v of veins) end = Math.max(end, v.at);
+  for (const t of stains) end = Math.max(end, t.at + t.grow);
+  return { growths, veins, stains, end };
 }
 
-/** Where the infection is drawn: the stains, the roots, the colonies' glow, the colonies. */
-type MoldCanvases = { stain: CanvasRenderingContext2D; veins: CanvasRenderingContext2D; glow: CanvasRenderingContext2D; body: CanvasRenderingContext2D };
+/**
+ * Where the infection is drawn: the stains, the roots, the glow, what's
+ * done growing, and what's growing. Only the stains and what's growing are
+ * drawn afresh each frame; the rest only ever gets more of it.
+ */
+type MoldCanvases = {
+  stain: CanvasRenderingContext2D;
+  veins: CanvasRenderingContext2D;
+  glow: CanvasRenderingContext2D;
+  done: CanvasRenderingContext2D;
+  growing: CanvasRenderingContext2D;
+};
 
 const clear = (ctx: CanvasRenderingContext2D) => {
   ctx.save();
@@ -1042,11 +1095,97 @@ const clear = (ctx: CanvasRenderingContext2D) => {
   ctx.restore();
 };
 
+const STALK = "hsl(78 25% 28%)";
+
+/** Where a growth glows from, and how far: a stalk at its head. */
+const glowOf = (g: Growth) =>
+  g.kind === "stalk" ? { x: g.x + g.shape[0], y: g.y + g.shape[1], r: g.r * 4 } : { x: g.x, y: g.y, r: g.r * (g.kind === "dust" ? 2 : 2.6) };
+
+/** A growth, `e` of the way grown (a lump a little past it as it lands). */
+function drawGrowth(ctx: CanvasRenderingContext2D, g: Growth, e: number) {
+  const { x, y, r, shape } = g;
+  if (g.kind === "lump" || g.kind === "husk") {
+    const n = shape.length;
+    const pt = (i: number) => {
+      const a = g.turn + ((i % n) / n) * 2 * Math.PI;
+      const k = shape[i % n] * r * e;
+      return [x + Math.cos(a) * k, y + Math.sin(a) * k];
+    };
+    // A smooth knobbly outline through the midpoints.
+    const [px, py] = pt(0);
+    const [qx, qy] = pt(1);
+    ctx.beginPath();
+    ctx.moveTo((px + qx) / 2, (py + qy) / 2);
+    for (let i = 1; i <= n; i++) {
+      const [ax, ay] = pt(i);
+      const [bx, by] = pt(i + 1);
+      ctx.quadraticCurveTo(ax, ay, (ax + bx) / 2, (ay + by) / 2);
+    }
+    ctx.closePath();
+    if (g.kind === "lump") {
+      ctx.fillStyle = MOLD_BODY;
+      ctx.fill();
+    }
+    ctx.strokeStyle = g.ring;
+    ctx.lineWidth = Math.max(0.7, r * e * (g.kind === "lump" ? 0.18 : 0.26));
+    ctx.stroke();
+    ctx.fillStyle = g.core;
+    for (let i = 0; i < g.pores.length; i += 3) {
+      ctx.beginPath();
+      ctx.arc(x + g.pores[i] * r * e, y + g.pores[i + 1] * r * e, g.pores[i + 2] * r * e, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+    return;
+  }
+  if (g.kind === "stalk") {
+    // The stalk first, along its bend, then its head swelling at the tip.
+    const f = Math.min(1, e * 1.5);
+    const [tx, ty, cx, cy] = shape;
+    const bx = 2 * (1 - f) * f * cx + f * f * tx;
+    const by = 2 * (1 - f) * f * cy + f * f * ty;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.quadraticCurveTo(x + cx * f, y + cy * f, x + bx, y + by);
+    ctx.strokeStyle = STALK;
+    ctx.lineWidth = Math.max(0.6, r * 0.35);
+    ctx.stroke();
+    const head = Math.max(0, (e - 0.55) / 0.45);
+    if (head > 0) {
+      ctx.beginPath();
+      ctx.fillStyle = g.ring;
+      ctx.arc(x + bx, y + by, r * head, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.fillStyle = g.core;
+      ctx.arc(x + bx - r * 0.25 * head, y + by - r * 0.2 * head, r * 0.5 * head, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+    return;
+  }
+  if (g.kind === "dust") {
+    ctx.fillStyle = g.ring;
+    for (let i = 0; i < shape.length; i += 3) {
+      ctx.beginPath();
+      ctx.arc(x + shape[i] * e, y + shape[i + 1] * e, shape[i + 2] * e, 0, 2 * Math.PI);
+      ctx.fill();
+    }
+    return;
+  }
+  ctx.beginPath();
+  for (let i = 0; i < shape.length; i += 2) {
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + Math.cos(shape[i]) * shape[i + 1] * e, y + Math.sin(shape[i]) * shape[i + 1] * e);
+  }
+  ctx.strokeStyle = g.ring;
+  ctx.lineWidth = 0.6;
+  ctx.stroke();
+}
+
 /**
- * The infection at `now` ms: each stain soaked in and each colony come up
- * so far, swelling in with a little overshoot; the roots only grow, so only
- * what they've grown since `then` is added (all of it, from scratch, when
- * `then` is null).
+ * The infection at `now` ms, from where it was painted at `then` (from
+ * scratch when null): each stain soaked in so far; the roots grown since,
+ * added; each growth that has started since, its glow stamped; each done
+ * since, drawn for good; and each still growing, as far as it has.
  */
 function paintMold(c: MoldCanvases, rot: Rot, then: number | null, now: number, art: ReturnType<typeof sprites>) {
   clear(c.stain);
@@ -1059,7 +1198,7 @@ function paintMold(c: MoldCanvases, rot: Rot, then: number | null, now: number, 
   }
   c.stain.globalAlpha = 1;
 
-  if (then === null) clear(c.veins);
+  if (then === null) for (const ctx of [c.veins, c.glow, c.done]) clear(ctx);
   const v = c.veins;
   v.lineCap = "round";
   for (const seg of rot.veins) {
@@ -1078,47 +1217,32 @@ function paintMold(c: MoldCanvases, rot: Rot, then: number | null, now: number, 
     }
   }
 
-  clear(c.glow);
-  clear(c.body);
-  const body = c.body;
-  for (const col of rot.colonies) {
-    const k = (now - col.at) / col.grow;
-    if (k <= 0) break;
-    const e = k >= 1 ? 1 : 1 + 2.7 * (k - 1) ** 3 + 1.7 * (k - 1) ** 2;
-    const r = col.r * e;
-    c.glow.drawImage(art.halo[col.halo], col.x - r * 2.6, col.y - r * 2.6, r * 5.2, r * 5.2);
-    body.beginPath();
-    if (col.kind === "speck") {
-      body.fillStyle = col.ring;
-      body.arc(col.x, col.y, r, 0, 2 * Math.PI);
-      body.fill();
+  clear(c.growing);
+  c.done.lineCap = c.growing.lineCap = "round";
+  for (const g of rot.growths) {
+    if (g.at > now) continue;
+    if (g.halo >= 0 && (then === null || g.at > then)) {
+      const o = glowOf(g);
+      c.glow.drawImage(art.halo[g.halo], o.x - o.r, o.y - o.r, 2 * o.r, 2 * o.r);
+    }
+    const done = g.at + g.grow;
+    if (done <= now) {
+      if (then === null || done > then) drawGrowth(c.done, g, 1);
       continue;
     }
-    if (col.kind === "cell") {
-      body.fillStyle = MOLD_BODY;
-      body.arc(col.x, col.y, r, 0, 2 * Math.PI);
-      body.fill();
-      body.beginPath();
-    }
-    body.strokeStyle = col.ring;
-    body.lineWidth = Math.max(0.8, r * (col.kind === "cell" ? 0.24 : 0.3));
-    body.arc(col.x, col.y, r * 0.82, 0, 2 * Math.PI);
-    body.stroke();
-    if (col.kind === "cell") {
-      body.beginPath();
-      body.fillStyle = col.core;
-      body.arc(col.x - r * 0.2, col.y - r * 0.15, r * 0.3, 0, 2 * Math.PI);
-      body.fill();
-    }
+    const k = (now - g.at) / g.grow;
+    // Lumps land with a little overshoot; the rest just grow.
+    const e = g.kind === "lump" || g.kind === "husk" ? 1 + 2.7 * (k - 1) ** 3 + 1.7 * (k - 1) ** 2 : 1 - (1 - k) ** 2;
+    drawGrowth(c.growing, g, e);
   }
 }
 
 /**
  * Demetrio Morselli's infection: out of a corner of his first card, a
- * different one each time, colonies of glowing circles eat their way along
- * its edge both ways, and from the edge the rot soaks in and roots grow in,
- * slowly, branching, ruining the card, until they've taken the whole of
- * it; then it stays, glowing. From when the card is on screen, its clock
+ * different one each time, a glowing crust eats its way along its edge both
+ * ways, knobbly, fuzzy, sprouting pin mould and puffing spores, and from the
+ * edge the rot soaks in and roots grow in, slowly, branching, ruining the
+ * card, until they've taken the whole of it; then it stays, glowing. From when the card is on screen, its clock
  * stopped while it isn't. Behind its text, clipped by it. `soft`, in the
  * standings, quick and small round his row while it's pointed at. For
  * reduced motion, the card already taken, still; nothing in the row.
@@ -1135,22 +1259,22 @@ function Mold({ soft, children }: { soft: boolean; children: ReactNode }) {
     layer.className = "rg-mold";
     layer.setAttribute("aria-hidden", "true");
     // The soft ones, the stains and the glow, need no more than a pixel each.
-    const sheets = (["stain", "veins", "glow", "body"] as const).map((key) => {
+    const sheets = (["stain", "veins", "glow", "done", "growing"] as const).map((key) => {
       const canvas = document.createElement("canvas");
       canvas.className = `rg-mold-${key}`;
       layer.append(canvas);
-      return { key, canvas, sharp: key === "veins" || key === "body" };
+      return { key, canvas, sharp: key !== "stain" && key !== "glow" };
     });
     host.classList.add("rg-mold-host");
     host.append(layer);
     const ctx = Object.fromEntries(sheets.map((s) => [s.key, s.canvas.getContext("2d")])) as Record<keyof MoldCanvases, CanvasRenderingContext2D | null>;
-    if (!ctx.stain || !ctx.veins || !ctx.glow || !ctx.body) return () => layer.remove();
+    if (!ctx.stain || !ctx.veins || !ctx.glow || !ctx.done || !ctx.growing) return () => layer.remove();
     const canvases = ctx as MoldCanvases;
     const art = sprites();
 
     const time = soft ? 900 : 9000;
     let from = Math.floor(Math.random() * 4);
-    let rot: Rot = { colonies: [], veins: [], stains: [], end: 0 };
+    let rot: Rot = { growths: [], veins: [], stains: [], end: 0 };
     // How far along it is, in ms, and when that clock started, while it runs.
     let elapsed = 0;
     let since: number | null = null;
@@ -1160,7 +1284,8 @@ function Mold({ soft, children }: { soft: boolean; children: ReactNode }) {
     const fit = () => {
       const w = host.clientWidth;
       const h = host.clientHeight;
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      // Sharp enough, and easy on memory with three of them.
+      const dpr = Math.min(1.5, window.devicePixelRatio || 1);
       for (const s of sheets) {
         const d = s.sharp ? dpr : 1;
         s.canvas.width = Math.round(w * d);
