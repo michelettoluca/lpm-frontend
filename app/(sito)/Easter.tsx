@@ -15,7 +15,7 @@ const SVG = "http://www.w3.org/2000/svg";
  * fog. Each is fixed on the screen on its own, not in a layer: a layer
  * would blend them with nothing.
  */
-function puff(box: DOMRect, front: boolean, ground: boolean) {
+function puff(box: DOMRect, foot: number, front: boolean, ground: boolean) {
   const site = document.querySelector<HTMLElement>(".lpm");
   if (!site) return;
   const span = Math.max(80, Math.min(box.width, 260));
@@ -24,7 +24,8 @@ function puff(box: DOMRect, front: boolean, ground: boolean) {
   const w = ground ? between(0.8, 1.4) * span : between(0.5, 1.1) * span;
   const h = ground ? w * between(0.2, 0.3) : w * between(0.35, 0.55);
   const x = between(box.left - w * 0.3, box.right - w * 0.7);
-  const y = ground ? box.bottom - h * between(0.3, 0.7) : between(box.top - h * 0.4, box.bottom - h * 0.6);
+  // A ground puff's thick heart sits on the line the letters stand on.
+  const y = ground ? foot - h * between(0.42, 0.58) : between(box.top - h * 0.4, box.bottom - h * 0.6);
   const drift = (ground ? between(12, 30) : between(24, 60)) * (Math.random() < 0.5 ? -1 : 1);
 
   const el = document.createElement("div");
@@ -47,11 +48,12 @@ function puff(box: DOMRect, front: boolean, ground: boolean) {
   ).finished.finally(() => el.remove());
 }
 
-type Play = { first: number; each: number; every: number; draw: (box: DOMRect, i: number) => void };
+/** `foot` is the line the name's last line of letters stands on. */
+type Play = { first: number; each: number; every: number; draw: (box: DOMRect, i: number, foot: number) => void };
 
 // Every other puff in front, so the name keeps sinking into the fog; two in
 // three along its foot, where the fog lies thickest.
-const MIST: Play = { first: 16, each: 1, every: 340, draw: (box, i) => puff(box, i % 2 === 0, i % 3 !== 2) };
+const MIST: Play = { first: 16, each: 1, every: 340, draw: (box, i, foot) => puff(box, foot, i % 2 === 0, i % 3 !== 2) };
 
 /** What the mist throws as it starts, then how much and how often: the same on his page and in the standings. */
 const PLAY: Record<"nebbia", { full: Play; soft: Play }> = {
@@ -74,7 +76,13 @@ function Burst({ effect, soft, children }: { effect: keyof typeof PLAY; soft: bo
     let timer: number | null = null;
     const burst = (count: number) => {
       const box = name.getBoundingClientRect();
-      for (let i = 0; i < count; i++) play.draw(box, n++);
+      // Where the letters stand: an empty mark at the end of the name sits on it.
+      const mark = document.createElement("span");
+      mark.style.cssText = "display:inline-block;width:0;height:0;vertical-align:baseline";
+      name.append(mark);
+      const foot = mark.getBoundingClientRect().bottom;
+      mark.remove();
+      for (let i = 0; i < count; i++) play.draw(box, n++, foot);
     };
     const start = () => {
       if (timer !== null) return;
