@@ -310,7 +310,8 @@ function Electric({ soft, children }: { soft: boolean; children: ReactNode }) {
 }
 
 const PEACH = "\u{1F351}";
-const LOBSTER = "\u{1F99E}";
+/** Lisa Coronini's lobster: a sticker, cut out of the picture she was given, edged in white; 1405 by 973. */
+const LOBSTER = "/easter/aragosta.webp";
 
 /** A sticker by the name: its centre as a share of the name's box, its size in em of the name's type, its tilt, and whether it's over the letters. */
 type Spot = { x: number; y: number; size: number; tilt: number; front?: boolean };
@@ -1498,11 +1499,11 @@ const SPREAD = 28;
 const turnOf = (i: number) => -SPREAD + (2 * SPREAD * i) / (HAND.length - 1);
 
 /**
- * Lisa Coronini's lobster, of comic size: one huge one on the right of her
- * first card, turned, cut off by its right edge; it comes in from the
- * right as the page opens, a jerky step at a time, turning right and left,
- * strikes a pose, then sways a little (sito.css). Behind the text, so the
- * numbers it reaches on a phone stay readable.
+ * Lisa Coronini's lobster, of comic size: one huge one at the top right of
+ * her first card, cut off by its right edge; it comes in from that corner
+ * down towards the middle as the page opens, a jerky step at a time,
+ * turning right and left, strikes a pose, then sways a little (sito.css).
+ * Over the text.
  */
 function Lobster({ children }: { children: ReactNode }) {
   const el = useRef<HTMLSpanElement>(null);
@@ -1510,10 +1511,11 @@ function Lobster({ children }: { children: ReactNode }) {
   useEffect(() => {
     const host = el.current?.closest<HTMLElement>(".rg-panel");
     if (!host) return;
-    const lobster = document.createElement("span");
+    const lobster = document.createElement("img");
     lobster.className = "rg-lobster";
+    lobster.src = LOBSTER;
+    lobster.alt = "";
     lobster.setAttribute("aria-hidden", "true");
-    lobster.textContent = LOBSTER;
     host.append(lobster);
     return () => lobster.remove();
   }, []);
@@ -1719,7 +1721,8 @@ export function EasterMark({ playerId }: { playerId: number | string }) {
             } as CSSProperties
           }
         >
-          {lobster ? LOBSTER : PEACH}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          {lobster ? <img src={LOBSTER} alt="" className="rg-sticker-picture" /> : PEACH}
         </span>
       ))}
     </span>
