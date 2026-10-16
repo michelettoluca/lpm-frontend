@@ -1534,9 +1534,9 @@ function Fan({ children }: { children: ReactNode }) {
 /**
  * Filippo Pezza's championship belt, for winning the Paupergeddon in Pisa
  * in 2024: its centre plate, drawn about its middle, 380 wide. Gold, its
- * edge notched at the corners, wings onto the strap, a crown on top, gems
- * at its sides; in the middle a red enamel field with PAUPERGEDDON round
- * the top, CHAMPION across it and PISA 2024 under it; and a glint that
+ * edge notched at the corners, wings onto the strap, gems at its sides; in
+ * the middle a red enamel field with PAUPERGEDDON round the top, CHAMPION
+ * across it and PISA 2024 under it; and a glint that
  * sweeps across the gold now and then (sito.css). Its gradients are named
  * on the page, for the side plates too.
  */
@@ -1559,10 +1559,8 @@ const BELT_PLATE = `<svg class="rg-belt-plate" viewBox="-190 -126 380 226" aria-
   </defs>
   <g fill="url(#rg-belt-gold)" stroke="#6b4a0c" stroke-width="3" stroke-linejoin="round">
     <path d="M-150 -40L-188 -30L-188 30L-150 40Z"/><path d="M150 -40L188 -30L188 30L150 40Z"/>
-    <path d="M-26 -88L-30 -114L-15 -100L0 -122L15 -100L30 -114L26 -88Z"/>
     <path d="${PLATE_EDGE}"/>
   </g>
-  <g fill="#c50f22" stroke="#6b4a0c" stroke-width="2"><circle cx="0" cy="-122" r="5"/><circle cx="-30" cy="-114" r="4"/><circle cx="30" cy="-114" r="4"/></g>
   <path d="${PLATE_EDGE}" transform="scale(0.9)" fill="none" stroke="#fff6cf" stroke-width="2.5"/>
   <path d="${PLATE_EDGE}" transform="scale(0.85)" fill="none" stroke="#7a560f" stroke-width="1.5"/>
   <ellipse rx="112" ry="66" fill="url(#rg-belt-red)" stroke="#6b4a0c" stroke-width="3"/>
