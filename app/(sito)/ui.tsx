@@ -424,6 +424,7 @@ export function Section({
   title,
   aside,
   as,
+  backdrop,
   children,
   className = "",
 }: {
@@ -432,11 +433,14 @@ export function Section({
   aside?: ReactNode;
   /** h1 when the section opens the page. */
   as?: "h1" | "h2";
+  /** Drawn behind everything else, like a watermark. */
+  backdrop?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
   return (
     <section className={`rg-panel grid gap-8 lg:grid-cols-[minmax(0,4fr)_minmax(0,8fr)] lg:gap-12 ${className}`}>
+      {backdrop}
       <Head label={label} title={title} aside={aside} as={as} className="lg:sticky lg:top-8 lg:self-start" />
       <div className="min-w-0">{children}</div>
     </section>

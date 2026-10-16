@@ -5,15 +5,15 @@ export const metadata = { title: "Regolamento · Lega Pauper Milano" };
 
 /** The rules sections, retitled in our voice. The text stays the same. */
 const TITLES: Record<string, string> = {
-  "Orari e iscrizioni": "puntuali, per favore",
-  Preiscrizioni: "tenersi il posto",
-  "Regolamento completo": "le regole vere",
+  "Orari e iscrizioni": "Puntuali, per favore",
+  Preiscrizioni: "Tenersi il posto",
+  "Regolamento completo": "Le regole vere",
 };
 
 export default function RulesPage() {
   return (
     <div className="rg-stack">
-      <Section as="h1" label="regolamento" title="come funziona" aside="Le cose da sapere prima di presentarsi al tavolo.">
+      <Section as="h1" label="regolamento" title="Come funziona" aside="Le cose da sapere prima di presentarsi al tavolo.">
         <dl className="grid gap-x-8 sm:grid-cols-2">
           {RULES.specs.map((s) => (
             <div key={s.label} className="rg-hr py-4">
@@ -27,13 +27,13 @@ export default function RulesPage() {
         </dl>
       </Section>
 
-      <Section label="nel dettaglio" title="iscrizioni e regole">
+      <Section label="nel dettaglio" title="Iscrizioni e regole">
         <div>
           {RULES.sections.map((sec, i) => (
             <section key={sec.title} className={`${i ? "rg-hr mt-8 pt-8" : ""}`}>
               <p className="rg-eyebrow">{sec.title}</p>
               <h3 className="rg-display rg-tight mt-1 text-[26px] leading-tight lg:text-[32px]">
-                {TITLES[sec.title] ?? sec.title.toLowerCase()}
+                {TITLES[sec.title] ?? sec.title.charAt(0).toUpperCase() + sec.title.slice(1).toLowerCase()}
               </h3>
               {sec.body.map((b) => (
                 <p key={b} className="mt-3 text-[16px] leading-relaxed lg:text-[17px]">

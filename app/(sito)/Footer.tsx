@@ -18,7 +18,7 @@ export function Footer() {
         <div>
           <p className="rg-eyebrow">ogni giovedì</p>
           <p className="rg-display rg-tight mt-3 text-[38px] leading-[1] lg:text-[64px]">
-            ci vediamo giovedì,
+            Ci vediamo giovedì,
             <br />
             alle 20.30.
           </p>

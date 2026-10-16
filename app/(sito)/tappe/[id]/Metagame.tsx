@@ -12,7 +12,7 @@ export function Metagame({ data }: { data: Data }) {
   return (
     <Section
       label="mazzi"
-      title="cosa si è giocato"
+      title="Cosa si è giocato"
       aside="I mazzi giocati durante la serata, raggruppati per archetipo."
     >
       <dl className="grid grid-cols-[1fr_1fr_auto] gap-x-4 sm:gap-x-6">
