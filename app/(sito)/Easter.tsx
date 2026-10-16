@@ -12,8 +12,8 @@ const SVG = "http://www.w3.org/2000/svg";
  * A puff of mist, drifting past the name and thinning out, or lying low
  * along its foot. Behind ones blend so the letters stay crisp over them
  * (sito.css), front ones are the card's paper and hide the letters in a
- * fog. Each is fixed on the screen on its own, not in a layer: a layer
- * would blend them with nothing.
+ * fog. Each is placed on the page on its own, not in a layer: a layer would
+ * blend them with nothing.
  */
 function puff(box: DOMRect, foot: number, front: boolean, ground: boolean) {
   const site = document.querySelector<HTMLElement>(".lpm");
@@ -31,8 +31,10 @@ function puff(box: DOMRect, foot: number, front: boolean, ground: boolean) {
   const el = document.createElement("div");
   el.className = `rg-mist ${front ? "rg-mist-front" : "rg-mist-back"}`;
   el.setAttribute("aria-hidden", "true");
-  el.style.left = `${x}px`;
-  el.style.top = `${y}px`;
+  // On the page, not the screen, so it scrolls with the name.
+  const at = site.getBoundingClientRect();
+  el.style.left = `${x - at.left}px`;
+  el.style.top = `${y - at.top}px`;
   el.style.width = `${w}px`;
   el.style.height = `${h}px`;
   site.append(el);
@@ -497,7 +499,8 @@ function bubblePath(w: number, h: number, tail: "left" | "right" | "middle"): st
 /**
  * One of his lines in a speech bubble drawn by hand, beside the name or
  * above it, its tail pointing back at it, springing out of the tail until
- * told to go. Fixed on the screen, so no row or panel clips it. The longer
+ * told to go. On the page, over the cards, so no row or panel clips it and
+ * it scrolls with the name. The longer
  * the line, the smaller the type. Returns what takes it off.
  */
 function speak(box: DOMRect, text: string, small: boolean): (() => void) | null {
@@ -522,8 +525,10 @@ function speak(box: DOMRect, text: string, small: boolean): (() => void) | null 
   const el = document.createElement("div");
   el.className = "rg-comic";
   el.setAttribute("aria-hidden", "true");
-  el.style.left = `${Math.max(4, Math.min(window.innerWidth - w - 4, x))}px`;
-  el.style.top = `${y}px`;
+  // On the page, not the screen, so it scrolls with the name; kept inside it sideways.
+  const at = site.getBoundingClientRect();
+  el.style.left = `${Math.max(4, Math.min(at.width - w - 4, x - at.left))}px`;
+  el.style.top = `${y - at.top}px`;
   el.style.width = `${w}px`;
   el.style.height = `${h}px`;
   el.style.fontSize = `${size}px`;
@@ -611,6 +616,214 @@ function Comic({ soft, children }: { soft: boolean; children: ReactNode }) {
   return <span ref={el}>{children}</span>;
 }
 
+/** The gummy bears lifted out of the photo Andrea Forti's easter egg was asked with, each its own picture with its size. */
+const BEAR_PICTURES: { src: string; w: number; h: number }[] = [
+  { src: "/easter/orsetti/1.png", w: 97, h: 140 },
+  { src: "/easter/orsetti/2.png", w: 140, h: 108 },
+  { src: "/easter/orsetti/3.png", w: 101, h: 140 },
+  { src: "/easter/orsetti/4.png", w: 102, h: 140 },
+  { src: "/easter/orsetti/5.png", w: 140, h: 130 },
+];
+
+/**
+ * One gummy bear falling through a box like rain: in at the top, turning
+ * as it goes, out at the bottom, gone. Big or small; a third fall in front
+ * of the text, the rest behind it, paler.
+ */
+function rainBear(back: HTMLElement, front: HTMLElement, small: boolean) {
+  const W = back.clientWidth;
+  const H = back.clientHeight;
+  // Mostly small and middling, now and then a big one.
+  const tall = small ? between(10, 18) : 16 + Math.random() ** 2.2 * 70;
+  const ahead = Math.random() < 0.33;
+  const pic = BEAR_PICTURES[Math.floor(Math.random() * BEAR_PICTURES.length)];
+  const el = document.createElement("img");
+  el.src = pic.src;
+  el.alt = "";
+  const wide = (tall * pic.w) / pic.h;
+  el.style.width = `${wide}px`;
+  el.style.height = `${tall}px`;
+  el.className = "rg-bear";
+  if (!ahead) el.classList.add("rg-bear-back");
+  el.style.left = `${between(-wide * 0.3, W - wide * 0.7)}px`;
+  el.style.top = `${-tall * 1.5}px`;
+  (ahead ? front : back).append(el);
+  const spin = between(-1, 1) * between(90, 360);
+  const start = between(0, 360);
+  const drift = between(-30, 30);
+  const far = H + tall * 3;
+  el.animate(
+    [
+      { transform: `translate(0, 0) rotate(${start}deg)` },
+      { transform: `translate(${drift}px, ${far}px) rotate(${start + spin}deg)` },
+    ],
+    // Already falling at full speed when they come in, like rain: a steady
+    // pace through the card, the big ones a touch quicker, as if nearer.
+    { duration: (far / ((small ? 140 : 360) + tall * 3)) * 1000, easing: "linear", fill: "forwards" },
+  ).finished.finally(() => el.remove());
+}
+
+/**
+ * Andrea Forti's gummy bears raining through his first card, from when it
+ * opens and while it's on screen, in front of the text and behind it;
+ * `soft`, in the standings, through his row while it's pointed at. Nothing
+ * for reduced motion.
+ */
+function Bears({ soft, children }: { soft: boolean; children: ReactNode }) {
+  const el = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const name = el.current;
+    const host = soft ? name?.closest<HTMLElement>(".rg-row") : name?.closest<HTMLElement>(".rg-panel");
+    if (!name || !host || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // Two layers: behind the text, and over it.
+    const back = document.createElement("div");
+    back.className = "rg-bears";
+    back.setAttribute("aria-hidden", "true");
+    const front = document.createElement("div");
+    front.className = "rg-bears rg-bears-front";
+    front.setAttribute("aria-hidden", "true");
+    host.classList.add("rg-bears-host");
+    host.prepend(back);
+    host.append(front);
+
+    let timer: number | null = null;
+    const rain = () => {
+      if (timer === null) timer = window.setInterval(() => !document.hidden && rainBear(back, front, soft), soft ? 160 : 260);
+    };
+    const stop = () => {
+      if (timer !== null) window.clearInterval(timer);
+      timer = null;
+    };
+    const cleanup = () => {
+      stop();
+      back.remove();
+      front.remove();
+    };
+
+    if (soft) {
+      const end = () => {
+        stop();
+        back.replaceChildren();
+        front.replaceChildren();
+      };
+      host.addEventListener("pointerenter", rain);
+      host.addEventListener("pointerleave", end);
+      host.addEventListener("pointercancel", end);
+      return () => {
+        host.removeEventListener("pointerenter", rain);
+        host.removeEventListener("pointerleave", end);
+        host.removeEventListener("pointercancel", end);
+        cleanup();
+      };
+    }
+    const seen = new IntersectionObserver(([entry]) => (entry.isIntersecting ? rain() : stop()));
+    seen.observe(host);
+    return () => {
+      seen.disconnect();
+      cleanup();
+    };
+  }, [soft]);
+
+  return <span ref={el}>{children}</span>;
+}
+
+/** Stefano D'Antonio's picture, lifted out of the one he gave and edged in white like a sticker: 613 by 720, twice the size it shows at. */
+const PEEKER = { src: "/easter/stefano-dantonio.png", w: 613, h: 720 };
+
+/** The edges he peeks in from, in turn, and how he's turned for each: head in, the cut edge on the screen's. */
+const SIDES = [
+  { side: "left", turn: 90 },
+  { side: "right", turn: -90 },
+  { side: "top", turn: 180 },
+  { side: "bottom", turn: 0 },
+] as const;
+
+/**
+ * Stefano D'Antonio peeking: his picture, edged in white like a sticker,
+ * comes in from the left edge of the screen as far as his chest, has a look
+ * round and ducks back out, then from the right, the
+ * top, the bottom, each time somewhere else along the edge, a pause between.
+ * On his page, while his name is on it; nothing for reduced motion.
+ */
+function Peek({ children }: { children: ReactNode }) {
+  const el = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const name = el.current;
+    const site = document.querySelector<HTMLElement>(".lpm");
+    if (!name || !site || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const who = document.createElement("img");
+    who.src = PEEKER.src;
+    who.alt = "";
+    who.setAttribute("aria-hidden", "true");
+    who.className = "rg-peek";
+    site.append(who);
+
+    let turn = 0;
+    let timer: number | null = null;
+    let on = false;
+    const peek = () => {
+      timer = null;
+      if (!on) return;
+      if (document.hidden) {
+        timer = window.setTimeout(peek, 1000);
+        return;
+      }
+      const { side, turn: angle } = SIDES[turn++ % SIDES.length];
+      const H = Math.min(window.innerHeight * 0.42, 300);
+      const W = (H * PEEKER.w) / PEEKER.h;
+      who.style.width = `${W}px`;
+      who.style.height = `${H}px`;
+      // Where on the edge: a point, the picture standing on it, turned.
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      // Near a corner of that edge, one end or the other.
+      const along = Math.random() < 0.5 ? between(0.08, 0.2) : between(0.8, 0.92);
+      const [px, py] =
+        side === "left" ? [0, vh * along] : side === "right" ? [vw, vh * along] : side === "top" ? [vw * along, 0] : [vw * along, vh];
+      // How far in he comes: at first a bit of his head, in the end his head and chest.
+      const peep = H * 0.12;
+      const deep = H * 0.38;
+      const at = (d: number, wobble = 0) =>
+        `translate(${px}px, ${py}px) rotate(${angle + wobble}deg) translate(${-W / 2}px, ${-d}px)`;
+      // Unsure: a little of his head, back a bit, a little more; then out he
+      // pops all at once, has a quick look and is gone as fast.
+      who
+        .animate(
+          [
+            { transform: at(0), easing: "ease-out" },
+            { transform: at(peep), offset: 0.2, easing: "ease-in-out" },
+            { transform: at(peep * 0.45, -3), offset: 0.32, easing: "ease-in-out" },
+            { transform: at(peep * 1.3, 2), offset: 0.48, easing: "ease-in-out" },
+            { transform: at(peep * 1.2), offset: 0.58, easing: "cubic-bezier(0.2, 0.9, 0.3, 1.4)" },
+            { transform: at(deep, 4), offset: 0.66, easing: "ease-in-out" },
+            { transform: at(deep, -3), offset: 0.76, easing: "ease-in-out" },
+            { transform: at(deep), offset: 0.82, easing: "cubic-bezier(0.6, 0, 0.9, 0.4)" },
+            { transform: at(0) },
+          ],
+          { duration: 3400, fill: "forwards" },
+        )
+        .finished.then(() => {
+          if (on) timer = window.setTimeout(peek, 1400);
+        });
+    };
+    const seen = new IntersectionObserver(([entry]) => {
+      on = entry.isIntersecting;
+      if (on && timer === null) timer = window.setTimeout(peek, 800);
+    });
+    seen.observe(name);
+    return () => {
+      seen.disconnect();
+      on = false;
+      if (timer !== null) window.clearTimeout(timer);
+      who.remove();
+    };
+  }, []);
+
+  return <span ref={el}>{children}</span>;
+}
+
 /**
  * A player's name with their easter egg, if they have one: a charge of
  * lightning round it, a mist drifting past, peaches stuck on like stickers, or a
@@ -626,6 +839,8 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   if (effect === "copione") return soft ? <CopioneRow>{children}</CopioneRow> : <Copione>{children}</Copione>;
   if (effect === "fulmini") return <Electric soft={soft}>{children}</Electric>;
   if (effect === "fumetto") return <Comic soft={soft}>{children}</Comic>;
+  if (effect === "orsetti") return <Bears soft={soft}>{children}</Bears>;
+  if (effect === "peek") return soft ? <>{children}</> : <Peek>{children}</Peek>;
   return (
     <Burst effect={effect} soft={soft}>
       {children}

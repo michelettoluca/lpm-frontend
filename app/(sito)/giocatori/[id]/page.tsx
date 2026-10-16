@@ -30,6 +30,12 @@ function Big({ label, children }: { label: string; children: ReactNode }) {
 
 const TCOLS = "grid-cols-[3rem_1fr_auto] gap-3 sm:grid-cols-[4rem_1fr_auto]";
 
+/** How much taller than wide a logo's box is. */
+function tallness(logo: TeamLogo) {
+  const [, , w, h] = logo.view_box.split(" ").map(Number);
+  return w > 0 ? h / w : 1;
+}
+
 /** A team's logo as an icon to scatter, drawn in the current colour. */
 function logoOf(logo: TeamLogo) {
   const Logo = ({ className }: { className?: string }) => (
@@ -54,7 +60,17 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
       {/* ---------------- hero ---------------- */}
       <section className="rg-panel">
         {/* The player's team, if any: its logo scattered thick behind the card, one big in the middle. */}
-        {p.team && <Drift icon={logoOf(p.team.logo)} cols={6} rows={4} seed={p.team.id * 7 + 3} feature />}
+        {p.team && (
+          <Drift
+            icon={logoOf(p.team.logo)}
+            // Every team's card laid out the same, its logo sized for its shape.
+            cols={6}
+            rows={4}
+            seed={17}
+            tall={tallness(p.team.logo)}
+            feature
+          />
+        )}
         <Link href="/classifica" className="rg-textlink -ml-1 inline-flex min-h-11 items-center px-1 text-[15px]">
           ← la classifica
         </Link>

@@ -73,6 +73,11 @@ body:has(.lpm)::before {
 
   /* A column as tall as the screen, so a page can stretch to the bottom. */
   display: flex;
+  /* The box the easter eggs' puffs and bubbles sit in, on the page so they
+     scroll with it; clipped sideways, so one near the edge never widens the
+     page (clip, not hidden: sticky still sticks). */
+  position: relative;
+  overflow-x: clip;
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
@@ -1135,6 +1140,10 @@ body:has(.lpm)::before {
   transform: translate(-50%, -50%);
   rotate: var(--r);
 }
+/* A team's big one: a third of the panel wide, less for a tall logo. */
+.lpm .rg-drift-item.rg-drift-feature {
+  width: clamp(120px, calc(34% * var(--fit)), 400px);
+}
 @media (prefers-reduced-motion: no-preference) {
   .lpm .rg-drift-item {
     animation-name: rg-drift;
@@ -1284,12 +1293,12 @@ body:has(.lpm)::before {
   }
 }
 
-/* The easter eggs' mist (Easter.tsx): soft puffs fixed on the screen, over
-   the grain. The ones behind blend so only the paper takes them and the
+/* The easter eggs' mist (Easter.tsx): soft puffs on the page, scrolling with
+   the name, over the grain. The ones behind blend so only the paper takes them and the
    letters stay crisp: darker on light, lighter on dark. The ones in front
    are the paper itself, and hide the letters in a fog. */
 .lpm .rg-mist {
-  position: fixed;
+  position: absolute;
   z-index: 105;
   border-radius: 50%;
   pointer-events: none;
@@ -1492,7 +1501,7 @@ body:has(.lpm)::before {
    name in a white bubble drawn by hand, its tail at the name, the words in a
    goofy hand. The same on light and dark, like a page of comics. */
 .lpm .rg-comic {
-  position: fixed;
+  position: absolute;
   z-index: 110;
   display: flex;
   align-items: center;
@@ -1523,4 +1532,50 @@ body:has(.lpm)::before {
   white-space: nowrap;
   text-transform: uppercase;
   color: #141a24;
+}
+
+/* The easter eggs' gummy bears (Easter.tsx): a layer in the card (or the
+   row) they fall into and pile up in, behind its text, clipped by it. */
+.lpm .rg-bears-host {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+}
+.lpm .rg-bears {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.lpm .rg-bears-front {
+  z-index: 1;
+}
+.lpm .rg-bear {
+  position: absolute;
+  overflow: visible;
+  opacity: 0.94;
+  filter: drop-shadow(0 1.5px 1.5px rgb(0 0 0 / 0.28));
+  will-change: transform;
+}
+/* Behind the text, paler, so front and back read apart. */
+.lpm .rg-bear-back {
+  opacity: 0.5;
+}
+
+/* The easter eggs' peek (Easter.tsx): a picture of the player, a sticker,
+   peeking in from an edge of the screen, turned so his head comes in first;
+   where and how far is set from the script. */
+.lpm .rg-peek {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 110;
+  pointer-events: none;
+  user-select: none;
+  /* Turned about its own corner: the script works out where that goes. */
+  transform-origin: 0 0;
+  transform: translate(-9999px, -9999px);
+  /* Its white sticker edge is in the picture itself, crisp; just a soft shadow here. */
+  filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.3));
+  will-change: transform;
 }
