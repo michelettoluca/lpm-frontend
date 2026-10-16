@@ -1,8 +1,9 @@
 import { getStatsData } from "@/app/lib/site";
 import { Matrix } from "../Matrix";
 import { Comune, Head } from "../ui";
+import { SITE, shareMeta } from "@/app/lib/share";
 
-export const metadata = { title: "Statistiche · Lega Pauper Milano" };
+export const metadata = shareMeta(`Statistiche · ${SITE}`, "I mazzi più giocati e come se la cavano l'uno contro l'altro.", "/statistiche");
 
 /**
  * The current season only, with no choice in the address: the page is the

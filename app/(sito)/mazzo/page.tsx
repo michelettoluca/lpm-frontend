@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { DeclarePage } from "./DeclarePage";
+import { SITE, shareMeta } from "@/app/lib/share";
 
 export const metadata: Metadata = {
-  title: "Cosa giochi? · Lega Pauper Milano",
-  description: "Indica il mazzo che giochi alla tappa di oggi.",
+  ...shareMeta(`Cosa giochi? · ${SITE}`, "Indica il mazzo che giochi alla tappa di oggi.", "/mazzo"),
   robots: { index: false, follow: false },
 };
 

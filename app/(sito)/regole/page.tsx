@@ -1,7 +1,8 @@
 import { RULES } from "@/app/lib/rules";
 import { Section } from "../ui";
+import { SITE, shareMeta } from "@/app/lib/share";
 
-export const metadata = { title: "Regolamento · Lega Pauper Milano" };
+export const metadata = shareMeta(`Regolamento · ${SITE}`, "Come funziona la lega: tappe, punti, classifica e premi.", "/regole");
 
 /** The rules sections, retitled in our voice. The text stays the same. */
 const TITLES: Record<string, string> = {

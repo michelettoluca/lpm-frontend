@@ -1,8 +1,9 @@
 import { getLeaderboardData } from "@/app/lib/site";
 import { Head, plural } from "../ui";
 import { Standings } from "./Standings";
+import { SITE, shareMeta } from "@/app/lib/share";
 
-export const metadata = { title: "Classifica · Lega Pauper Milano" };
+export const metadata = shareMeta(`Classifica · ${SITE}`, "La classifica della stagione: chi è in testa e chi è in zona top 8.", "/classifica");
 
 export default async function LeaderboardPage() {
   const { season, leaderboard, tappe, results, improvable, verdict, playedEvents, totalEvents } =
