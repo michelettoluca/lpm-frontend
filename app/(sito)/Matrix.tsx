@@ -98,7 +98,13 @@ export function Matrix({
         head={
           <table
             className={`table-fixed border-separate border-spacing-0 text-[13px] ${WIDTHS}`}
-            style={{ width: `calc(var(--name) + ${columns.length + 1} * var(--col))` }}
+            style={
+              {
+                width: "var(--mx-w)",
+                // Also for the corner, which slides back as far as the strip slides on (sito.css).
+                "--mx-w": `calc(var(--name) + ${columns.length + 1} * var(--col))`,
+              } as CSSProperties
+            }
           >
             <Columns columns={columns} />
             <thead>
@@ -206,7 +212,7 @@ function Columns({ columns }: { columns: Archetype[] }) {
 function HeadRow({ columns }: { columns: Archetype[] }) {
   return (
     <tr>
-      <th className="sticky left-0 z-20 w-[var(--name)] bg-[var(--rg-paper)]" />
+      <th className="rg-mx-corner sticky left-0 z-20 w-[var(--name)] bg-[var(--rg-paper)]" />
       {/* Grey rules between the column names, like the ones between the row names. */}
       <th scope="col" className={`${COL} border-l ${LINE} px-1 pb-2 align-bottom ${NAME}`}>
         <span>totale</span>

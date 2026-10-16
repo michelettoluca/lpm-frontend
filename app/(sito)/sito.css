@@ -888,6 +888,44 @@ body:has(.lpm)::before {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+/*
+ * The strip follows the table sideways on the table's own scroll: across the
+ * whole scroll it slides by the table's width less the strip's, which is just
+ * how far the table can go (both are as wide). MatrixScroll.tsx falls back
+ * to the scroll event where this isn't drawn.
+ */
+@supports (animation-timeline: scroll()) {
+  .lpm .rg-mx-scope {
+    timeline-scope: --rg-mx;
+  }
+  .lpm .rg-mx-scroller {
+    scroll-timeline: --rg-mx x;
+  }
+  .lpm .rg-mx-strip {
+    container-type: inline-size;
+  }
+  .lpm .rg-mx-follow {
+    width: max-content;
+    animation: rg-mx-follow linear both;
+    animation-timeline: --rg-mx;
+  }
+  /* Sticky can't hold the corner in a strip that slides instead of
+     scrolling: it slides back by as much, and stays put. */
+  .lpm .rg-mx-strip .rg-mx-corner {
+    animation: rg-mx-stay linear both;
+    animation-timeline: --rg-mx;
+  }
+}
+@keyframes rg-mx-follow {
+  to {
+    transform: translateX(calc(100cqw - 100%));
+  }
+}
+@keyframes rg-mx-stay {
+  to {
+    transform: translateX(calc(var(--mx-w) - 100cqw));
+  }
+}
 /* Won-lost-drawn above, the rate large, the count below. */
 .lpm .rg-mx-rec {
   font-size: 10px;
