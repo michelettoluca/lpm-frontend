@@ -105,3 +105,17 @@ export function verdicts(
   }
   return out;
 }
+
+/**
+ * Where a table's settled places run, drawn as lines like a football
+ * table's zones: the first `certain` rows are already sure of the top
+ * `spots`, the rows from `outFrom` on are already out of them. A settled
+ * player outside those runs (rare, with discards) is left to a badge.
+ */
+export function settledRuns(table: (Verdict | undefined)[], spots: number): { certain: number; outFrom: number } {
+  let certain = 0;
+  while (certain < Math.min(spots, table.length) && table[certain] === "dentro") certain++;
+  let outFrom = table.length;
+  while (outFrom > spots && table[outFrom - 1] === "fuori") outFrom--;
+  return { certain, outFrom };
+}

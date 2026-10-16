@@ -13,6 +13,13 @@ export type ShareImage = {
   title: string;
 };
 
+/** The season's standings so far, the active season's: one image, not one per tappa. */
+export const SEASON_IMAGE = {
+  href: "/api/admin/classifica/immagine",
+  file: "lpm-classifica-generale.png",
+  title: "Lega Pauper Milano: la classifica generale",
+} as const;
+
 /** Who finished the night without losing a match: a draw does not count against them. */
 export function undefeated<T extends Standing>(standings: T[]): T[] {
   return standings.filter((s) => s.losses === 0 && s.wins + s.draws + s.byes > 0);

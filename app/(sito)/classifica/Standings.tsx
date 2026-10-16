@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useDeferredValue, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import type { LeaderboardTappa, TappaResult, Verdict } from "@/app/lib/site";
+import { settledRuns } from "@/app/lib/potential";
 import { Comune, MarkerUnderline } from "../ui";
 
 type Row = {
@@ -345,10 +346,10 @@ export function Standings({
   // Settled places are drawn as lines, like the zones of a football table: one
   // under the players already certain of the top 8, one over those already out
   // of it. A settled player outside those runs (rare, with discards) keeps a badge.
-  let certain = 0;
-  while (certain < zone.length && zone[certain].verdict === "dentro") certain++;
-  let outFrom = others.length;
-  while (outFrom > 0 && others[outFrom - 1].verdict === "fuori") outFrom--;
+  const runs = settledRuns(rows.map((r) => r.verdict), TOP);
+  const certain = runs.certain;
+  // Counted within the rows past the top 8.
+  const outFrom = runs.outFrom - zone.length;
   const lined = new Set([...zone.slice(0, certain), ...others.slice(outFrom)].map((r) => r.id));
   const unlined = (list: Row[]) =>
     list.map((r) => (lined.has(r.id) ? { ...r, verdict: undefined } : r));
