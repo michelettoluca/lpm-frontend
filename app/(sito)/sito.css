@@ -1146,7 +1146,7 @@ body:has(.lpm)::before {
 }
 @media (prefers-reduced-motion: no-preference) {
   .lpm .rg-grain {
-    animation: rg-grain 0.9s steps(1) infinite;
+    animation: rg-grain 2s steps(1) infinite;
   }
 }
 @keyframes rg-grain {
