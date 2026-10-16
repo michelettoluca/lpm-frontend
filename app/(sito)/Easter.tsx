@@ -851,9 +851,195 @@ function Peek({ soft, children }: { soft: boolean; children: ReactNode }) {
 }
 
 /**
+ * The mushrooms Demetrio Morselli's card grows, drawn upright with the foot
+ * of the stem at 0 0, 100 tall: a red one with white spots and a ring round
+ * its stem, a fat brown porcino, a slim tan one with a pointed cap. The more
+ * of the first, the likelier.
+ */
+const MUSHROOMS = [
+  `<path fill="#f4ecdc" d="M-11 0C-13-18-9-38-8-52H8C9-38 13-18 11 0Z"/>
+  <path fill="#e6dccb" d="M-11-36Q0-29 11-36L10-40Q0-34-10-40Z"/>
+  <path fill="#e41428" d="M-44-48C-46-84 46-84 44-48C30-42-30-42-44-48Z"/>
+  <g fill="#fff" class="rg-shroom-dots"><circle cx="-22" cy="-62" r="6"/><circle cx="3" cy="-67" r="6"/><circle cx="25" cy="-59" r="5"/><circle cx="-5" cy="-53" r="3.5"/><circle cx="-36" cy="-52" r="3"/><circle cx="13" cy="-51" r="3"/></g>`,
+  `<path fill="#efe2c6" d="M-15 0C-24-14-22-34-12-46H12C22-34 24-14 15 0Z"/>
+  <path fill="#8b5530" d="M-38-40C-41-80 41-80 38-40C26-34-26-34-38-40Z"/>
+  <path fill="#a86b3e" class="rg-shroom-dots" d="M-26-55C-22-66-8-70 4-69C-8-64-18-61-26-55Z"/>`,
+  `<path fill="#f3ead8" d="M-5 0C-6-24-4-48-3-62H3C4-48 6-24 5 0Z"/>
+  <path fill="#c8925a" d="M-22-58C-18-78-6-92 0-93C6-92 18-78 22-58C10-55-10-55-22-58Z"/>`,
+];
+const MUSHROOM_ODDS = [0.45, 0.75, 1];
+
+/** A tuft of mushrooms on the card's edge: where round it, and when it goes. */
+type Tuft = { t: number; el: HTMLElement; until: number };
+
+/**
+ * A tuft of one to three mushrooms of a kind, sprouting out of the box's
+ * edge at `t` (round it from the top left, clockwise) and growing in, stem
+ * first, the cap landing with a squash; after `delay`, one after another.
+ */
+function sprout(layer: HTMLElement, t: number, delay: number, small: boolean): HTMLElement {
+  const p = round(t, layer.clientWidth, layer.clientHeight, 0);
+  // Upright on the bottom edge, upside down on the top, on its side on the others: always growing in.
+  const turn = p.ny < 0 ? 180 : p.nx > 0 ? -90 : p.ny > 0 ? 0 : 90;
+  const tuft = document.createElement("div");
+  tuft.className = "rg-shroom-tuft";
+  // Its foot a little past the edge, so it comes up out of it.
+  tuft.style.transform = `translate(${p.x + p.nx * 2}px, ${p.y + p.ny * 2}px) rotate(${turn}deg)`;
+  const pick = Math.random();
+  const kind = MUSHROOMS[MUSHROOM_ODDS.findIndex((o) => pick < o)];
+  // Mostly small and middling, now and then a big one; smaller in a narrow card, as on a phone.
+  const fit = Math.min(1, Math.max(0.6, layer.clientWidth / 900));
+  const tall = small ? between(10, 18) : (24 + Math.random() ** 2 * 52) * fit;
+  const side = Math.random() < 0.5 ? -1 : 1;
+  const crowd = [{ along: 0, tall }];
+  if (Math.random() < 0.45) crowd.push({ along: side * tall * between(0.45, 0.65), tall: tall * between(0.45, 0.7) });
+  if (Math.random() < 0.2) crowd.push({ along: -side * tall * between(0.4, 0.55), tall: tall * between(0.35, 0.55) });
+  crowd.forEach((m, k) => {
+    const el = document.createElement("div");
+    el.className = "rg-shroom";
+    el.style.left = `${m.along - m.tall / 2}px`;
+    el.style.top = `${-m.tall}px`;
+    el.style.width = el.style.height = `${m.tall}px`;
+    el.style.rotate = `${between(-14, 14) + m.along * 0.4}deg`;
+    // Some face the other way.
+    const flip = Math.random() < 0.5 ? ' transform="scale(-1 1)"' : "";
+    el.innerHTML = `<svg viewBox="-50 -100 100 102"><g${flip}>${kind}</g></svg>`;
+    tuft.append(el);
+    el.animate(
+      [
+        { transform: "scale(0.4, 0)" },
+        { transform: "scale(0.85, 1.15)", offset: 0.5 },
+        { transform: "scale(1.1, 0.9)", offset: 0.75 },
+        { transform: "scale(1)" },
+      ],
+      { duration: between(520, 720), delay: delay + k * between(80, 160), easing: "ease-out", fill: "backwards" },
+    );
+  });
+  layer.append(tuft);
+  return tuft;
+}
+
+/** A tuft going back into the edge it came out of, then gone. */
+function wither(tuft: HTMLElement) {
+  for (const el of tuft.children) {
+    el.animate([{ transform: "scale(1)" }, { transform: "scale(1.08, 0.9)", offset: 0.3 }, { transform: "scale(0.5, 0)" }], {
+      duration: between(300, 420),
+      easing: "ease-in",
+      fill: "forwards",
+    });
+  }
+  // Gone by then even where the animation is held, as in a hidden tab.
+  window.setTimeout(() => tuft.remove(), 450);
+}
+
+/**
+ * Demetrio Morselli's mushrooms, sprouting all round his first card: as
+ * it opens, one tuft after another clockwise from the top left, then tufts
+ * going back in here and coming up there, for as long as it's on screen.
+ * Behind its text, clipped by it. `soft`, in the standings, small ones
+ * round his row while it's pointed at. Nothing for reduced motion.
+ */
+function Shrooms({ soft, children }: { soft: boolean; children: ReactNode }) {
+  const el = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const name = el.current;
+    const host = soft ? name?.closest<HTMLElement>(".rg-row") : name?.closest<HTMLElement>(".rg-panel");
+    if (!name || !host || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const layer = document.createElement("div");
+    layer.className = "rg-shrooms";
+    layer.setAttribute("aria-hidden", "true");
+    host.classList.add("rg-shrooms-host");
+    host.append(layer);
+
+    // How far apart tufts keep at least, and off the rounded corners, in px.
+    const gap = soft ? 56 : 66;
+    const corner = soft ? 14 : 40;
+    let tufts: Tuft[] = [];
+    let timer: number | null = null;
+
+    const fits = (t: number) => {
+      const w = layer.clientWidth;
+      const h = layer.clientHeight;
+      const p = round(t, w, h, 0);
+      const clear = p.ny ? p.x > corner && p.x < w - corner : p.y > corner && p.y < h - corner;
+      const apart = gap / (2 * (w + h));
+      return clear && tufts.every((f) => Math.min(Math.abs(f.t - t), 1 - Math.abs(f.t - t)) > apart);
+    };
+    // About as many as fit with room to come and go.
+    const wanted = () => Math.round(((2 * (layer.clientWidth + layer.clientHeight)) / gap) * 0.75);
+    const life = () => (soft ? between(1800, 4000) : between(2500, 6500));
+
+    const grow = (t: number, delay: number) =>
+      tufts.push({ t, el: sprout(layer, t, delay, soft), until: performance.now() + delay + life() });
+    // As it opens: once round, from the top left, clockwise.
+    const ring = () => {
+      const n = wanted();
+      const time = soft ? 500 : 1600;
+      for (let i = 0; i < n; i++) {
+        const t = ((i + between(-0.3, 0.3)) / n + 1) % 1;
+        if (fits(t)) grow(t, (i / n) * time);
+      }
+    };
+    // Then the ones whose time is up go back in, and new ones come up where there's room.
+    const tick = () => {
+      if (document.hidden) return;
+      const now = performance.now();
+      tufts = tufts.filter((f) => f.until > now || (wither(f.el), false));
+      if (tufts.length >= wanted() || Math.random() < 0.4) return;
+      for (let k = 0; k < 10; k++) {
+        const t = Math.random();
+        if (fits(t)) return void grow(t, 0);
+      }
+    };
+    const start = () => {
+      if (timer !== null) return;
+      if (!tufts.length) ring();
+      timer = window.setInterval(tick, 220);
+    };
+    const stop = () => {
+      if (timer !== null) window.clearInterval(timer);
+      timer = null;
+    };
+    const cleanup = () => {
+      stop();
+      layer.remove();
+    };
+
+    if (soft) {
+      const end = () => {
+        stop();
+        tufts.forEach((f) => wither(f.el));
+        tufts = [];
+      };
+      host.addEventListener("pointerenter", start);
+      host.addEventListener("pointerleave", end);
+      host.addEventListener("pointercancel", end);
+      return () => {
+        host.removeEventListener("pointerenter", start);
+        host.removeEventListener("pointerleave", end);
+        host.removeEventListener("pointercancel", end);
+        cleanup();
+      };
+    }
+    const seen = new IntersectionObserver(([entry]) => (entry.isIntersecting ? start() : stop()));
+    // A moment after the page opens, so the card is there to grow out of.
+    const t = window.setTimeout(() => seen.observe(host), 300);
+    return () => {
+      window.clearTimeout(t);
+      seen.disconnect();
+      cleanup();
+    };
+  }, [soft]);
+
+  return <span ref={el}>{children}</span>;
+}
+
+/**
  * A player's name with their easter egg, if they have one: a charge of
- * lightning round it, a mist drifting past, peaches stuck on like stickers, or a
- * chat of his messages piling up behind it. On
+ * lightning round it, a mist drifting past, peaches stuck on like stickers,
+ * mushrooms sprouting round the card, or a chat of his messages piling up
+ * behind it. On
  * the player's own page in full; `soft` in the standings, fewer and smaller,
  * where the peach is a single one, put after the name by `EasterMark`.
  * Anyone else's name comes back as it is.
@@ -867,6 +1053,7 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   if (effect === "fumetto") return <Comic soft={soft}>{children}</Comic>;
   if (effect === "orsetti") return <Bears soft={soft}>{children}</Bears>;
   if (effect === "peek") return <Peek soft={soft}>{children}</Peek>;
+  if (effect === "funghi") return <Shrooms soft={soft}>{children}</Shrooms>;
   return (
     <Burst effect={effect} soft={soft}>
       {children}
