@@ -1035,49 +1035,54 @@ body:has(.lpm)::before {
   --rg-blob-a: light-dark(#1f2734, #283243);
   --rg-blob-b: light-dark(#0d1118, #161c26);
 }
-/* The blobs, both on one layer much larger than the panel: it turns and
-   sways slowly, so they circle each other. */
+.lpm .rg-panel::before,
 .lpm .rg-panel::after {
   content: "";
   position: absolute;
-  inset: -40%;
   z-index: -2;
+  width: max(70%, 420px);
+  aspect-ratio: 1;
+  border-radius: 50%;
   pointer-events: none;
-  background:
-    radial-gradient(21% 21% at 32% 30%, var(--rg-blob-a), transparent),
-    radial-gradient(23% 23% at 70% 72%, var(--rg-blob-b), transparent);
 }
-/* The cards' grain: the page's noise (--rg-noise, below) on a tile larger
-   than the card, over its text like a film's, jumping about. */
 .lpm .rg-panel::before {
-  content: "";
-  position: absolute;
-  inset: -180px;
-  z-index: 1;
-  pointer-events: none;
-  background-color: var(--rg-grain);
-  -webkit-mask-image: var(--rg-noise);
-  mask-image: var(--rg-noise);
-  -webkit-mask-size: 180px;
-  mask-size: 180px;
+  top: -35%;
+  left: -20%;
+  background: radial-gradient(closest-side, var(--rg-blob-a), transparent);
+}
+.lpm .rg-panel::after {
+  bottom: -40%;
+  right: -25%;
+  background: radial-gradient(closest-side, var(--rg-blob-b), transparent);
 }
 @media (prefers-reduced-motion: no-preference) {
-  .lpm .rg-panel::after {
-    animation: rg-blobs 34s ease-in-out infinite alternate;
-  }
   .lpm .rg-panel::before {
-    animation: rg-grain 0.9s steps(1) infinite;
+    animation: rg-blob-a 23s ease-in-out infinite alternate;
+  }
+  .lpm .rg-panel::after {
+    animation: rg-blob-b 31s ease-in-out infinite alternate;
   }
 }
-@keyframes rg-blobs {
+@keyframes rg-blob-a {
   0% {
-    transform: rotate(0deg) translate(0, 0) scale(1);
+    transform: translate(0, 0) scale(1);
   }
   50% {
-    transform: rotate(28deg) translate(6%, -4%) scale(1.08);
+    transform: translate(28%, 18%) scale(1.15);
   }
   100% {
-    transform: rotate(-14deg) translate(-5%, 5%) scale(0.94);
+    transform: translate(52%, -6%) scale(0.9);
+  }
+}
+@keyframes rg-blob-b {
+  0% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-34%, -12%) scale(0.88);
+  }
+  100% {
+    transform: translate(-14%, -30%) scale(1.12);
   }
 }
 
@@ -1125,25 +1130,24 @@ body:has(.lpm)::before {
 }
 
 /* A fine grain over the whole page: a tile of noise used as a mask on a
-   faint ink, so it darkens on light and lifts on dark. The page's stands
-   still behind the cards; each card has its own, moving (above). */
-.lpm {
-  --rg-grain: light-dark(rgb(20 26 36 / 0.05), rgb(255 255 255 / 0.04));
-  --rg-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2.6 0 0 0 -0.8'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  /* Its own layer, so the page's grain can sit under the cards and still
-     above the fog. */
-  isolation: isolate;
-}
+   faint ink, so it darkens on light and lifts on dark. A tile larger than
+   the screen, jumping about like film grain: moved, never repainted. */
 .lpm .rg-grain {
   position: fixed;
-  inset: 0;
-  z-index: -1;
+  inset: -180px;
+  z-index: 100;
   pointer-events: none;
-  background-color: var(--rg-grain);
+  background-color: light-dark(rgb(20 26 36 / 0.05), rgb(255 255 255 / 0.04));
+  --rg-noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2.6 0 0 0 -0.8'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   -webkit-mask-image: var(--rg-noise);
   mask-image: var(--rg-noise);
   -webkit-mask-size: 180px;
   mask-size: 180px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lpm .rg-grain {
+    animation: rg-grain 0.9s steps(1) infinite;
+  }
 }
 @keyframes rg-grain {
   0% { transform: translate(0, 0); }
