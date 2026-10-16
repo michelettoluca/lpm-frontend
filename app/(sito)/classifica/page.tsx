@@ -15,7 +15,7 @@ export default async function LeaderboardPage() {
         as="h1"
         big
         label={season ? `stagione ${season.name.toLowerCase()}` : "stagione"}
-        title="la classifica"
+        title="La classifica"
         className="lg:sticky lg:top-8 lg:self-start"
         aside={
           <>

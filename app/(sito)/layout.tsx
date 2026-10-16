@@ -32,6 +32,9 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
       </main>
 
       <Footer />
+
+      {/* A fine grain over the whole page, film more than screen. */}
+      <div aria-hidden="true" className="rg-grain" />
     </div>
   );
 }

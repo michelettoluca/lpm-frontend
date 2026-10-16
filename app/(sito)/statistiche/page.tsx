@@ -22,7 +22,7 @@ export default async function StatsPage() {
           as="h1"
           big
           label="statistiche"
-          title="la matrice della lega"
+          title="La matrice della lega"
           aside={`La matrice dei risultati ${of}, archetipo contro archetipo.`}
         />
         <div className="mt-6">

@@ -24,7 +24,7 @@ export function DeclarePage() {
     // sits beside the steps and keeps its own height.
     <div className="flex flex-1 flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_620px] lg:gap-4">
       <aside className="rg-panel hidden lg:block lg:self-start">
-        <Head label="il mio mazzo" title="cosa giochi?" big aside={aside.text} />
+        <Head label="il mio mazzo" title="Cosa giochi?" big aside={aside.text} />
         <ol className="rg-hr mt-10 pt-1">
           {aside.steps.map((s, i) => (
             <li key={s} className={`grid grid-cols-[2rem_1fr] items-baseline py-3 ${i ? "rg-hr" : ""}`}>

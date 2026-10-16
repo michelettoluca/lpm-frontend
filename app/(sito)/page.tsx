@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { COUNTED_EVENTS, dateTile, getHomeData } from "@/app/lib/site";
-import { Crown } from "@/app/lib/emblem";
+import { Emblem } from "@/app/lib/emblem";
+import { Calendar, Cup, Drift } from "./Drift";
 import { ArrowLink, ColHeads, MarkerCircle, MarkerUnderline, PixelStar, Section, plural, sameRomeDay, weekday } from "./ui";
 
 function Stat({ label, value, sub }: { label: string; value: ReactNode; sub?: ReactNode }) {
@@ -29,13 +30,12 @@ export default async function Home() {
   return (
     <div className="rg-stack">
       {/* ---------------- hero ---------------- */}
-      {/* Its own layer, so the emblem can sit behind the text and still above the panel's paper. */}
-      <section className="rg-panel relative isolate overflow-hidden">
-        {/* The emblem's crown as a watermark, large on the right, standing on the panel's bottom edge. */}
-        <Crown className="pointer-events-none absolute bottom-0 -right-[24%] -z-10 rg-watermark h-[72%] w-auto sm:-right-[6%] sm:h-[88%] lg:right-0" />
+      {/* The emblem as a watermark, scattered and drifting behind the text. */}
+      <section className="rg-panel">
+        <Drift icon={Emblem} cols={6} rows={3} seed={7} />
         <p className="rg-eyebrow">{season ? `stagione ${season.name.toLowerCase()}` : "la lega del giovedì"}</p>
         <h1 className="rg-display rg-tight mt-4 max-w-[12ch] text-[46px] leading-[0.95] sm:text-[72px] lg:text-[112px]">
-          lega pauper milano
+          Lega Pauper Milano
         </h1>
         <p className="rg-muted mt-4 text-[16px] leading-relaxed lg:text-[18px]">
           Tornei di Magic: The Gathering in formato Pauper, ogni giovedì sera alla Casa dei Giochi. Solo carte
@@ -53,8 +53,9 @@ export default async function Home() {
       {first && (
         <Section
           label="classifica"
-          title="chi comanda"
+          title="Chi comanda"
           aside={<>La classifica dopo {plural(played.length, "tappa", "tappe")}.</>}
+          backdrop={<Drift icon={Cup} cols={4} rows={5} seed={23} />}
         >
           <Link
             href={`/giocatori/${first.player_id}`}
@@ -99,8 +100,9 @@ export default async function Home() {
 
       {/* ---------------- tappe ---------------- */}
       <Section
+        backdrop={<Drift icon={Calendar} cols={5} rows={4} seed={41} />}
         label="calendario"
-        title="le tappe"
+        title="Le tappe"
         aside={
           <>
             {totalEvents} giovedì, quattro turni di svizzera a sera. Chi chiude con 9 punti o più si prende la stellina{" "}

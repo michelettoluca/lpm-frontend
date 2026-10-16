@@ -359,7 +359,7 @@ export function DeclareFlow({ onFindBy }: { onFindBy?: (by: FindBy) => void }) {
       <section className="grid items-center gap-6 sm:grid-cols-[auto_1fr]">
         <Comune pose="sleep" className="h-[110px] w-[110px]" />
         <div>
-          <h1 className={H1}>per ora è tutto chiuso.</h1>
+          <h1 className={H1}>Per ora è tutto chiuso.</h1>
           <p className="rg-muted mt-4 text-[16px] leading-relaxed">
             Scegli il mazzo durante la tappa, appena escono gli abbinamenti del primo turno. Quando li vedi, ricarica la
             pagina.
@@ -371,7 +371,7 @@ export function DeclareFlow({ onFindBy }: { onFindBy?: (by: FindBy) => void }) {
   if (status === "error" || !current) {
     return (
       <section>
-        <h1 className={H1}>non riusciamo a collegarci.</h1>
+        <h1 className={H1}>Non riusciamo a collegarci.</h1>
         <p className="rg-muted mt-4 text-[16px] leading-relaxed">Controlla la connessione e riprova.</p>
         <button type="button" className="rg-btn rg-btn-line mt-6 w-full" onClick={() => void loadCurrent()}>
           riprova
@@ -402,7 +402,7 @@ export function DeclareFlow({ onFindBy }: { onFindBy?: (by: FindBy) => void }) {
           // keypad comes back once it is withdrawn.
           <section className="mt-6">
             <h1 ref={heading} tabIndex={-1} className={H1}>
-              hai già indicato il mazzo.
+              Hai già indicato il mazzo.
             </h1>
             <Message note={note} />
             <div className="mt-6 grid gap-4">
@@ -433,7 +433,7 @@ export function DeclareFlow({ onFindBy }: { onFindBy?: (by: FindBy) => void }) {
         ) : byName ? (
           <section className="mt-6">
             <h1 ref={heading} tabIndex={-1} className={H1}>
-              come ti chiami?
+              Come ti chiami?
             </h1>
             <Message note={note} />
             <label htmlFor="rg-name" className="sr-only">
@@ -495,7 +495,7 @@ export function DeclareFlow({ onFindBy }: { onFindBy?: (by: FindBy) => void }) {
         ) : open ? (
           <section className="mt-6">
             <h1 ref={heading} tabIndex={-1} className={H1}>
-              a che tavolo sei?
+              A che tavolo sei?
             </h1>
             <Message note={note} />
             <div className="mt-2 flex items-end justify-center lg:mt-1">
@@ -554,7 +554,7 @@ export function DeclareFlow({ onFindBy }: { onFindBy?: (by: FindBy) => void }) {
         ) : (
           <section className="mt-6">
             <h1 ref={heading} tabIndex={-1} className={H1}>
-              abbinamenti non ancora pubblicati.
+              Abbinamenti non ancora pubblicati.
             </h1>
             <p className="rg-muted mt-4 text-[16px] leading-relaxed">
               {round.number === 0
@@ -571,7 +571,7 @@ export function DeclareFlow({ onFindBy }: { onFindBy?: (by: FindBy) => void }) {
       {step.kind === "player" && (
         <section className="mt-6">
           <h1 ref={heading} tabIndex={-1} className={H1}>
-            {step.table === 0 ? "bye. tu chi sei?" : `tavolo ${step.table}. tu chi sei?`}
+            {step.table === 0 ? "Bye. Tu chi sei?" : `Tavolo ${step.table}. Tu chi sei?`}
           </h1>
           <Message note={note} />
           <div className="mt-6 grid gap-3">
@@ -610,7 +610,7 @@ export function DeclareFlow({ onFindBy }: { onFindBy?: (by: FindBy) => void }) {
       {step.kind === "deck" && (
         <section className="mt-6">
           <h1 ref={heading} tabIndex={-1} className={H1}>
-            cosa giochi, {first(step.seat.name)}?
+            Cosa giochi, {first(step.seat.name)}?
           </h1>
           <Message note={note} />
           {archetypes.length === 0 ? (
@@ -694,7 +694,7 @@ export function DeclareFlow({ onFindBy }: { onFindBy?: (by: FindBy) => void }) {
       {step.kind === "confirm" && (
         <section className="mt-6">
           <h1 ref={heading} tabIndex={-1} className={H1}>
-            ricapitolando.
+            Ricapitolando.
           </h1>
           <Message note={note} />
           <dl className="mt-6 rounded-[20px] bg-[var(--rg-soft)] px-5 py-1">
@@ -742,7 +742,7 @@ export function DeclareFlow({ onFindBy }: { onFindBy?: (by: FindBy) => void }) {
         <section className="rg-pop mt-6 text-center">
           <Comune pose="party" className="mx-auto h-[130px] w-[130px]" />
           <h1 ref={heading} tabIndex={-1} className="rg-display rg-tight mt-2 text-[48px] leading-[0.95]">
-            fatto!
+            Fatto!
           </h1>
           <p className="rg-display mt-2 text-[22px] leading-tight">buona partita, {first(step.mine.player_name)}.</p>
           <div className="mx-auto mt-7 max-w-[380px] text-left">
@@ -783,7 +783,7 @@ export function DeclareFlow({ onFindBy }: { onFindBy?: (by: FindBy) => void }) {
       {step.kind === "withdraw" && (
         <section className="mt-6">
           <h1 ref={heading} tabIndex={-1} className={H1}>
-            sei sicuro?
+            Sei sicuro?
           </h1>
           <Message note={note} />
           <p className="mt-5 text-[17px] leading-relaxed">

@@ -83,7 +83,7 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
       {/* ---------------- tappe ---------------- */}
       <Section
         label="storico"
-        title="le sue tappe"
+        title="Le sue tappe"
         aside={
           <>
             Le più recenti in alto. <PixelStar size={12} className="inline-block text-[var(--rg-o)]" /> = 9 punti o più. Le
@@ -137,7 +137,7 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
         <section className="rg-panel">
           <Head
             label="mazzi"
-            title="cosa ha giocato"
+            title="Cosa ha giocato"
             aside={`Gli archetipi giocati da ${p.first} ${within}.`}
           />
           <div className="mt-6">
@@ -182,7 +182,7 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
       {/* ---------------- testa a testa ---------------- */}
       <Section
         label="confronto"
-        title="testa a testa"
+        title="Testa a testa"
         aside={`Scegli un avversario e guarda come è andata contro ${p.first} in questa stagione. Partite vinte, perse e patte.`}
       >
         <FaceOff

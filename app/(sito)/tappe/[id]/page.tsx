@@ -84,7 +84,7 @@ export default async function EventPage(props: PageProps<"/tappe/[id]">) {
       ) : (
         <Section
           label="risultati"
-          title="com'è finita"
+          title="Com'è finita"
           aside={
             <>
               Record in vinte-perse-patte, bye contati come vittorie. Con {PRIZE_POINTS} punti o più arriva la stellina{" "}
@@ -189,7 +189,7 @@ export default async function EventPage(props: PageProps<"/tappe/[id]">) {
         <section className="rg-panel">
           <Head
             label="matchup"
-            title="chi ha battuto chi"
+            title="Chi ha battuto chi"
             aside="La matrice dei risultati della serata, archetipo contro archetipo."
           />
           <div className="mt-6">
@@ -206,7 +206,7 @@ export default async function EventPage(props: PageProps<"/tappe/[id]">) {
 
       {rounds.length > 0 && (
         <section className="rg-panel">
-          <Head label="abbinamenti" title="turno per turno" aside="Tocca un turno per vedere tavoli e risultati." />
+          <Head label="abbinamenti" title="Turno per turno" aside="Tocca un turno per vedere tavoli e risultati." />
           <div className="mt-6 grid gap-x-10 lg:grid-cols-2">
             {rounds.map((r) => (
               <details key={r} className="rg-hr">
