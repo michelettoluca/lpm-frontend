@@ -9,7 +9,8 @@ import { join } from "node:path";
 import type { ReactNode } from "react";
 import { MANA_FILL, STAR, manaGlyph, plural, weekday } from "@/app/(sito)/ui";
 import { ROGUE, archetypeLabel } from "@/app/lib/decks";
-import { CROWN_PATH, CROWN_VIEWBOX } from "@/app/lib/emblem";
+import { CUP_PATH, scatter } from "@/app/(sito)/Drift";
+import { CROWN_PATH, CROWN_VIEWBOX, EMBLEM_PATH, EMBLEM_VIEWBOX } from "@/app/lib/emblem";
 import type { Deck, EventData } from "@/app/lib/site";
 import { undefeated, type ImageKind } from "./kinds";
 
@@ -20,6 +21,10 @@ const MUTE = "#556072";
 const RED = "#fa1e32";
 const LINE = "#e3e7ed";
 const SOFT = "#f4f6f9";
+/* The site's panels behind the text: the watermark's pale slate, the blobs a shade off the paper. */
+const WATERMARK = "#f1f3f6";
+const BLOB_A = "241 243 247";
+const BLOB_B = "246 247 250";
 
 const WIDTH = 1080;
 const PAD_X = 64;
@@ -142,24 +147,98 @@ function DeckLine({ deck, size, color = MUTE }: { deck: Deck; size: number; colo
   );
 }
 
+/** A watermark icon: its path in its own box. */
+type Icon = { path: string; w: number; h: number };
+const [, , EMBLEM_W, EMBLEM_H] = EMBLEM_VIEWBOX.split(" ").map(Number);
+const EMBLEM: Icon = { path: EMBLEM_PATH, w: EMBLEM_W, h: EMBLEM_H };
+const CUP: Icon = { path: CUP_PATH, w: 100, h: 100 };
+
+/** The watermark's icons come out a little larger than on the site's panels. */
+const ICON_SCALE = 1.3;
+
+/**
+ * Behind the content, as on the site's panels: two soft blobs a shade off
+ * the paper, and the icon scattered as a watermark over the whole image.
+ */
+function Backdrop({ icon, height, seed }: { icon: Icon; height: number; seed: number }) {
+  const blob = (rgb: string) => `radial-gradient(circle, rgb(${rgb}) 0%, rgba(${rgb.replace(/ /g, ",")},0) 70%)`;
+  return (
+    <div style={{ position: "absolute", left: 0, top: 0, width: WIDTH, height, display: "flex", overflow: "hidden" }}>
+      <div style={{ position: "absolute", left: -320, top: -360, width: 1000, height: 1000, backgroundImage: blob(BLOB_A) }} />
+      <div
+        style={{ position: "absolute", left: WIDTH - 620, top: height - 640, width: 1000, height: 1000, backgroundImage: blob(BLOB_B) }}
+      />
+      {scatter(4, Math.max(4, Math.round(height / 270)), seed).map((it) => {
+        const w = Math.round(it.size * ICON_SCALE);
+        const h = Math.round((w * icon.h) / icon.w);
+        return (
+          <svg
+            key={it.key}
+            width={w}
+            height={h}
+            viewBox={`0 0 ${icon.w} ${icon.h}`}
+            style={{
+              position: "absolute",
+              left: Math.round(it.x * WIDTH - w / 2),
+              top: Math.round(it.y * height - h / 2),
+              transform: `rotate(${it.rotate.toFixed(1)}deg)`,
+              opacity: it.opacity,
+            }}
+          >
+            <path fill={WATERMARK} fillRule="evenodd" d={icon.path} />
+          </svg>
+        );
+      })}
+    </div>
+  );
+}
+
+/** A fine grain over the whole image, as over the site: noise on a faint ink. */
+function Grain({ height }: { height: number }) {
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${height}">` +
+    `<filter id="n"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" stitchTiles="stitch"/>` +
+    // Ink in every pixel, the noise as its alpha: about 5% at most, like the site's.
+    `<feColorMatrix values="0 0 0 0 0.078 0 0 0 0 0.102 0 0 0 0 0.141 0.16 0 0 0 -0.05"/></filter>` +
+    `<rect width="100%" height="100%" filter="url(#n)"/></svg>`;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text
+    <img
+      src={`data:image/svg+xml;utf8,${encodeURIComponent(svg)}`}
+      width={WIDTH}
+      height={height}
+      style={{ position: "absolute", left: 0, top: 0 }}
+    />
+  );
+}
+
 /** The page every image shares: the league's name, the tappa, a title, the content, and the site's address. */
 function Frame({
   e,
   label,
   title,
   meta,
+  icon,
+  height,
+  seed,
   children,
 }: {
   e: EventData;
   label?: string;
   title: string;
-  /** The footer's note on the left. */
-  meta: string;
+  /** The footer's note on the left, if any. */
+  meta?: string;
+  /** The watermark, scattered behind the content. */
+  icon: Icon;
+  /** The image's height, for the watermark and the grain. */
+  height: number;
+  seed: number;
   children: ReactNode;
 }) {
   return (
     <div
       style={{
+        position: "relative",
         width: "100%",
         height: "100%",
         display: "flex",
@@ -170,6 +249,7 @@ function Frame({
         fontFamily: "Figtree",
       }}
     >
+      <Backdrop icon={icon} height={height} seed={seed} />
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 52 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <Badge size={52} />
@@ -195,7 +275,7 @@ function Frame({
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
+          justifyContent: meta ? "space-between" : "flex-end",
           marginTop: 40,
           paddingTop: 20,
           borderTop: `2px solid ${LINE}`,
@@ -205,9 +285,11 @@ function Frame({
           lineHeight: 1.3,
         }}
       >
-        <div>{meta}</div>
+        {meta && <div>{meta}</div>}
         <div>legapaupermilano.it</div>
       </div>
+
+      <Grain height={height} />
     </div>
   );
 }
@@ -422,42 +504,38 @@ export async function drawImage(e: EventData, kind: ImageKind): Promise<ImageRes
   let height: number;
   switch (kind) {
     case "classifica":
+      height = Math.max(PORTRAIT, classificaHeight(e));
       body = (
-        <Frame e={e} title="classifica" meta={playersAndRounds(e)}>
+        <Frame e={e} title="Classifica" meta={playersAndRounds(e)} icon={CUP} height={height} seed={23}>
           <Classifica e={e} />
         </Frame>
       );
-      height = classificaHeight(e);
       break;
     case "mazzi": {
       if (!e.metagame) return null;
+      height = Math.max(PORTRAIT, mazziHeight(e));
       body = (
-        <Frame e={e} title="metagame" meta={playersAndRounds(e)}>
+        <Frame e={e} title="Metagame" meta={playersAndRounds(e)} icon={EMBLEM} height={height} seed={7}>
           <Mazzi e={e} />
         </Frame>
       );
-      height = mazziHeight(e);
       break;
     }
     case "imbattuti": {
       const rows = undefeated(e.standings);
       if (rows.length === 0) return null;
-      const meta =
-        rows.length === 1
-          ? `uno su ${e.standings.length} ha chiuso senza perdere`
-          : `${rows.length} su ${e.standings.length} hanno chiuso senza perdere`;
+      height = Math.max(SQUARE, CHROME + rows.length * unbeatenRow(rows));
       body = (
-        <Frame e={e} title="imbattuti" meta={meta}>
+        <Frame e={e} title="Imbattuti" icon={EMBLEM} height={height} seed={41}>
           <Imbattuti rows={rows} />
         </Frame>
       );
-      height = Math.max(SQUARE, CHROME + rows.length * unbeatenRow(rows));
       break;
     }
   }
   return new ImageResponse(body, {
     width: WIDTH,
-    height: kind === "imbattuti" ? height : Math.max(PORTRAIT, height),
+    height,
     fonts: await loadFonts(),
   });
 }

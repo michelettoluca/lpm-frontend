@@ -1,12 +1,13 @@
 import type { ComponentType, CSSProperties } from "react";
 
-/** A trophy, drawn in the current colour: a cup with two handles on a stepped foot. Square. */
+/** A trophy: a cup with two handles on a stepped foot, in a 100 square. */
+export const CUP_PATH =
+  "M24 8H76V34C76 52 65 63 50 63C35 63 24 52 24 34ZM24 14H10V24C10 36 17 44 27 46L26 39C20 37 17 31 17 24V21H24ZM76 14H90V24C90 36 83 44 73 46L74 39C80 37 83 31 83 24V21H76ZM45 62H55V76H45ZM33 76H67C69 76 70 77 70 79V84H30V79C30 77 31 76 33 76ZM26 86H74V93H26Z";
+
+/** The trophy, drawn in the current colour. Square. */
 export const Cup = ({ className }: { className?: string }) => (
   <svg viewBox="0 0 100 100" aria-hidden="true" className={className}>
-    <path
-      fill="currentColor"
-      d="M24 8H76V34C76 52 65 63 50 63C35 63 24 52 24 34ZM24 14H10V24C10 36 17 44 27 46L26 39C20 37 17 31 17 24V21H24ZM76 14H90V24C90 36 83 44 73 46L74 39C80 37 83 31 83 24V21H76ZM45 62H55V76H45ZM33 76H67C69 76 70 77 70 79V84H30V79C30 77 31 76 33 76ZM26 86H74V93H26Z"
-    />
+    <path fill="currentColor" d={CUP_PATH} />
   </svg>
 );
 
@@ -32,11 +33,62 @@ function random(seed: number) {
   };
 }
 
+export type Scattered = {
+  key: string;
+  /** The centre, as a share of the box's width and height. */
+  x: number;
+  y: number;
+  /** Width in px at full size. */
+  size: number;
+  /** Degrees. */
+  rotate: number;
+  /** The big ones a touch paler, so they read as further back. */
+  opacity: number;
+  /** How far it drifts and sways, and on what clock (Drift's animation). */
+  dx: number;
+  dy: number;
+  dr: number;
+  duration: number;
+  delay: number;
+};
+
 /**
- * An icon scattered behind a panel as a watermark: one per cell of a loose
- * grid, shaken well inside it so no row or column shows, a few cells left
- * empty, mostly small with the odd big one. Each drifts and sways slowly on
- * its own clock. Panels are their own layer, so it stays behind the text.
+ * Icons scattered as a watermark: one per cell of a loose grid, shaken well
+ * inside it so no row or column shows, a few cells left empty, mostly small
+ * with the odd big one. The same seed scatters the same way every time. The
+ * site's panels (Drift, below) and the tappa's images share it.
+ */
+export function scatter(cols: number, rows: number, seed: number): Scattered[] {
+  const rnd = random(seed);
+  const between = (a: number, b: number) => a + rnd() * (b - a);
+  const sign = () => (rnd() < 0.5 ? -1 : 1);
+
+  const items: Scattered[] = [];
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      if (rnd() < 0.2) continue;
+      const size = 26 + rnd() ** 2.2 * 130;
+      items.push({
+        key: `${r}-${c}`,
+        x: (c + between(0.1, 0.9)) / cols,
+        y: (r + between(0.1, 0.9)) / rows,
+        size,
+        rotate: between(-24, 24),
+        dx: sign() * between(3, 8),
+        dy: sign() * between(3, 8),
+        dr: between(1.5, 4),
+        duration: between(22, 38),
+        delay: -between(0, 38),
+        opacity: size > 90 ? 0.7 : 1,
+      });
+    }
+  }
+  return items;
+}
+
+/**
+ * The scattered icon behind a panel, each drifting and swaying slowly on its
+ * own clock. Panels are their own layer, so it stays behind the text.
  */
 export function Drift({
   icon: Icon,
@@ -49,39 +101,30 @@ export function Drift({
   rows: number;
   seed: number;
 }) {
-  const rnd = random(seed);
-  const between = (a: number, b: number) => a + rnd() * (b - a);
-  const sign = () => (rnd() < 0.5 ? -1 : 1);
-
-  const items = [];
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (rnd() < 0.2) continue;
-      const size = 26 + rnd() ** 2.2 * 130;
-      const style = {
-        left: `${((c + between(0.1, 0.9)) / cols) * 100}%`,
-        top: `${((r + between(0.1, 0.9)) / rows) * 100}%`,
-        "--s": size.toFixed(0),
-        "--r": `${between(-24, 24).toFixed(1)}deg`,
-        "--dx": `${(sign() * between(3, 8)).toFixed(1)}px`,
-        "--dy": `${(sign() * between(3, 8)).toFixed(1)}px`,
-        "--dr": `${between(1.5, 4).toFixed(1)}deg`,
-        animationDuration: `${between(22, 38).toFixed(1)}s`,
-        animationDelay: `${(-between(0, 38)).toFixed(1)}s`,
-        // The big ones a touch paler, so they read as further back.
-        opacity: size > 90 ? 0.7 : 1,
-      } as CSSProperties;
-      items.push(
-        <span key={`${r}-${c}`} className="rg-drift-item" style={style}>
-          <Icon className="block h-auto w-full" />
-        </span>,
-      );
-    }
-  }
-
   return (
     <div aria-hidden="true" className="rg-drift rg-watermark">
-      {items}
+      {scatter(cols, rows, seed).map((it) => (
+        <span
+          key={it.key}
+          className="rg-drift-item"
+          style={
+            {
+              left: `${it.x * 100}%`,
+              top: `${it.y * 100}%`,
+              "--s": it.size.toFixed(0),
+              "--r": `${it.rotate.toFixed(1)}deg`,
+              "--dx": `${it.dx.toFixed(1)}px`,
+              "--dy": `${it.dy.toFixed(1)}px`,
+              "--dr": `${it.dr.toFixed(1)}deg`,
+              animationDuration: `${it.duration.toFixed(1)}s`,
+              animationDelay: `${it.delay.toFixed(1)}s`,
+              opacity: it.opacity,
+            } as CSSProperties
+          }
+        >
+          <Icon className="block h-auto w-full" />
+        </span>
+      ))}
     </div>
   );
 }
