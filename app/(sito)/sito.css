@@ -447,15 +447,6 @@ body:has(.lpm)::before {
     animation-timeline: scroll(self inline);
   }
 }
-/* A pinned cell in a scrolling table: it covers what scrolls under it, and
-   takes the row's wash on hover. */
-.lpm .rg-stick {
-  background: var(--rg-paper);
-  transition: background-color 0.12s ease;
-}
-.lpm .rg-row:hover .rg-stick {
-  background: var(--rg-soft);
-}
 
 /* Small status badge. */
 .lpm .rg-badge {

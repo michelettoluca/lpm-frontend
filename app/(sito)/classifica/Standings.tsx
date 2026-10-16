@@ -68,16 +68,16 @@ const isView = (v: unknown): v is View => VIEWS.some((x) => x.id === v);
 
 /**
  * One grid per layout, so positions, totals and the extra columns line up on
- * every row. In "avanzata" the player stays pinned on the left while the tappe
- * scroll under it; --n is the number of tappa columns.
+ * every row. In "avanzata" the whole row scrolls sideways, the player with
+ * the tappe; --n is the number of tappa columns.
  */
 const COLS: Record<View, string> = {
   base: "grid-cols-[minmax(0,1fr)_2.6rem_2.8rem] gap-x-2 sm:grid-cols-[minmax(0,1fr)_4rem_4rem]",
   avanzata:
     "grid-cols-[minmax(9rem,1fr)_2.6rem_2.8rem_repeat(var(--n),2.4rem)] gap-x-2 sm:grid-cols-[minmax(14rem,1fr)_4rem_4rem_repeat(var(--n),2.8rem)]",
 };
-/** Pinned cell: opaque, so the scrolled columns pass under it. */
-const STICK = "rg-stick sticky left-0 z-[1] flex min-w-0 items-center self-stretch";
+/** The first cell: position and player. */
+const PLAYER = "flex min-w-0 items-center self-stretch";
 
 /* The visitor's layout, remembered between visits. The server and the first
    client render use "base"; storage can be blocked, so the choice also lives
@@ -171,7 +171,7 @@ function ViewSwitch({
 function Head({ view, tappe }: Layout) {
   return (
     <div aria-hidden="true" className={`rg-colheads grid px-2 ${COLS[view]}`}>
-      <span className={STICK}>
+      <span className={PLAYER}>
         <span className="w-[2.2rem] shrink-0 sm:w-[3rem]">pos.</span>
         nome
       </span>
@@ -251,7 +251,7 @@ function ListRow({ r, size, view, tappe }: { r: Row; size: "md" | "sm" } & Layou
   const md = size === "md";
   return (
     <Link href={`/giocatori/${r.id}`} className={`rg-row grid items-center px-2 ${md ? "min-h-14" : "min-h-12"} ${COLS[view]}`}>
-      <span className={STICK}>
+      <span className={PLAYER}>
         <span
           className={`tnum w-[2.2rem] shrink-0 sm:w-[3rem] ${
             md ? `rg-display text-[22px] ${r.rank === 1 ? "text-[var(--rg-o)]" : ""}` : "rg-muted text-[15px] font-semibold"
