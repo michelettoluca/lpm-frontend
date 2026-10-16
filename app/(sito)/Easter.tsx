@@ -4,12 +4,6 @@ import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { effectOf } from "@/app/lib/easter";
 import { COPIONE, type Battuta } from "./copione";
 
-/* Diego's bolts: the orange bolt of his logo, traced from his picture into
-   a 93 by 479 box. */
-const BOLT = "M39 0 41 1 41 10 22 174 34 178 72 182 76 183 77 186 41 283 40 293 45 294 87 283 91 283 93 289 73 479 71 479 73 309 66 308 13 320 9 320 7 317 47 207 47 202 44 200 6 197 0 193Z";
-const BOLT_W = 93;
-const BOLT_H = 479;
-
 const between = (a: number, b: number) => a + Math.random() * (b - a);
 
 const SVG = "http://www.w3.org/2000/svg";
@@ -132,56 +126,49 @@ function round(t: number, w: number, h: number, pad: number) {
   return { x: -pad, y: h + pad - d, nx: -1, ny: 0 };
 }
 
-/**
- * A crackle of static: the bolt, small, lit for a moment somewhere on the
- * box, lying along the edge or now and then sticking out of it.
- */
-function crackle(w: number, h: number, small: boolean): SVGPathElement {
-  const p = round(Math.random(), w, h, 3);
-  const tall = between(small ? 8 : 10, small ? 14 : 22);
-  const k = tall / BOLT_H;
-  const out = Math.random() < 0.35;
-  // Along the edge the bolt lies on it, either way; out of it, it points out.
-  const turn = (Math.atan2(p.ny, p.nx) * 180) / Math.PI + (out ? 90 : Math.random() < 0.5 ? 0 : 180) + between(-20, 20);
-  const x = p.x + p.nx * (out ? tall * 0.45 : between(-2, 2));
-  const y = p.y + p.ny * (out ? tall * 0.45 : between(-2, 2));
-  const path = document.createElementNS(SVG, "path");
-  path.setAttribute("d", BOLT);
-  path.setAttribute(
-    "transform",
-    `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${turn.toFixed(1)}) scale(${k.toFixed(4)}) translate(${-BOLT_W / 2} ${-BOLT_H / 2})`,
-  );
-  return path;
+/** A crackle: a jagged arc clinging to a stretch of the box, or now and then shooting out of it. */
+function arc(w: number, h: number, pad: number, amp: number): string {
+  const t = Math.random();
+  const out = Math.random() < 0.25;
+  const steps = 7;
+  const pts: string[] = [];
+  if (out) {
+    const p = round(t, w, h, pad);
+    const far = between(10, 22);
+    for (let k = 0; k <= steps; k++) {
+      const f = k / steps;
+      const jx = k && k < steps ? between(-amp, amp) : 0;
+      pts.push(`${(p.x + p.nx * far * f + p.ny * jx).toFixed(1)} ${(p.y + p.ny * far * f + p.nx * jx).toFixed(1)}`);
+    }
+  } else {
+    const span = between(0.03, 0.09);
+    for (let k = 0; k <= steps; k++) {
+      const p = round(t + (span * k) / steps, w, h, pad);
+      const j = k && k < steps ? between(-amp, amp) : 0;
+      pts.push(`${(p.x + p.nx * j).toFixed(1)} ${(p.y + p.ny * j).toFixed(1)}`);
+    }
+  }
+  return `M${pts.join(" L")}`;
 }
 
 /**
- * Charges the name like a hero's fist in a film: a static of small bolts
- * lighting up and out along its edges, never in the same places twice, and
- * bigger ones going round it, pointing out, flickering as they go. Draws into the svg until stopped;
- * `place` puts the svg over the name each frame, where it isn't already.
+ * Charges the name like a hero's fist in a film: jagged arcs crackling along
+ * its edges, a new set every other frame, now and then shooting out of it.
+ * Draws into the svg until stopped; `place` puts the svg over the name each
+ * frame, where it isn't already.
  */
 function electrify(svg: SVGSVGElement, name: HTMLElement, soft: boolean, place?: (box: DOMRect) => void): () => void {
   const crackles = document.createElementNS(SVG, "g");
   crackles.setAttribute("class", "rg-crackles");
   svg.append(crackles);
-  const count = soft ? 3 : 4;
-  const bolts = Array.from({ length: count }, (_, i) => {
-    const g = document.createElementNS(SVG, "g");
-    const path = document.createElementNS(SVG, "path");
-    path.setAttribute("d", BOLT);
-    g.append(path);
-    svg.append(g);
-    return { g, t: i / count, speed: between(0.06, 0.1) };
-  });
   name.classList.add("rg-charged");
 
   let frame = 0;
-  let last = performance.now();
   let n = 0;
-  const tick = (now: number) => {
+  const tick = () => {
     frame = requestAnimationFrame(tick);
-    const dt = Math.min(0.05, (now - last) / 1000);
-    last = now;
+    // A new set every other frame: faster would only blur.
+    if (n++ % 2) return;
     const box = name.getBoundingClientRect();
     const w = box.width;
     const h = box.height;
@@ -189,23 +176,13 @@ function electrify(svg: SVGSVGElement, name: HTMLElement, soft: boolean, place?:
     svg.setAttribute("width", String(w + 2 * AROUND));
     svg.setAttribute("height", String(h + 2 * AROUND));
     svg.setAttribute("viewBox", `${-AROUND} ${-AROUND} ${w + 2 * AROUND} ${h + 2 * AROUND}`);
-
-    // As tall as a third of the name's line, in the standings a little less.
-    const tall = Math.min(soft ? 22 : 46, Math.max(16, h * (soft ? 0.7 : 0.32)));
-    const k = tall / BOLT_H;
-    for (const b of bolts) {
-      b.t = (b.t + b.speed * dt) % 1;
-      const p = round(b.t, w, h, 2);
-      const turn = (Math.atan2(p.ny, p.nx) * 180) / Math.PI + 90 + between(-12, 12);
-      const x = p.x + p.nx * tall * 0.3 + between(-1.5, 1.5);
-      const y = p.y + p.ny * tall * 0.3 + between(-1.5, 1.5);
-      b.g.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${turn.toFixed(1)}) scale(${k.toFixed(3)}) translate(${-BOLT_W / 2} ${-BOLT_H / 2})`);
-      b.g.setAttribute("opacity", Math.random() < 0.12 ? "0.35" : "1");
-    }
-    // The static changes every other frame: faster would only blur.
-    if (n++ % 2 === 0) {
-      crackles.replaceChildren(...Array.from({ length: soft ? 5 : 9 }, () => crackle(w, h, soft)));
-    }
+    crackles.replaceChildren(
+      ...Array.from({ length: soft ? 3 : 6 }, () => {
+        const path = document.createElementNS(SVG, "path");
+        path.setAttribute("d", arc(w, h, 3, soft ? 3 : 5));
+        return path;
+      }),
+    );
   };
   frame = requestAnimationFrame(tick);
   return () => {

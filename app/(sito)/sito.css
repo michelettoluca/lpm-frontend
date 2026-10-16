@@ -1244,10 +1244,9 @@ body:has(.lpm)::before {
 }
 
 /* The easter eggs' charge (Easter.tsx): Diego's name crackling like a
-   hero's fist, a static of the orange bolt of his logo flickering along its
-   edges with a glow, bigger ones going round it, the letters glowing a
-   little. On his page in the name's own box; in the
-   standings over the screen. */
+   hero's fist, jagged arcs with an orange glow along its edges (white-hot on
+   dark, orange on the light paper), the letters glowing a little. On his
+   page in the name's own box; in the standings over the screen. */
 .lpm .rg-charge-host {
   position: relative;
   display: inline-block;
@@ -1258,14 +1257,18 @@ body:has(.lpm)::before {
   top: -28px;
   overflow: visible;
   pointer-events: none;
-  fill: #f7941d;
 }
 .lpm .rg-charge.rg-charge-float {
   position: fixed;
   z-index: 110;
 }
 .lpm .rg-crackles {
-  filter: drop-shadow(0 0 1.5px #f7941d) drop-shadow(0 0 4px rgb(247 148 29 / 0.8));
+  fill: none;
+  stroke: light-dark(#f58a07, #fff8ee);
+  stroke-width: 1.4px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 1.5px #f7941d) drop-shadow(0 0 4px #f7941d);
 }
 .lpm .rg-charged {
   text-shadow: 0 0 0.35em rgb(247 148 29 / 0.45);

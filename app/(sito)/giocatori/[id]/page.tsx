@@ -9,6 +9,8 @@ import { ColHeads, Head, MarkerCircle, PixelStar, Section, plural } from "../../
 import { FaceOff } from "./FaceOff";
 import { DeckTag } from "../../DeckTag";
 import { Easter } from "../../Easter";
+import { Drift } from "../../Drift";
+import { teamOf } from "@/app/lib/teams";
 
 
 export async function generateMetadata(props: PageProps<"/giocatori/[id]">) {
@@ -35,12 +37,15 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
   if (!p) notFound();
   const deckSeason = d.choice.seasons.find((x) => x.id === d.choice.selected);
   const within = deckSeason ? `nella ${deckSeason.name}` : "in tutte le stagioni";
+  const team = teamOf(id);
 
 
   return (
     <div className="rg-stack">
       {/* ---------------- hero ---------------- */}
       <section className="rg-panel">
+        {/* The player's team, if any: its logo scattered behind the card, like the league's on the home. */}
+        {team && <Drift icon={team.logo} cols={5} rows={3} seed={Number(id) * 7 + 3} />}
         <Link href="/classifica" className="rg-textlink -ml-1 inline-flex min-h-11 items-center px-1 text-[15px]">
           ← la classifica
         </Link>
