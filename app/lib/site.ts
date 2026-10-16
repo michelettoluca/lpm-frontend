@@ -26,6 +26,7 @@ import {
   type Pairing,
   type PlayerDeck,
   type PlayerEventEntry,
+  type PlayerTeam,
   type Season,
   type Standing,
 } from "./api";
@@ -219,6 +220,8 @@ export type PlayerTappa = PlayerEventEntry & {
 export type PlayerData = {
   id: number;
   name: string;
+  /** Their team, for the watermark of its logo, or null. */
+  team: PlayerTeam | null;
   first: string;
   last: string;
   season: Season | null;
@@ -263,6 +266,8 @@ export async function getPlayerData(id: string): Promise<PlayerData | null> {
   return {
     id: player.id,
     name: player.display_name,
+    // Older APIs leave it out.
+    team: player.team ?? null,
     first,
     last,
     season,

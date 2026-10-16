@@ -45,6 +45,12 @@ export type AdminAccount = { id: number; email: string; is_super: boolean };
 
 export type AdminListEntry = AdminAccount & { created_at: string };
 
+/** A player as the team page picks them. */
+export type TeamPlayer = { id: number; display_name: string };
+
+/** A team, its logo as SVG path data in its own box, and its members. */
+export type Team = { id: number; name: string; logo: { view_box: string; path: string }; players: TeamPlayer[] };
+
 export type AdminSession = { token: string; expires_at: string; admin: AdminAccount };
 
 export type Season = {

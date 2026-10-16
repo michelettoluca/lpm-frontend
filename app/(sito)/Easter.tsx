@@ -464,6 +464,139 @@ function CopioneRow({ children }: { children: ReactNode }) {
   return <span ref={el}>{children}</span>;
 }
 
+/** Matteo Conte's lines, one at a time. */
+const FUMETTI = ["Skibidi!", "Sleep del panzone!", "Faccio pippa!"];
+
+/** A speech bubble, w by h, round-ended, its tail at the bottom on the given side. */
+function bubblePath(w: number, h: number, tail: "left" | "right" | "middle"): string {
+  const r = h / 2;
+  const tx = tail === "left" ? w * 0.22 : tail === "right" ? w * 0.78 : w * 0.5;
+  const tip = tail === "left" ? tx - h * 0.5 : tail === "right" ? tx + h * 0.5 : tx + h * 0.15;
+  return [
+    `M${r} 0 H${w - r}`,
+    `A${r} ${r} 0 0 1 ${w - r} ${h}`,
+    `H${tx + h * 0.22} L${tip} ${h + h * 0.55} L${tx - h * 0.18} ${h}`,
+    `H${r} A${r} ${r} 0 0 1 ${r} 0 Z`,
+  ].join(" ");
+}
+
+/**
+ * One of his lines in a speech bubble drawn by hand, beside the name or
+ * above it, its tail pointing back at it, springing out of the tail until
+ * told to go. Fixed on the screen, so no row or panel clips it. The longer
+ * the line, the smaller the type. Returns what takes it off.
+ */
+function speak(box: DOMRect, text: string, small: boolean): (() => void) | null {
+  const site = document.querySelector<HTMLElement>(".lpm");
+  if (!site) return null;
+  const fit = Math.min(1, Math.max(0.72, 1 - (text.length - 9) * 0.03));
+  const size = (small ? 12 : 18) * fit;
+  const w = Math.max(80, text.length * size * 0.62 + size * 1.8);
+  const h = size * 2.3;
+  const side = Math.random();
+  const where = side < 0.35 ? "left" : side < 0.7 ? "right" : "above";
+  const x =
+    where === "left"
+      ? box.left - w * between(0.65, 0.9)
+      : where === "right"
+        ? box.right - w * between(0.1, 0.35)
+        : between(box.left - w * 0.1, box.right - w * 0.9);
+  const y = where === "above" ? box.top - h * between(1.1, 1.4) : box.top + box.height / 2 - h * between(0.9, 1.4);
+  // The tail points back at the name.
+  const tail = where === "left" ? "right" : where === "right" ? "left" : "middle";
+
+  const el = document.createElement("div");
+  el.className = "rg-comic";
+  el.setAttribute("aria-hidden", "true");
+  el.style.left = `${Math.max(4, Math.min(window.innerWidth - w - 4, x))}px`;
+  el.style.top = `${y}px`;
+  el.style.width = `${w}px`;
+  el.style.height = `${h}px`;
+  el.style.fontSize = `${size}px`;
+  el.style.rotate = `${between(-10, 10)}deg`;
+  el.style.transformOrigin = tail === "left" ? "15% 130%" : tail === "right" ? "85% 130%" : "50% 130%";
+
+  const svg = document.createElementNS(SVG, "svg");
+  svg.setAttribute("class", "rg-comic-shape");
+  svg.setAttribute("viewBox", `-8 -8 ${w + 16} ${h * 1.6 + 16}`);
+  svg.style.height = `${h * 1.6 + 16}px`;
+  const path = document.createElementNS(SVG, "path");
+  path.setAttribute("d", bubblePath(w, h, tail));
+  path.setAttribute("class", "rg-comic-fill");
+  svg.append(path);
+  const words = document.createElement("span");
+  words.className = "rg-comic-words";
+  words.textContent = text;
+  el.append(svg, words);
+  site.append(el);
+
+  el.animate([{ transform: "scale(0.2)", opacity: 0 }, { transform: "scale(1.06)", opacity: 1, offset: 0.6 }, { transform: "scale(1)" }], {
+    duration: 300,
+    easing: "cubic-bezier(0.2, 0.9, 0.3, 1)",
+    fill: "forwards",
+  });
+  return () => {
+    el.animate([{ opacity: 1 }, { opacity: 0, transform: "scale(0.85)" }], { duration: 160, easing: "ease-in", fill: "forwards" });
+    // Gone by then even where the animation is held, as in a hidden tab.
+    window.setTimeout(() => el.remove(), 200);
+  };
+}
+
+/**
+ * Matteo Conte's name, saying things: speech bubbles by it, one at a
+ * time, each new line springing out as the last one goes. On his page from when it opens, while the name is on
+ * screen; `soft`, in the standings, one at a time while the row is pointed at.
+ */
+function Comic({ soft, children }: { soft: boolean; children: ReactNode }) {
+  const el = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const name = el.current;
+    if (!name || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let n = Math.floor(Math.random() * FUMETTI.length);
+    let timer: number | null = null;
+    // One at a time: the new one lands as the old one pops.
+    let off: (() => void) | null = null;
+    const say = () => {
+      off?.();
+      // Nobody to talk to in a tab out of sight.
+      off = document.hidden ? null : speak(name.getBoundingClientRect(), FUMETTI[n++ % FUMETTI.length], soft);
+    };
+    const start = () => {
+      if (timer !== null) return;
+      say();
+      timer = window.setInterval(say, soft ? 1300 : 1100);
+    };
+    const stop = () => {
+      if (timer !== null) window.clearInterval(timer);
+      timer = null;
+      off?.();
+      off = null;
+    };
+    if (soft) {
+      const row = name.closest<HTMLElement>(".rg-row") ?? name;
+      row.addEventListener("pointerenter", start);
+      row.addEventListener("pointerleave", stop);
+      row.addEventListener("pointercancel", stop);
+      return () => {
+        row.removeEventListener("pointerenter", start);
+        row.removeEventListener("pointerleave", stop);
+        row.removeEventListener("pointercancel", stop);
+        stop();
+      };
+    }
+    const seen = new IntersectionObserver(([entry]) => (entry.isIntersecting ? start() : stop()));
+    const t = window.setTimeout(() => seen.observe(name), 400);
+    return () => {
+      window.clearTimeout(t);
+      seen.disconnect();
+      stop();
+    };
+  }, [soft]);
+
+  return <span ref={el}>{children}</span>;
+}
+
 /**
  * A player's name with their easter egg, if they have one: a charge of
  * lightning round it, a mist drifting past, peaches stuck on like stickers, or a
@@ -478,6 +611,7 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   if (effect === "pesca") return <Peaches>{children}</Peaches>;
   if (effect === "copione") return soft ? <CopioneRow>{children}</CopioneRow> : <Copione>{children}</Copione>;
   if (effect === "fulmini") return <Electric soft={soft}>{children}</Electric>;
+  if (effect === "fumetto") return <Comic soft={soft}>{children}</Comic>;
   return (
     <Burst effect={effect} soft={soft}>
       {children}
