@@ -1686,16 +1686,13 @@ const MARK_PEACHES: Spot[] = [
   { x: 0.55, y: -0.1, size: 0.5, tilt: -6 },
 ];
 
-/** Lisa Coronini's lobster in the standings, by the name: just the one. */
-const MARK_LOBSTER: Spot[] = [{ x: 0.5, y: 0.5, size: 1.1, tilt: 14 }];
-
 /**
  * Arturo Precioso's peaches in the standings: a little bunch just after
  * his name, popping on one after another while the row is pointed at
  * (sito.css). Its own element beside the name, not in it: a name cut short
- * with an ellipsis would cut them off too. Lisa Coronini's one lobster,
- * Tommaso Cavallini's hand of cards and Filippo Pezza's belt, slung aslant,
- * go there the same way.
+ * with an ellipsis would cut them off too. Lisa Coronini's lobster walking
+ * in, Tommaso Cavallini's hand of cards and Filippo Pezza's belt, slung
+ * aslant, go there the same way.
  */
 export function EasterMark({ playerId }: { playerId: number | string }) {
   const effect = effectOf(playerId);
@@ -1703,11 +1700,18 @@ export function EasterMark({ playerId }: { playerId: number | string }) {
   // His belt slung aslant just after his name in the standings.
   if (effect === "cintura")
     return <span aria-hidden="true" className="rg-belt-mark" dangerouslySetInnerHTML={{ __html: `<span class="rg-belt-mark-strap"></span>${BELT_PLATE}` }} />;
-  if (effect !== "pesca" && effect !== "aragosta") return null;
-  const lobster = effect === "aragosta";
+  // Her lobster walking in after her name, cut off by the row's edges.
+  if (effect === "aragosta")
+    return (
+      <span aria-hidden="true" className="rg-lobster-mark">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={LOBSTER} alt="" />
+      </span>
+    );
+  if (effect !== "pesca") return null;
   return (
-    <span aria-hidden="true" className={`rg-peach-mark ${lobster ? "rg-peach-mark-one" : ""}`}>
-      {(lobster ? MARK_LOBSTER : MARK_PEACHES).map((p, i) => (
+    <span aria-hidden="true" className="rg-peach-mark">
+      {MARK_PEACHES.map((p, i) => (
         <span
           key={i}
           className="rg-sticker rg-sticker-inline"
@@ -1721,8 +1725,7 @@ export function EasterMark({ playerId }: { playerId: number | string }) {
             } as CSSProperties
           }
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          {lobster ? <img src={LOBSTER} alt="" className="rg-sticker-picture" /> : PEACH}
+          {PEACH}
         </span>
       ))}
     </span>
