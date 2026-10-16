@@ -25,10 +25,3 @@ export const EASTER_EGGS: { playerId: number; name: string; effect: Effect }[] =
 export const effectOf = (playerId: number | string): Effect | undefined =>
   EASTER_EGGS.find((e) => e.playerId === Number(playerId))?.effect;
 
-/**
- * How Matteo Conte's lines show, to compare for now (?nuvola= on his page):
- * a spiky burst, a speech bubble drawn by hand pointing at the name, meme
- * lettering, or a red marker scrawl with a loop round it.
- */
-export type ComicLook = "scoppio" | "nuvola" | "meme" | "pennarello";
-export const COMIC_LOOKS: ComicLook[] = ["scoppio", "nuvola", "meme", "pennarello"];

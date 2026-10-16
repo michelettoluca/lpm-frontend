@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
-import { effectOf, type ComicLook } from "@/app/lib/easter";
+import { effectOf } from "@/app/lib/easter";
 import { COPIONE, type Battuta } from "./copione";
 
 const between = (a: number, b: number) => a + Math.random() * (b - a);
@@ -465,19 +465,7 @@ function CopioneRow({ children }: { children: ReactNode }) {
 }
 
 /** Matteo Conte's lines, one at a time. */
-const FUMETTI = ["Skibidi!", "Sleep del panzone!", "Forza Dio!", "Faccio pippa!"];
-
-/** The spiky edge of a comic burst, in a w by h box: points in and out, never even. */
-function burstPath(w: number, h: number): string {
-  const spikes = Math.round(between(13, 18));
-  const pts: string[] = [];
-  for (let i = 0; i < spikes * 2; i++) {
-    const a = (i / (spikes * 2)) * Math.PI * 2 + between(-0.08, 0.08);
-    const r = i % 2 ? between(0.72, 0.8) : between(0.94, 1.08);
-    pts.push(`${(w / 2 + Math.cos(a) * (w / 2) * r).toFixed(1)} ${(h / 2 + Math.sin(a) * (h / 2) * r).toFixed(1)}`);
-  }
-  return `M${pts.join(" L")}Z`;
-}
+const FUMETTI = ["Skibidi!", "Sleep del panzone!", "Faccio pippa!"];
 
 /** A speech bubble, w by h, round-ended, its tail at the bottom on the given side. */
 function bubblePath(w: number, h: number, tail: "left" | "right" | "middle"): string {
@@ -492,27 +480,19 @@ function bubblePath(w: number, h: number, tail: "left" | "right" | "middle"): st
   ].join(" ");
 }
 
-/** A loose marker loop round a w by h box, never closing quite where it began. */
-function loopPath(w: number, h: number): string {
-  const j = () => between(-0.05, 0.05);
-  return `M${w * (0.18 + j())} ${h * (0.08 + j())} C${w * 0.6} ${-h * 0.12} ${w * (1.05 + j())} ${h * 0.05} ${w * 1.02} ${h * 0.5} C${w} ${h * 0.95} ${w * 0.45} ${h * (1.12 + j())} ${w * 0.08} ${h * 0.9} C${-w * 0.06} ${h * 0.72} ${w * 0.02} ${h * 0.12} ${w * (0.4 + j())} ${h * 0.02}`;
-}
-
 /**
- * One of his lines by the name, in the given look, landing with a little
- * spring, until told to go. Fixed on the screen, so no row or panel clips
- * it; beside the name, or above it. The longer the line, the smaller the
- * type. Returns what takes it off.
+ * One of his lines in a speech bubble drawn by hand, beside the name or
+ * above it, its tail pointing back at it, springing out of the tail until
+ * told to go. Fixed on the screen, so no row or panel clips it. The longer
+ * the line, the smaller the type. Returns what takes it off.
  */
-function burst(box: DOMRect, text: string, small: boolean, look: ComicLook): (() => void) | null {
+function speak(box: DOMRect, text: string, small: boolean): (() => void) | null {
   const site = document.querySelector<HTMLElement>(".lpm");
   if (!site) return null;
   const fit = Math.min(1, Math.max(0.72, 1 - (text.length - 9) * 0.03));
-  const size = (small ? 12 : look === "meme" || look === "pennarello" ? 24 : 18) * fit;
-  const wordsW = text.length * size * (look === "meme" ? 0.56 : 0.62);
-  const w = look === "meme" || look === "pennarello" ? wordsW + size : Math.max(80, wordsW + size * (look === "nuvola" ? 1.8 : 2.6));
-  const h = size * (look === "scoppio" ? 3.3 : look === "nuvola" ? 2.3 : 1.8);
-  // Off one end of the name or over it, somewhere along it.
+  const size = (small ? 12 : 18) * fit;
+  const w = Math.max(80, text.length * size * 0.62 + size * 1.8);
+  const h = size * 2.3;
   const side = Math.random();
   const where = side < 0.35 ? "left" : side < 0.7 ? "right" : "above";
   const x =
@@ -522,85 +502,39 @@ function burst(box: DOMRect, text: string, small: boolean, look: ComicLook): (()
         ? box.right - w * between(0.1, 0.35)
         : between(box.left - w * 0.1, box.right - w * 0.9);
   const y = where === "above" ? box.top - h * between(1.1, 1.4) : box.top + box.height / 2 - h * between(0.9, 1.4);
-  const tilt = between(-10, 10);
+  // The tail points back at the name.
+  const tail = where === "left" ? "right" : where === "right" ? "left" : "middle";
 
   const el = document.createElement("div");
-  el.className = `rg-comic rg-comic-${look}`;
+  el.className = "rg-comic";
   el.setAttribute("aria-hidden", "true");
   el.style.left = `${Math.max(4, Math.min(window.innerWidth - w - 4, x))}px`;
   el.style.top = `${y}px`;
   el.style.width = `${w}px`;
   el.style.height = `${h}px`;
   el.style.fontSize = `${size}px`;
-  el.style.rotate = `${tilt}deg`;
+  el.style.rotate = `${between(-10, 10)}deg`;
+  el.style.transformOrigin = tail === "left" ? "15% 130%" : tail === "right" ? "85% 130%" : "50% 130%";
 
-  const shape = (d: string, cls: string) => {
-    const path = document.createElementNS(SVG, "path");
-    path.setAttribute("d", d);
-    path.setAttribute("class", cls);
-    return path;
-  };
-  if (look !== "meme") {
-    const svg = document.createElementNS(SVG, "svg");
-    svg.setAttribute("class", "rg-comic-shape");
-    svg.setAttribute("viewBox", `-8 -8 ${w + 16} ${h * 1.6 + 16}`);
-    svg.style.height = `${h * 1.6 + 16}px`;
-    if (look === "scoppio") {
-      const d = burstPath(w, h);
-      svg.append(shape(d, "rg-comic-shadow"), shape(d, "rg-comic-fill"));
-    } else if (look === "nuvola") {
-      // The tail points back at the name.
-      const tail = where === "left" ? "right" : where === "right" ? "left" : "middle";
-      svg.append(shape(bubblePath(w, h, tail), "rg-comic-fill"));
-      el.style.transformOrigin = tail === "left" ? "15% 130%" : tail === "right" ? "85% 130%" : "50% 130%";
-    } else {
-      svg.append(shape(loopPath(w, h), "rg-comic-loop"));
-    }
-    el.append(svg);
-  }
+  const svg = document.createElementNS(SVG, "svg");
+  svg.setAttribute("class", "rg-comic-shape");
+  svg.setAttribute("viewBox", `-8 -8 ${w + 16} ${h * 1.6 + 16}`);
+  svg.style.height = `${h * 1.6 + 16}px`;
+  const path = document.createElementNS(SVG, "path");
+  path.setAttribute("d", bubblePath(w, h, tail));
+  path.setAttribute("class", "rg-comic-fill");
+  svg.append(path);
   const words = document.createElement("span");
   words.className = "rg-comic-words";
   words.textContent = text;
-  el.append(words);
+  el.append(svg, words);
   site.append(el);
 
-  const spring = { duration: 300, easing: "cubic-bezier(0.2, 0.9, 0.3, 1)", fill: "forwards" as const };
-  if (look === "scoppio") {
-    // A soft splat: lands a touch wide, springs, settles.
-    el.animate(
-      [
-        { transform: "scale(1.3, 0.7)", opacity: 0 },
-        { transform: "scale(0.95, 1.07)", opacity: 1, offset: 0.45 },
-        { transform: "scale(1.02, 0.98)", offset: 0.75 },
-        { transform: "scale(1)" },
-      ],
-      spring,
-    );
-  } else if (look === "nuvola") {
-    // Out of its tail.
-    el.animate([{ transform: "scale(0.2)", opacity: 0 }, { transform: "scale(1.06)", opacity: 1, offset: 0.6 }, { transform: "scale(1)" }], spring);
-  } else if (look === "meme") {
-    // Slammed onto the screen, with a shake.
-    el.animate(
-      [
-        { transform: "scale(1.9)", opacity: 0 },
-        { transform: "scale(0.96)", opacity: 1, offset: 0.5 },
-        { transform: "translate(-2px, 1px) scale(1)", offset: 0.65 },
-        { transform: "translate(2px, -1px) scale(1)", offset: 0.8 },
-        { transform: "scale(1)" },
-      ],
-      { ...spring, duration: 340 },
-    );
-  } else {
-    // Written out, then circled.
-    words.animate([{ clipPath: "inset(0 100% 0 0)" }, { clipPath: "inset(0 0 0 0)" }], { duration: 420, easing: "ease-out", fill: "forwards" });
-    const loop = el.querySelector<SVGPathElement>(".rg-comic-loop");
-    if (loop) {
-      const length = loop.getTotalLength();
-      loop.style.strokeDasharray = `${length}`;
-      loop.animate([{ strokeDashoffset: length }, { strokeDashoffset: 0 }], { duration: 380, delay: 300, easing: "ease-in-out", fill: "both" });
-    }
-  }
+  el.animate([{ transform: "scale(0.2)", opacity: 0 }, { transform: "scale(1.06)", opacity: 1, offset: 0.6 }, { transform: "scale(1)" }], {
+    duration: 300,
+    easing: "cubic-bezier(0.2, 0.9, 0.3, 1)",
+    fill: "forwards",
+  });
   return () => {
     el.animate([{ opacity: 1 }, { opacity: 0, transform: "scale(0.85)" }], { duration: 160, easing: "ease-in", fill: "forwards" });
     // Gone by then even where the animation is held, as in a hidden tab.
@@ -609,11 +543,11 @@ function burst(box: DOMRect, text: string, small: boolean, look: ComicLook): (()
 }
 
 /**
- * Matteo Conte's name, saying things: comic bursts by it, one at a time,
- * each new line landing as the last one pops. On his page from when it opens, while the name is on
+ * Matteo Conte's name, saying things: speech bubbles by it, one at a
+ * time, each new line springing out as the last one goes. On his page from when it opens, while the name is on
  * screen; `soft`, in the standings, one at a time while the row is pointed at.
  */
-function Comic({ soft, look, children }: { soft: boolean; look: ComicLook; children: ReactNode }) {
+function Comic({ soft, children }: { soft: boolean; children: ReactNode }) {
   const el = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
@@ -626,7 +560,7 @@ function Comic({ soft, look, children }: { soft: boolean; look: ComicLook; child
     const say = () => {
       off?.();
       // Nobody to talk to in a tab out of sight.
-      off = document.hidden ? null : burst(name.getBoundingClientRect(), FUMETTI[n++ % FUMETTI.length], soft, look);
+      off = document.hidden ? null : speak(name.getBoundingClientRect(), FUMETTI[n++ % FUMETTI.length], soft);
     };
     const start = () => {
       if (timer !== null) return;
@@ -658,7 +592,7 @@ function Comic({ soft, look, children }: { soft: boolean; look: ComicLook; child
       seen.disconnect();
       stop();
     };
-  }, [soft, look]);
+  }, [soft]);
 
   return <span ref={el}>{children}</span>;
 }
@@ -671,28 +605,13 @@ function Comic({ soft, look, children }: { soft: boolean; look: ComicLook; child
  * where the peach is a single one, put after the name by `EasterMark`.
  * Anyone else's name comes back as it is.
  */
-export function Easter({
-  playerId,
-  soft = false,
-  look = "scoppio",
-  children,
-}: {
-  playerId: number | string;
-  soft?: boolean;
-  /** For Matteo Conte's bursts, while their looks are compared. */
-  look?: ComicLook;
-  children: ReactNode;
-}) {
+export function Easter({ playerId, soft = false, children }: { playerId: number | string; soft?: boolean; children: ReactNode }) {
   const effect = effectOf(playerId);
   if (!effect || (effect === "pesca" && soft)) return <>{children}</>;
   if (effect === "pesca") return <Peaches>{children}</Peaches>;
   if (effect === "copione") return soft ? <CopioneRow>{children}</CopioneRow> : <Copione>{children}</Copione>;
   if (effect === "fulmini") return <Electric soft={soft}>{children}</Electric>;
-  if (effect === "fumetto") return (
-    <Comic soft={soft} look={look}>
-      {children}
-    </Comic>
-  );
+  if (effect === "fumetto") return <Comic soft={soft}>{children}</Comic>;
   return (
     <Burst effect={effect} soft={soft}>
       {children}
