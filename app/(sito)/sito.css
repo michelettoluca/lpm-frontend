@@ -1289,45 +1289,64 @@ body:has(.lpm)::before {
   mix-blend-mode: lighten;
 }
 
-/* The easter eggs' sticker (Easter.tsx): an emoji with a white edge and a
-   soft shadow, like a sticker, tilted. On the player's page it sits after the
-   name, raised to the letters' tops; elsewhere it is fixed over the screen. */
-.lpm .rg-sticker {
+/* The easter eggs' peaches (Easter.tsx): emoji with a white edge and a soft
+   shadow, like stickers, tilted, placed around the name, some behind its
+   letters. They pop on one after another. */
+.lpm .rg-peaches {
+  position: relative;
+  isolation: isolate;
   display: inline-block;
+}
+.lpm .rg-sticker {
+  position: absolute;
   line-height: 1;
   pointer-events: none;
   user-select: none;
+  translate: -50% -50%;
+  rotate: var(--tilt);
   filter: drop-shadow(0.06em 0 0 #fff) drop-shadow(-0.06em 0 0 #fff) drop-shadow(0 0.06em 0 #fff)
     drop-shadow(0 -0.06em 0 #fff) drop-shadow(0 0.08em 0.08em rgb(0 0 0 / 0.25));
 }
-.lpm .rg-sticker-stuck {
-  margin-left: 0.06em;
-  font-size: 0.5em;
-  vertical-align: top;
-  translate: 0 -0.35em;
-  rotate: 12deg;
+.lpm .rg-sticker-back {
+  z-index: -1;
+}
+/* The standings' one peach, in the line after the name, raised a little:
+   there only while the row is pointed at. Both classes, to outweigh the
+   stickers' pop below. */
+.lpm .rg-sticker.rg-sticker-inline {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  margin-left: 0.2em;
+  font-size: 0.85em;
+  translate: 0 -0.3em;
+  scale: 0;
+  animation: none;
+}
+.lpm .rg-row:hover .rg-sticker-inline {
+  scale: 1;
 }
 @media (prefers-reduced-motion: no-preference) {
-  .lpm .rg-sticker-stuck {
-    animation: rg-sticker-on 0.5s 0.4s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+  .lpm .rg-row:hover .rg-sticker-inline {
+    animation: rg-sticker-on 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lpm .rg-sticker {
+    animation: rg-sticker-on 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) both;
   }
 }
 @keyframes rg-sticker-on {
   from {
     scale: 0;
-    rotate: -30deg;
+    rotate: calc(var(--tilt) - 40deg);
   }
   60% {
     scale: 1.2;
-    rotate: 20deg;
+    rotate: calc(var(--tilt) + 8deg);
   }
   to {
     scale: 1;
-    rotate: 12deg;
+    rotate: var(--tilt);
   }
-}
-.lpm .rg-sticker-float {
-  position: fixed;
-  z-index: 110;
-  transform-origin: 30% 80%;
 }

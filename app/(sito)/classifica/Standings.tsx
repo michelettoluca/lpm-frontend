@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useDeferredValue, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import type { LeaderboardTappa, TappaResult, Verdict } from "@/app/lib/site";
 import { Comune, MarkerUnderline } from "../ui";
-import { Easter } from "../Easter";
+import { Easter, EasterMark } from "../Easter";
 
 type Row = {
   rank: number;
@@ -267,8 +267,11 @@ function ListRow({ r, size, view, tappe }: { r: Row; size: "md" | "sm" } & Layou
             md ? `rg-display sm:text-[20px] ${view === "base" ? "text-[19px]" : "text-[17px]"}` : "text-[16px] font-semibold"
           }`}
         >
-          <Easter playerId={r.id}>{r.name}</Easter>
+          <Easter playerId={r.id} soft>
+            {r.name}
+          </Easter>
         </span>
+        <EasterMark playerId={r.id} />
         {r.verdict && (
           <span className="ml-2 flex">
             <VerdictBadge verdict={r.verdict} />
@@ -410,7 +413,12 @@ export function Standings({
               <span className="min-w-0 pb-0.5">
                 <span className="rg-eyebrow block">in testa</span>
                 <span className="relative mt-3 inline-block">
-                  <span className="rg-display block text-[26px] leading-[1.05] sm:text-[32px] lg:text-[46px]"><Easter playerId={first.id}>{first.name}</Easter></span>
+                  <span className="rg-display block text-[26px] leading-[1.05] sm:text-[32px] lg:text-[46px]">
+                    <Easter playerId={first.id} soft>
+                      {first.name}
+                    </Easter>
+                    <EasterMark playerId={first.id} />
+                  </span>
                   <MarkerUnderline always width={3} className="-left-1 top-full mt-0.5 h-[9px] w-[calc(100%+8px)]" />
                 </span>
                 <span className="rg-muted mt-3.5 block text-[14px] tnum">{first.played} tappe</span>

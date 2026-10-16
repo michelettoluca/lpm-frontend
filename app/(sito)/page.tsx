@@ -4,7 +4,7 @@ import { COUNTED_EVENTS, dateTile, getHomeData } from "@/app/lib/site";
 import { Emblem } from "@/app/lib/emblem";
 import { Calendar, Cup, Drift } from "./Drift";
 import { ArrowLink, ColHeads, MarkerCircle, MarkerUnderline, PixelStar, Section, plural, sameRomeDay, weekday } from "./ui";
-import { Easter } from "./Easter";
+import { Easter, EasterMark } from "./Easter";
 
 function Stat({ label, value, sub }: { label: string; value: ReactNode; sub?: ReactNode }) {
   return (
@@ -122,7 +122,12 @@ export default async function Home() {
             <span className="min-w-0 pb-0.5">
               <span className="rg-eyebrow block">primo, per ora</span>
               <span className="relative mt-3 inline-block">
-                <span className="rg-display block text-[26px] leading-[1.05] sm:text-[32px] lg:text-[48px]"><Easter playerId={first.player_id}>{first.display_name}</Easter></span>
+                <span className="rg-display block text-[26px] leading-[1.05] sm:text-[32px] lg:text-[48px]">
+                  <Easter playerId={first.player_id} soft>
+                    {first.display_name}
+                  </Easter>
+                  <EasterMark playerId={first.player_id} />
+                </span>
                 <MarkerUnderline always width={3} className="-left-1 top-full mt-0.5 h-[9px] w-[calc(100%+8px)]" />
               </span>
               <span className="rg-muted mt-3.5 block text-[14px] tnum">{plural(first.events_played, "tappa", "tappe")}</span>
@@ -142,7 +147,14 @@ export default async function Home() {
               <li key={e.player_id} className={i ? "rg-hr" : ""}>
                 <Link href={`/giocatori/${e.player_id}`} className={`rg-row -mx-2 grid min-h-13 items-center px-2 ${ROWS}`}>
                   <span className="rg-muted tnum text-[16px] font-semibold">{i + 2}</span>
-                  <span className="rg-display truncate text-[19px]"><Easter playerId={e.player_id}>{e.display_name}</Easter></span>
+                  <span className="flex min-w-0 items-center">
+                    <span className="rg-display truncate text-[19px]">
+                      <Easter playerId={e.player_id} soft>
+                        {e.display_name}
+                      </Easter>
+                    </span>
+                    <EasterMark playerId={e.player_id} />
+                  </span>
                   <span className="rg-muted tnum text-right text-[15px]">{e.events_played}</span>
                   <span className="rg-display rg-strong tnum text-right text-[19px]">{e.total_points}</span>
                 </Link>

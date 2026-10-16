@@ -46,7 +46,7 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
         </Link>
         {p.season && <p className="rg-eyebrow mt-4">stagione {p.season.name.toLowerCase()}</p>}
         <h1 className="rg-display rg-tight mt-2 text-[48px] leading-[0.95] break-words sm:text-[72px] lg:text-[104px]">
-          <Easter playerId={id} greet>
+          <Easter playerId={id}>
             {p.first}
             {p.last && (
               <>

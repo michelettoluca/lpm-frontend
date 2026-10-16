@@ -1,7 +1,7 @@
 /**
- * The site's easter eggs: a few players whose name does something when you
- * point at it. For now set here, by player id; later from the back office,
- * for the super admins only.
+ * The site's easter eggs: a few players whose name does something on their
+ * own page. For now set here, by player id; later from the back office, for
+ * the super admins only.
  */
 export type Effect = "fulmini" | "nebbia" | "pesca";
 
