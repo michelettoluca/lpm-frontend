@@ -1590,9 +1590,10 @@ body:has(.lpm)::before {
 }
 
 /* The easter eggs' infection (Easter.tsx): canvases in the card (or the
-   row), behind its text, clipped by it, round corners and all: the rot's
-   stains and roots, the glow, breathing, and the growths over it. In a
-   row it fades in and out with the pointer. */
+   row), clipped by it, round corners and all. Behind its text, over the
+   whole of it, seen through: the rot's stains, the glow, breathing, and the
+   roots and growths. Over the text, just round the name: what grows on its
+   letters. In a row it fades in and out with the pointer. */
 .lpm .rg-mold-host {
   position: relative;
   isolation: isolate;
@@ -1607,8 +1608,15 @@ body:has(.lpm)::before {
   transition: opacity 0.3s ease;
 }
 .lpm .rg-mold.rg-mold-on {
-  opacity: 1;
+  opacity: 0.85;
   transition-duration: 0.1s;
+}
+.lpm .rg-mold-front {
+  inset: auto;
+  z-index: 1;
+}
+.lpm .rg-mold-front.rg-mold-on {
+  opacity: 0.95;
 }
 .lpm .rg-mold canvas {
   position: absolute;

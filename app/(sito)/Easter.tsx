@@ -892,11 +892,17 @@ type Growth = {
 type Vein = { x1: number; y1: number; x2: number; y2: number; w: number; at: number };
 /** A stain of rot soaking into the card, spreading out from where it's dropped. */
 type Stain = { x: number; y: number; r: number; at: number; grow: number; a: number };
+/** A glow along a root, stamped where it passes. */
+type Shine = { x: number; y: number; r: number; at: number };
 /** All of an infection, and when it's done. */
-type Rot = { growths: Growth[]; veins: Vein[]; stains: Stain[]; end: number };
+type Rot = { growths: Growth[]; veins: Vein[]; stains: Stain[]; shines: Shine[]; end: number };
 
-/** A soft round glow in each step of green, and the rot's stain, drawn once to stamp. */
-function sprites(): { halo: HTMLCanvasElement[]; stain: HTMLCanvasElement } {
+/**
+ * A soft round glow in each step of green, and the rot's stain, drawn once
+ * to stamp: on light paper a sick olive going brown at its heart, on dark a
+ * sick green, as if the card were wearing through to something glowing.
+ */
+function sprites(dark: boolean): { halo: HTMLCanvasElement[]; stain: HTMLCanvasElement } {
   const draw = (stops: [number, string][]) => {
     const el = document.createElement("canvas");
     el.width = el.height = 64;
@@ -917,71 +923,127 @@ function sprites(): { halo: HTMLCanvasElement[]; stain: HTMLCanvasElement } {
         [1, `hsl(${hue} 90% 50% / 0)`],
       ]);
     }),
-    // A sick olive going brown at its heart, soaking out to nothing.
-    stain: draw([
-      [0, "rgb(58 62 16 / 1)"],
-      [0.45, "rgb(74 92 22 / 0.6)"],
-      [1, "rgb(74 92 22 / 0)"],
-    ]),
+    stain: draw(
+      dark
+        ? [
+            [0, "rgb(120 165 45 / 1)"],
+            [0.45, "rgb(100 145 35 / 0.55)"],
+            [1, "rgb(100 145 35 / 0)"],
+          ]
+        : [
+            [0, "rgb(58 62 16 / 1)"],
+            [0.45, "rgb(74 92 22 / 0.6)"],
+            [1, "rgb(74 92 22 / 0)"],
+          ],
+    ),
   };
 }
 
-/** A slow wobble along the edge, -1 to 1, its shape set by three phases. */
-const wobble = (u: number, ph: number[]) =>
-  (Math.sin(u / 97 + ph[0]) + 0.6 * Math.sin(u / 41 + ph[1]) + 0.8 * Math.sin(u / 211 + ph[2])) / 2.4;
+/** A box in the card, in px from its top left. */
+type Box = { left: number; top: number; right: number; bottom: number };
+type Point = { x: number; y: number };
 
 /**
- * An infection of a box w by h, and when each part of it comes: it starts
- * in corner `from` (0 the top left, then clockwise) and eats its way along
- * the edge both ways, reaching the far corner after `time` ms, its front
- * ragged; a thick crust of lumps and husks along the edge, fuzzy, its
- * thickness wandering, then smaller ones and stalks of pin mould, then spore
- * dust further in, each a while after the edge beside it, as if creeping in. Stains of rot soak into the card from
- * the edge, and roots grow in out of it, slowly, branching, wandering,
- * thinning out, staining it where they pass.
+ * Where the name's letters are, in the card `at`: the box of each of its
+ * lines, and points picked on the strokes of its letters, found by setting
+ * its words again off screen in its own type, as wide as they show, and
+ * looking where the ink is.
  */
-function infect(w: number, h: number, from: number, time: number, small: boolean): Rot {
-  const P = 2 * (w + h);
-  const start = [0, w, w + h, 2 * w + h][from];
-  const ph = Array.from({ length: 9 }, () => between(0, 2 * Math.PI));
+function letters(name: HTMLElement, at: DOMRect): { lines: Box[]; ink: Point[] } {
+  const lines: Box[] = [];
+  const ink: Point[] = [];
+  const style = getComputedStyle(name);
+  const font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+  const walk = document.createTreeWalker(name, NodeFilter.SHOW_TEXT);
+  const range = document.createRange();
+  for (let node = walk.nextNode(); node; node = walk.nextNode()) {
+    const text = node.textContent?.trim();
+    if (!text) continue;
+    range.selectNodeContents(node);
+    const rects = [...range.getClientRects()].filter((r) => r.width > 0);
+    for (const r of rects) lines.push({ left: r.left - at.left, top: r.top - at.top, right: r.right - at.left, bottom: r.bottom - at.top });
+    const r = rects[0];
+    const off = document.createElement("canvas");
+    off.width = Math.ceil(r?.width ?? 0);
+    off.height = Math.ceil(r?.height ?? 0);
+    const ctx = off.getContext("2d", { willReadFrequently: true });
+    // A word broken over lines: anywhere in its boxes will do.
+    if (rects.length !== 1 || !ctx || !off.width || !off.height) {
+      for (const b of rects) for (let k = 0; k < 30; k++) ink.push({ x: between(b.left, b.right) - at.left, y: between(b.top, b.bottom) - at.top });
+      continue;
+    }
+    ctx.font = font;
+    const m = ctx.measureText(text);
+    const up = m.fontBoundingBoxAscent;
+    const down = m.fontBoundingBoxDescent;
+    ctx.setTransform(r.width / Math.max(1, m.width), 0, 0, 1, 0, 0);
+    ctx.fillText(text, 0, (r.height - up - down) / 2 + up);
+    const data = ctx.getImageData(0, 0, off.width, off.height).data;
+    for (let k = 0, found = 0; k < 4000 && found < 200; k++) {
+      const x = Math.floor(Math.random() * off.width);
+      const y = Math.floor(Math.random() * off.height);
+      if (data[(y * off.width + x) * 4 + 3] > 128) {
+        ink.push({ x: r.left - at.left + x, y: r.top - at.top + y });
+        found++;
+      }
+    }
+  }
+  return { lines, ink };
+}
+
+/** Where what grows over the name is drawn: round its lines, a little out from them, in the card. */
+function frontBox(lines: Box[], w: number, h: number, size: number): Box {
+  const m = 60 * size + 10;
+  const left = Math.max(0, Math.min(w, ...lines.map((x) => x.left)) - m);
+  const top = Math.max(0, Math.min(h, ...lines.map((x) => x.top)) - m);
+  return {
+    left,
+    top,
+    right: Math.max(left, Math.min(w, Math.max(0, ...lines.map((x) => x.right)) + m)),
+    bottom: Math.max(top, Math.min(h, Math.max(0, ...lines.map((x) => x.bottom)) + m)),
+  };
+}
+
+/**
+ * An infection of a card w by h out of the name in it, its `lines` and the
+ * `ink` of its letters, and when each part of it comes: roots grow out from
+ * under the name towards the card's edges, slowly over `time` ms, branching,
+ * wandering, thinning out, glowing and staining the card where they pass, as
+ * if wearing it through; a few lumps and specks round the name, behind it;
+ * and, `front`, a few on its letters, over them, with roots running across
+ * them, coming along the name from its start. `size` is the name's type, in
+ * hundreds of px.
+ */
+function infect(w: number, h: number, lines: Box[], ink: Point[], time: number, small: boolean, size: number): { back: Rot; front: Rot } {
+  const ph = Array.from({ length: 6 }, () => between(0, 2 * Math.PI));
   // Smaller in a narrow card, as on a phone; much smaller round a row.
   const scale = small ? 0.38 : Math.min(1, Math.max(0.5, w / 900));
-  const speed = P / 2 / time;
-  const creep = small ? 0.04 : 0.016;
-  const growths: Growth[] = [];
-  const veins: Vein[] = [];
-  const stains: Stain[] = [];
-
-  const arrive = (u: number, depth: number) => {
-    const far = Math.min(Math.abs(u - start), P - Math.abs(u - start));
-    return (far / speed) * (1 + 0.3 * wobble(u, ph.slice(3))) + depth / creep + between(0, 300);
-  };
-  const thick = (u: number) => (small ? 7 : 30 * scale) * (0.5 + 0.5 * (wobble(u, ph) + 1));
-  const at = (u: number, depth: number, spread: number) => {
-    const p = round(u / P, w, h, 0);
-    const side = between(-spread, spread);
-    return { x: p.x - p.nx * depth - p.ny * side, y: p.y - p.ny * depth + p.nx * side, p };
+  const back: Rot = { growths: [], veins: [], stains: [], shines: [], end: 0 };
+  const front: Rot = { growths: [], veins: [], stains: [], shines: [], end: 0 };
+  if (!ink.length) return { back, front };
+  const left = Math.min(...lines.map((l) => l.left));
+  const right = Math.max(...lines.map((l) => l.right));
+  const pick = () => ink[Math.floor(Math.random() * ink.length)];
+  // How far along the name, 0 at its start.
+  const along = (p: Point) => (p.x - left) / Math.max(1, right - left);
+  const span = MOLD_HUES[1] - MOLD_HUES[0];
+  const hueAt = (x: number, y: number) => {
+    const wave = (Math.sin(x / 83 + ph[0]) + Math.sin(y / 61 + ph[1]) + Math.sin((x + y) / 127 + ph[2])) / 3;
+    return Math.max(MOLD_HUES[0], Math.min(MOLD_HUES[1], MOLD_HUES[0] + span * ((wave + 1) / 2) + between(-12, 12)));
   };
 
-  const greens = (u: number) => {
-    const span = MOLD_HUES[1] - MOLD_HUES[0];
-    return Math.max(MOLD_HUES[0], Math.min(MOLD_HUES[1], MOLD_HUES[0] + span * ((wobble(u * 0.5, ph.slice(6)) + 1) / 2) + between(-12, 12)));
-  };
-  const add = (u: number, depth: number, r: number, kind: Growth["kind"], spread = 3) => {
-    const { x, y, p } = at(u, depth, spread);
-    const hue = greens(u);
-    // Which way is in, there.
-    const inward = Math.atan2(-p.ny, -p.nx);
+  const make = (kind: Growth["kind"], x: number, y: number, r: number, at: number, k: number): Growth => {
+    const hue = hueAt(x, y);
     const g: Growth = {
       kind,
       x,
       y,
       r,
-      at: arrive(u, depth),
+      at,
       grow: between(500, 900),
-      ring: kind === "fuzz" ? `hsl(${hue} 30% 70% / 0.75)` : `hsl(${hue} 78% ${kind === "dust" ? 58 : 44}%)`,
+      ring: `hsl(${hue} 78% ${kind === "dust" ? 58 : 44}%)`,
       core: `hsl(${hue + 8} 90% 64%)`,
-      halo: kind === "fuzz" ? -1 : haloOf(hue),
+      halo: haloOf(hue),
       turn: between(0, 2 * Math.PI),
       shape: [],
       pores: [],
@@ -990,101 +1052,95 @@ function infect(w: number, h: number, from: number, time: number, small: boolean
       // Knobbly: a radius for each point round it, each softened by its neighbours'.
       const raw = Array.from({ length: 7 + Math.floor(Math.random() * 5) }, () => between(0.5, 1.5));
       g.shape = raw.map((v, i) => (2 * v + raw[(i + 1) % raw.length] + raw[(i + raw.length - 1) % raw.length]) / 4);
-      if (kind === "lump") for (let k = Math.floor(Math.random() * 4); k > 0; k--) g.pores.push(between(-0.45, 0.45), between(-0.45, 0.45), between(0.1, 0.24));
-    } else if (kind === "stalk") {
-      const a = inward + between(-0.7, 0.7);
-      const len = (small ? between(3, 8) : between(8, 26)) * scale;
-      const bend = between(-0.35, 0.35) * len;
-      g.shape = [Math.cos(a) * len, Math.sin(a) * len, Math.cos(a) * len * 0.5 - Math.sin(a) * bend, Math.sin(a) * len * 0.5 + Math.cos(a) * bend];
-      g.at += between(300, 900);
-      g.grow = between(900, 1500);
+      if (kind === "lump") for (let n = Math.floor(Math.random() * 4); n > 0; n--) g.pores.push(between(-0.45, 0.45), between(-0.45, 0.45), between(0.1, 0.24));
     } else if (kind === "dust") {
-      for (let k = 3 + Math.floor(Math.random() * 5); k > 0; k--) g.shape.push(between(-1, 1) * r, between(-1, 1) * r, between(0.5, 1.4) * Math.max(0.6, scale));
-    } else {
-      for (let k = 4 + Math.floor(Math.random() * 5); k > 0; k--) g.shape.push(inward + between(-1.5, 1.5), between(2, 7) * scale);
+      for (let n = 3 + Math.floor(Math.random() * 5); n > 0; n--) g.shape.push(between(-1, 1) * r, between(-1, 1) * r, between(0.5, 1.4) * Math.max(0.6, k));
     }
-    growths.push(g);
+    return g;
   };
-  for (let u = 0; u < P; u += between(4, 8) * scale) {
-    const t = thick(u);
-    const depth = Math.random() ** 1.5 * t;
-    add(u, depth, between(3, 10) * scale * (1 - (depth / t) * 0.5), Math.random() < 0.8 ? "lump" : "husk");
-  }
-  for (let u = 0; u < P; u += between(10, 18) * scale) {
-    const t = thick(u);
-    add(u, t * 0.6 + Math.random() ** 1.4 * t * 1.6, between(1.5, 5) * scale, Math.random() < 0.7 ? "lump" : "husk", 6);
-  }
-  // The fuzz on the crust.
-  for (let u = 0; u < P; u += between(3, 7) * scale) add(u, between(0, thick(u)), 0, "fuzz", 2);
-  // Pin mould at the crust's inner edge, bending in.
-  for (let u = 0; u < P; u += between(9, 22) * scale) {
-    add(u, thick(u) * between(0.4, 1.1), Math.max(0.8, between(1.2, 3) * scale), "stalk", 4);
-  }
-  for (let u = 0; u < P; u += between(12, 22) * scale) {
-    const t = thick(u);
-    // Round a row, not so far in: it's low.
-    add(u, t + Math.random() ** 2 * t * (small ? 1.4 : 3), between(2, 6) * scale, "dust", 8);
-  }
-  // The corners' rounding, filled in from the corner itself.
-  for (const u of [0, w, w + h, 2 * w + h]) {
-    for (let k = 0; k < 24; k++) {
-      const a = Math.random() ** 0.8 * (small ? 10 : 46 * scale);
-      add(u + between(-1, 1) * a, a * between(0.5, 1), between(2.5, 9) * scale, Math.random() < 0.8 ? "lump" : "husk", 2);
-    }
-  }
 
-  // The rot soaking in along the edge, under the crust.
-  for (let u = 0; u < P; u += between(40, 80) * scale) {
-    const depth = between(0, thick(u) * 1.5);
-    const { x, y } = at(u, depth, 10);
-    stains.push({ x, y, r: (small ? between(10, 24) : between(40, 110)) * scale ** 0.5, at: arrive(u, depth), grow: 2500, a: between(0.14, 0.28) });
-  }
-
-  // The roots, out of the edge where it's taken, growing in.
-  const reach = small ? h * 0.8 : Math.min(w, h) * 0.7;
-  const step = small ? 2.5 : 5;
-  const pace = small ? 0.06 : 0.011;
-  const root = (x: number, y: number, heading: number, len: number, width: number, when: number, depth: number) => {
+  // A root: a run of short stretches, wandering but on the whole the way it
+  // set out, thinning to its end, branching now and then; its stretches
+  // come `pace` px a ms. Behind, it glows and stains the card as it goes.
+  const card: Box = { left: 0, top: 0, right: w, bottom: h };
+  const root = (into: Rot, x: number, y: number, heading: number, len: number, width: number, when: number, pace: number, depth: number, within = card) => {
+    const step = small ? 2.5 : 5;
     let a = heading;
     for (let d = 0; d < len; d += step) {
-      // Wandering, but on the whole the way it set out.
       a += between(-0.35, 0.35) + (heading - a) * 0.08;
       const x2 = x + Math.cos(a) * step;
       const y2 = y + Math.sin(a) * step;
-      if (x2 < 0 || y2 < 0 || x2 > w || y2 > h) return;
-      veins.push({ x1: x, y1: y, x2, y2, w: Math.max(0.5, width * (1 - (d / len) * 0.85)), at: when });
-      if (Math.random() < 0.025) stains.push({ x: x2, y: y2, r: between(14, 40) * scale, at: when, grow: 2000, a: between(0.1, 0.2) });
-      if (depth < 2 && Math.random() < 0.07) {
-        root(x2, y2, a + (Math.random() < 0.5 ? -1 : 1) * between(0.5, 1.1), (len - d) * between(0.4, 0.7), width * 0.7, when, depth + 1);
+      if (x2 < within.left || y2 < within.top || x2 > within.right || y2 > within.bottom) return;
+      const thick = Math.max(0.5, width * (1 - (d / len) * 0.85));
+      into.veins.push({ x1: x, y1: y, x2, y2, w: thick, at: when });
+      if (into === back) {
+        if (Math.random() < 0.15) into.shines.push({ x: x2, y: y2, r: thick * between(3, 5), at: when });
+        if (Math.random() < 0.035) into.stains.push({ x: x2, y: y2, r: between(16, 50) * scale, at: when, grow: 2500, a: between(0.08, 0.18) });
+      }
+      if (depth < 2 && Math.random() < 0.05) {
+        root(into, x2, y2, a + (Math.random() < 0.5 ? -1 : 1) * between(0.5, 1.1), (len - d) * between(0.4, 0.7), thick * 0.7, when, pace, depth + 1, within);
       }
       x = x2;
       y = y2;
       when += step / pace;
     }
   };
-  for (let u = between(0, 40); u < P; u += between(22, 55) * scale) {
-    const { x, y, p } = at(u, between(0, thick(u) * 0.5), 0);
-    const len = (small ? between(0.3, 1) : 0.25 + Math.random() ** 1.6 * 0.75) * reach;
-    root(x, y, Math.atan2(-p.ny, -p.nx) + between(-0.6, 0.6), len, between(2, 4.5) * scale * (small ? 1.2 : 1), arrive(u, 0) + between(200, 1200), 0);
+
+  // Out from under the name to the edges, the first ones from its start:
+  // each makes for somewhere on the card's edge, so in the end they reach
+  // all of it, the far side too.
+  const pace = Math.hypot(w, h) / (time * 1.1);
+  for (let n = small ? 5 : 14; n > 0; n--) {
+    const p = pick();
+    const to = round(Math.random(), w, h, 0);
+    const far = Math.hypot(to.x - p.x, to.y - p.y);
+    const when = along(p) * (small ? 200 : 1800) + between(200, small ? 400 : 1800);
+    back.stains.push({ x: p.x, y: p.y, r: (small ? between(10, 22) : between(40, 100)) * scale, at: when, grow: 4000, a: between(0.08, 0.16) });
+    root(back, p.x, p.y, Math.atan2(to.y - p.y, to.x - p.x), far * between(0.6, 1.05), between(1.2, 2.8) * scale, when, pace, 0);
+  }
+  // A few lumps and specks round the name, over and under its lines.
+  for (let n = small ? 3 : 14; n > 0; n--) {
+    const p = pick();
+    const a = between(0, 2 * Math.PI);
+    const off = between(4, 36) * size;
+    const roll = Math.random();
+    const kind = roll < 0.5 ? "lump" : roll < 0.7 ? "husk" : "dust";
+    back.growths.push(make(kind, p.x + Math.cos(a) * off, p.y + Math.sin(a) * off, between(2, 6) * size, along(p) * 2500 + between(300, 2500), size));
+  }
+  // A few on its letters, and fine roots crawling over them.
+  for (let n = small ? 3 : 12; n > 0; n--) {
+    const p = pick();
+    const kind = Math.random() < 0.65 ? "lump" : "dust";
+    front.growths.push(make(kind, p.x, p.y, between(1.5, 4.5) * size, along(p) * (small ? 300 : 2600) + between(0, small ? 200 : 900), size));
+  }
+  // Roots across the letters, mostly along the name, kept to where the front is drawn.
+  const over = frontBox(lines, w, h, size);
+  for (let n = small ? 2 : 8; n > 0; n--) {
+    const p = pick();
+    const heading = (Math.random() < 0.5 ? 0 : Math.PI) + between(-0.7, 0.7);
+    root(front, p.x, p.y, heading, between(40, 160) * size, between(1, 2.4) * size, along(p) * 2600 + between(300, 2500), small ? 0.08 : 0.025, 1, over);
   }
 
-  let end = 0;
-  for (const g of growths) end = Math.max(end, g.at + g.grow);
-  for (const v of veins) end = Math.max(end, v.at);
-  for (const t of stains) end = Math.max(end, t.at + t.grow);
-  return { growths, veins, stains, end };
+  for (const rot of [back, front]) {
+    for (const g of rot.growths) rot.end = Math.max(rot.end, g.at + g.grow);
+    for (const v of rot.veins) rot.end = Math.max(rot.end, v.at);
+    for (const t of rot.stains) rot.end = Math.max(rot.end, t.at + t.grow);
+  }
+  return { back, front };
 }
 
 /**
- * Where the infection is drawn: the stains, the roots, the glow, what's
- * done growing, and what's growing. Only the stains and what's growing are
- * drawn afresh each frame; the rest only ever gets more of it.
+ * Where an infection is drawn: the stains and the glow (behind the name
+ * only), what's done, the roots with it, the green down the roots, over
+ * them so the next stretch of a root never covers it, and what's growing. Only the
+ * stains and what's growing are drawn afresh each frame; the rest only
+ * ever gets more of it.
  */
 type MoldCanvases = {
-  stain: CanvasRenderingContext2D;
-  veins: CanvasRenderingContext2D;
-  glow: CanvasRenderingContext2D;
+  stain?: CanvasRenderingContext2D;
+  glow?: CanvasRenderingContext2D;
   done: CanvasRenderingContext2D;
+  cores: CanvasRenderingContext2D;
   growing: CanvasRenderingContext2D;
 };
 
@@ -1181,47 +1237,61 @@ function drawGrowth(ctx: CanvasRenderingContext2D, g: Growth, e: number) {
   ctx.stroke();
 }
 
+/** The roots' colours: a dark root with a sick green down the thick of it; on dark paper, moss with a brighter green. */
+const ROOT = { light: [MOLD_BODY, "hsl(92 70% 42%)"], dark: ["hsl(84 30% 24%)", "hsl(95 85% 52%)"] };
+
 /**
  * The infection at `now` ms, from where it was painted at `then` (from
- * scratch when null): each stain soaked in so far; the roots grown since,
- * added; each growth that has started since, its glow stamped; each done
- * since, drawn for good; and each still growing, as far as it has.
+ * scratch when null): each stain soaked in so far; the roots grown since
+ * and their glow, added; each growth that has started since, its glow
+ * stamped; each done since, drawn for good; and each still growing, as far
+ * as it has.
  */
-function paintMold(c: MoldCanvases, rot: Rot, then: number | null, now: number, art: ReturnType<typeof sprites>) {
-  clear(c.stain);
-  for (const s of rot.stains) {
-    const k = Math.min(1, (now - s.at) / s.grow);
-    if (k <= 0) continue;
-    const r = s.r * (1 - (1 - k) ** 2);
-    c.stain.globalAlpha = s.a * k;
-    c.stain.drawImage(art.stain, s.x - r, s.y - r, 2 * r, 2 * r);
+function paintMold(c: MoldCanvases, rot: Rot, then: number | null, now: number, art: ReturnType<typeof sprites>, dark: boolean) {
+  const fresh = (at: number) => at <= now && (then === null || at > then);
+  if (c.stain) {
+    clear(c.stain);
+    for (const s of rot.stains) {
+      const k = Math.min(1, (now - s.at) / s.grow);
+      if (k <= 0) continue;
+      const r = s.r * (1 - (1 - k) ** 2);
+      c.stain.globalAlpha = s.a * k * (dark ? 0.8 : 1);
+      c.stain.drawImage(art.stain, s.x - r, s.y - r, 2 * r, 2 * r);
+    }
+    c.stain.globalAlpha = 1;
   }
-  c.stain.globalAlpha = 1;
-
-  if (then === null) for (const ctx of [c.veins, c.glow, c.done]) clear(ctx);
-  const v = c.veins;
-  v.lineCap = "round";
+  if (then === null) for (const ctx of [c.glow, c.done, c.cores]) if (ctx) clear(ctx);
+  if (c.glow) {
+    // Along the roots, a glow, stronger on dark paper.
+    c.glow.globalAlpha = dark ? 0.22 : 0.08;
+    for (const g of rot.shines) if (fresh(g.at)) c.glow.drawImage(art.halo[HALO_STEPS >> 1], g.x - g.r, g.y - g.r, 2 * g.r, 2 * g.r);
+    c.glow.globalAlpha = 1;
+  }
+  const [body, core] = ROOT[dark ? "dark" : "light"];
+  c.done.lineCap = c.cores.lineCap = "round";
+  c.done.strokeStyle = body;
+  c.cores.strokeStyle = core;
   for (const seg of rot.veins) {
-    if (seg.at > now || (then !== null && seg.at <= then)) continue;
-    // A dark root of rot, a sick green running down the thick of it.
-    v.beginPath();
-    v.moveTo(seg.x1, seg.y1);
-    v.lineTo(seg.x2, seg.y2);
-    v.strokeStyle = MOLD_BODY;
-    v.lineWidth = seg.w;
-    v.stroke();
+    if (!fresh(seg.at)) continue;
+    c.done.beginPath();
+    c.done.moveTo(seg.x1, seg.y1);
+    c.done.lineTo(seg.x2, seg.y2);
+    c.done.lineWidth = seg.w;
+    c.done.stroke();
     if (seg.w > 1.3) {
-      v.strokeStyle = "hsl(92 70% 42%)";
-      v.lineWidth = seg.w * 0.32;
-      v.stroke();
+      c.cores.beginPath();
+      c.cores.moveTo(seg.x1, seg.y1);
+      c.cores.lineTo(seg.x2, seg.y2);
+      c.cores.lineWidth = seg.w * 0.32;
+      c.cores.stroke();
     }
   }
 
   clear(c.growing);
-  c.done.lineCap = c.growing.lineCap = "round";
+  c.growing.lineCap = "round";
   for (const g of rot.growths) {
     if (g.at > now) continue;
-    if (g.halo >= 0 && (then === null || g.at > then)) {
+    if (c.glow && fresh(g.at)) {
       const o = glowOf(g);
       c.glow.drawImage(art.halo[g.halo], o.x - o.r, o.y - o.r, 2 * o.r, 2 * o.r);
     }
@@ -1237,15 +1307,22 @@ function paintMold(c: MoldCanvases, rot: Rot, then: number | null, now: number, 
   }
 }
 
+/** Whether the card is dark: its paper, from the colour it's painted. */
+function darkPaper(el: HTMLElement): boolean {
+  const [r, g, b] = (getComputedStyle(el).backgroundColor.match(/[\d.]+/g) ?? ["255", "255", "255"]).map(Number);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 110;
+}
+
 /**
- * Demetrio Morselli's infection: out of a corner of his first card, a
- * different one each time, a glowing crust eats its way along its edge both
- * ways, knobbly, fuzzy, sprouting pin mould and puffing spores, and from the
- * edge the rot soaks in and roots grow in, slowly, branching, ruining the
- * card, until they've taken the whole of it; then it stays, glowing. From when the card is on screen, its clock
- * stopped while it isn't. Behind its text, clipped by it. `soft`, in the
- * standings, quick and small round his row while it's pointed at. For
- * reduced motion, the card already taken, still; nothing in the row.
+ * Demetrio Morselli's infection, out of his name: a few lumps and fine
+ * roots on its letters, coming along it from its start, and from under it
+ * roots growing out across his first card to its edges, slowly, branching,
+ * glowing and staining the card as if wearing it through, a few lumps and
+ * specks round the name; then it stays, glowing. From when the card is on
+ * screen, its clock stopped while it isn't. What's behind the name is
+ * behind its text, clipped by the card. `soft`, in the standings, quick and
+ * small out of his name in his row while it's pointed at. For reduced
+ * motion, the card already taken, still; nothing in the row.
  */
 function Mold({ soft, children }: { soft: boolean; children: ReactNode }) {
   const el = useRef<HTMLSpanElement>(null);
@@ -1255,58 +1332,78 @@ function Mold({ soft, children }: { soft: boolean; children: ReactNode }) {
     const host = soft ? name?.closest<HTMLElement>(".rg-row") : name?.closest<HTMLElement>(".rg-panel");
     const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (!name || !host || (still && soft)) return;
-    const layer = document.createElement("div");
-    layer.className = "rg-mold";
-    layer.setAttribute("aria-hidden", "true");
-    // The soft ones, the stains and the glow, need no more than a pixel each.
-    const sheets = (["stain", "veins", "glow", "done", "growing"] as const).map((key) => {
+    const sheet = (layer: HTMLElement, key: string) => {
       const canvas = document.createElement("canvas");
       canvas.className = `rg-mold-${key}`;
       layer.append(canvas);
-      return { key, canvas, sharp: key !== "stain" && key !== "glow" };
-    });
+      return canvas;
+    };
+    // Behind the text, over the whole card; over the text, just round the name.
+    const back = document.createElement("div");
+    back.className = "rg-mold";
+    const front = document.createElement("div");
+    front.className = "rg-mold rg-mold-front";
+    for (const layer of [back, front]) layer.setAttribute("aria-hidden", "true");
+    const behind = { stain: sheet(back, "stain"), glow: sheet(back, "glow"), done: sheet(back, "done"), cores: sheet(back, "cores"), growing: sheet(back, "growing") };
+    const over = { done: sheet(front, "done"), cores: sheet(front, "cores"), growing: sheet(front, "growing") };
     host.classList.add("rg-mold-host");
-    host.append(layer);
-    const ctx = Object.fromEntries(sheets.map((s) => [s.key, s.canvas.getContext("2d")])) as Record<keyof MoldCanvases, CanvasRenderingContext2D | null>;
-    if (!ctx.stain || !ctx.veins || !ctx.glow || !ctx.done || !ctx.growing) return () => layer.remove();
-    const canvases = ctx as MoldCanvases;
-    const art = sprites();
+    host.append(back, front);
+    const cleanup = [() => back.remove(), () => front.remove()];
+    const ctx = (c: HTMLCanvasElement) => c.getContext("2d");
+    const b = { stain: ctx(behind.stain), glow: ctx(behind.glow), done: ctx(behind.done), cores: ctx(behind.cores), growing: ctx(behind.growing) };
+    const f = { done: ctx(over.done), cores: ctx(over.cores), growing: ctx(over.growing) };
+    if (!b.stain || !b.glow || !b.done || !b.cores || !b.growing || !f.done || !f.cores || !f.growing) return () => cleanup.forEach((c) => c());
+    const backC: MoldCanvases = { stain: b.stain, glow: b.glow, done: b.done, cores: b.cores, growing: b.growing };
+    const frontC: MoldCanvases = { done: f.done, cores: f.cores, growing: f.growing };
 
-    const time = soft ? 900 : 9000;
-    let from = Math.floor(Math.random() * 4);
-    let rot: Rot = { growths: [], veins: [], stains: [], end: 0 };
+    const time = soft ? 1500 : 16000;
+    const none: Rot = { growths: [], veins: [], stains: [], shines: [], end: 0 };
+    let rot = { back: none, front: none };
+    let end = 0;
+    let dark = darkPaper(host);
+    let art = sprites(dark);
     // How far along it is, in ms, and when that clock started, while it runs.
     let elapsed = 0;
     let since: number | null = null;
     let painted: number | null = null;
     let frame = 0;
 
+    const size = (c: HTMLCanvasElement, w: number, h: number, d: number, ox = 0, oy = 0) => {
+      c.width = Math.round(w * d);
+      c.height = Math.round(h * d);
+      c.getContext("2d")?.setTransform(d, 0, 0, d, -ox * d, -oy * d);
+    };
     const fit = () => {
       const w = host.clientWidth;
       const h = host.clientHeight;
-      // Sharp enough, and easy on memory with three of them.
+      const { lines, ink } = letters(name, host.getBoundingClientRect());
+      const type = Math.min(1.1, Math.max(0.2, parseFloat(getComputedStyle(name).fontSize) / 100));
+      rot = infect(w, h, lines, ink, time, soft, type);
+      end = Math.max(rot.back.end, rot.front.end);
+      // Sharp enough, and easy on memory; the soft ones need no more than a pixel each.
       const dpr = Math.min(1.5, window.devicePixelRatio || 1);
-      for (const s of sheets) {
-        const d = s.sharp ? dpr : 1;
-        s.canvas.width = Math.round(w * d);
-        s.canvas.height = Math.round(h * d);
-        s.canvas.getContext("2d")?.setTransform(d, 0, 0, d, 0, 0);
-      }
-      rot = infect(w, h, from, time, soft);
+      size(behind.stain, w, h, 1);
+      size(behind.glow, w, h, 1);
+      for (const c of [behind.done, behind.cores, behind.growing]) size(c, w, h, dpr);
+      // The front just over the name, and a little round it.
+      const o = frontBox(lines, w, h, type);
+      Object.assign(front.style, { left: `${o.left}px`, top: `${o.top}px`, width: `${o.right - o.left}px`, height: `${o.bottom - o.top}px` });
+      for (const c of [over.done, over.cores, over.growing]) size(c, o.right - o.left, o.bottom - o.top, dpr, o.left, o.top);
       painted = null;
     };
     const now = () => (since === null ? elapsed : elapsed + performance.now() - since);
     const paint = (t: number) => {
-      paintMold(canvases, rot, painted, t, art);
+      paintMold(backC, rot.back, painted, t, art, dark);
+      paintMold(frontC, rot.front, painted, t, art, dark);
       painted = t;
     };
     const tick = () => {
       const t = now();
       paint(t);
-      frame = t < rot.end ? requestAnimationFrame(tick) : 0;
+      frame = t < end ? requestAnimationFrame(tick) : 0;
     };
     const start = () => {
-      if (since !== null || elapsed >= rot.end) return;
+      if (since !== null || elapsed >= end) return;
       since = performance.now();
       frame = requestAnimationFrame(tick);
     };
@@ -1316,60 +1413,62 @@ function Mold({ soft, children }: { soft: boolean; children: ReactNode }) {
       cancelAnimationFrame(frame);
       frame = 0;
     };
-    // A card that changes size is laid out again, as far along as it was.
-    const resized = new ResizeObserver(() => {
+    cleanup.push(stop);
+    // A card that changes size or theme is laid out again, as far along as it was.
+    const redo = () => {
+      dark = darkPaper(host);
+      art = sprites(dark);
       fit();
       paint(now());
-    });
-    resized.observe(host);
-
-    if (still) {
-      fit();
-      elapsed = rot.end;
-      paint(rot.end);
-      return () => {
-        resized.disconnect();
-        layer.remove();
-      };
-    }
-
-    if (soft) {
-      const enter = () => {
-        // A fresh one each time, from another corner.
-        stop();
-        from = Math.floor(Math.random() * 4);
-        elapsed = 0;
-        fit();
-        layer.classList.add("rg-mold-on");
-        start();
-      };
-      const leave = () => {
-        stop();
-        layer.classList.remove("rg-mold-on");
-      };
-      host.addEventListener("pointerenter", enter);
-      host.addEventListener("pointerleave", leave);
-      host.addEventListener("pointercancel", leave);
-      return () => {
-        host.removeEventListener("pointerenter", enter);
-        host.removeEventListener("pointerleave", leave);
-        host.removeEventListener("pointercancel", leave);
-        stop();
-        resized.disconnect();
-        layer.remove();
-      };
-    }
-    layer.classList.add("rg-mold-on");
-    const seen = new IntersectionObserver(([entry]) => (entry.isIntersecting ? start() : stop()));
-    // A moment after the page opens, so the card is there to take.
-    const t = window.setTimeout(() => seen.observe(host), 300);
-    return () => {
-      window.clearTimeout(t);
-      seen.disconnect();
-      stop();
-      resized.disconnect();
-      layer.remove();
     };
+    const resized = new ResizeObserver(redo);
+    const themed = new MutationObserver(redo);
+    const scheme = window.matchMedia("(prefers-color-scheme: dark)");
+    cleanup.push(() => resized.disconnect(), () => themed.disconnect(), () => scheme.removeEventListener("change", redo));
+
+    let gone = false;
+    cleanup.push(() => (gone = true));
+    // The letters are found in the name's own type: once it's there.
+    document.fonts.ready.then(() => {
+      if (gone) return;
+      resized.observe(host);
+      themed.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class", "style"] });
+      scheme.addEventListener("change", redo);
+      if (still) {
+        fit();
+        elapsed = end;
+        paint(end);
+        return;
+      }
+      if (soft) {
+        const enter = () => {
+          // A fresh one each time.
+          stop();
+          elapsed = 0;
+          fit();
+          for (const layer of [back, front]) layer.classList.add("rg-mold-on");
+          start();
+        };
+        const leave = () => {
+          stop();
+          for (const layer of [back, front]) layer.classList.remove("rg-mold-on");
+        };
+        host.addEventListener("pointerenter", enter);
+        host.addEventListener("pointerleave", leave);
+        host.addEventListener("pointercancel", leave);
+        cleanup.push(() => {
+          host.removeEventListener("pointerenter", enter);
+          host.removeEventListener("pointerleave", leave);
+          host.removeEventListener("pointercancel", leave);
+        });
+        return;
+      }
+      for (const layer of [back, front]) layer.classList.add("rg-mold-on");
+      const seen = new IntersectionObserver(([entry]) => (entry.isIntersecting ? start() : stop()));
+      seen.observe(host);
+      cleanup.push(() => seen.disconnect());
+    });
+    return () => cleanup.forEach((c) => c());
   }, [soft]);
 
   return <span ref={el}>{children}</span>;
