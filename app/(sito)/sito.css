@@ -2032,6 +2032,10 @@ body:has(.lpm)::before {
   height: 0;
   overflow: hidden;
 }
+/* A row in the standings, the folds' box. */
+.lpm .rg-tug-host {
+  position: relative;
+}
 .lpm .rg-tug-folds {
   position: absolute;
   inset: 0;

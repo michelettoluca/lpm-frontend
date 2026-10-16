@@ -1658,11 +1658,18 @@ const TUG_WAY = { x: 0.2, y: -0.98 };
 const BEYOND = 0.15;
 /** At its hardest, how far the cloth is pulled, as a share of the card's shorter side. */
 const PULL = 0.16;
+/**
+ * In the standings, a row: pulled gently, gathered in less, its top edge
+ * lifted and its foot left where it is, more the folds than the pull.
+ */
+const ROW = { beyond: 0.5, pull: 0.35, down: 1.6, gather: 0.25 };
+/** On his page, the card. */
+const CARD = { beyond: BEYOND, pull: PULL, down: 1, gather: 0.55 };
 
-/** Where one tug pinches, about the usual spot, and the phases that make its pull uneven. */
+/** Where one tug pinches, about `x` (the usual spot), and the phases that make its pull uneven. */
 type Pinch = { x: number; y: number; ph: number[] };
-const pinchHere = (): Pinch => ({
-  x: PINCH.x + between(-0.03, 0.03),
+const pinchHere = (x = PINCH.x): Pinch => ({
+  x: x + between(-0.03, 0.03),
   // Right on its edge, always.
   y: PINCH.y,
   ph: Array.from({ length: 3 }, () => between(0, 2 * Math.PI)),
@@ -1676,20 +1683,21 @@ const pinchHere = (): Pinch => ({
  * it's drawn out that way, past the card's edge. Red is across, green is
  * down, 128 is still.
  */
-function pinchMap(p: Pinch, size = 256): string {
+function pinchMap(p: Pinch, { beyond, down, gather: pullIn }: typeof CARD, size = 256): string {
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = size;
   const ctx = canvas.getContext("2d");
   if (!ctx) return "";
   const img = ctx.createImageData(size, size);
-  const span = 1 + 2 * BEYOND;
+  const span = 1 + 2 * beyond;
   for (let j = 0; j < size; j++) {
     for (let i = 0; i < size; i++) {
-      const x = -BEYOND + ((i + 0.5) / size) * span;
-      const y = -BEYOND + ((j + 0.5) / size) * span;
+      const x = -beyond + ((i + 0.5) / size) * span;
+      const y = -beyond + ((j + 0.5) / size) * span;
       // Across counted short: the pull runs the card's whole width.
       const dx = (x - p.x) * PINCH.across;
-      const dy = y - p.y;
+      // Down counted short too where it's pulled whole.
+      const dy = (y - p.y) / down;
       const r = Math.hypot(dx, dy) || 1e-6;
       const a = Math.atan2(dy, dx);
       // How far the pull reaches, more on some sides than others.
@@ -1708,8 +1716,8 @@ function pinchMap(p: Pinch, size = 256): string {
       // even a hair's shift would leave the letters there ragged.
       const k0 = Math.min(1, Math.max(0, (reach * 1.3 - r) / (reach * 0.6)));
       const still = k0 * k0 * (3 - 2 * k0);
-      const vx = still * Math.max(-1, Math.min(1, 0.55 * (dx / r) * gather - TUG_WAY.x * out));
-      const vy = still * Math.max(-1, Math.min(1, 0.55 * (dy / r) * gather - TUG_WAY.y * out));
+      const vx = still * Math.max(-1, Math.min(1, pullIn * (dx / r) * gather - TUG_WAY.x * out));
+      const vy = still * Math.max(-1, Math.min(1, pullIn * (dy / r) * gather - TUG_WAY.y * out));
       const k = (j * size + i) * 4;
       img.data[k] = Math.round(128 + 127 * vx);
       img.data[k + 1] = Math.round(128 + 127 * vy);
@@ -1750,16 +1758,19 @@ function tugAt(t: number): number | null {
  * up, sharply, a bit, then less, then more, and leaves it so, the card
  * stretched towards the pinch, unevenly, pulled out past its edge, folds
  * spreading from the pinch. The pinch is a little different each time.
+ * `soft`, in the standings, his row: yanked up once as it's pointed at,
+ * held, and let go slowly when the pointer leaves.
  * An SVG filter does it, a displacement map that pulls things towards the
- * pinch, on only once it's tugged. From when the card is on screen.
- * Nothing for reduced motion.
+ * pinch, on only once it's tugged. Nothing for reduced motion.
  */
-function Tug({ children }: { children: ReactNode }) {
+function Tug({ soft, children }: { soft: boolean; children: ReactNode }) {
   const el = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    const host = el.current?.closest<HTMLElement>(".rg-panel");
+    const host = el.current?.closest<HTMLElement>(soft ? ".rg-row" : ".rg-panel");
     if (!host || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const how = soft ? ROW : CARD;
+    const { beyond } = how;
     const id = `rg-tug-${Math.random().toString(36).slice(2, 8)}`;
     // The filter, in its own hidden svg on the page.
     const defs = document.createElementNS(SVG, "svg");
@@ -1778,6 +1789,8 @@ function Tug({ children }: { children: ReactNode }) {
     const folds = document.createElement("div");
     folds.className = "rg-tug-folds";
     folds.setAttribute("aria-hidden", "true");
+    // A row has no box of its own for them; the card does.
+    if (soft) host.classList.add("rg-tug-host");
     host.append(folds);
 
     let frame = 0;
@@ -1790,17 +1803,72 @@ function Tug({ children }: { children: ReactNode }) {
       w = host.offsetWidth;
       h = host.offsetHeight;
       for (const [el, ...xywh] of [
-        [filter, -BEYOND * w, -BEYOND * h, (1 + 2 * BEYOND) * w, (1 + 2 * BEYOND) * h],
-        [image, -BEYOND * w, -BEYOND * h, (1 + 2 * BEYOND) * w, (1 + 2 * BEYOND) * h],
+        [filter, -beyond * w, -beyond * h, (1 + 2 * beyond) * w, (1 + 2 * beyond) * h],
+        [image, -beyond * w, -beyond * h, (1 + 2 * beyond) * w, (1 + 2 * beyond) * h],
       ] as const) {
         ["x", "y", "width", "height"].forEach((a, i) => el?.setAttribute(a, xywh[i].toFixed(1)));
       }
     };
     // Pulled this hard: the filter's pull, and the folds as strong.
+    let pulled = 0;
     const pullTo = (pull: number) => {
-      displace?.setAttribute("scale", (pull * PULL * Math.min(w, h)).toFixed(2));
+      pulled = pull;
+      displace?.setAttribute("scale", (pull * how.pull * (soft ? h : Math.min(w, h))).toFixed(2));
       folds.style.opacity = String(Math.max(0, Math.min(1, pull * 1.4)));
     };
+    // Pinched afresh: about the usual spot, its pull uneven its own way.
+    const pinch = () => {
+      fit();
+      // In a row, over his name; on the card, the usual spot.
+      const name = el.current?.getBoundingClientRect();
+      const box = host.getBoundingClientRect();
+      const p = pinchHere(soft && name && box.width ? (name.left + name.width / 2 - box.left) / box.width : PINCH.x);
+      image?.setAttribute("href", pinchMap(p, how));
+      folds.style.setProperty("--x", `${p.x * 100}%`);
+      folds.style.setProperty("--y", `${p.y * 100}%`);
+      host.style.filter = `url(#${id})`;
+    };
+    const release = () => {
+      host.style.filter = "";
+      folds.style.opacity = "0";
+      pulled = 0;
+    };
+
+    if (soft) {
+      // From how hard it's pulled now to `to`, over `time` seconds, eased by `ease`; done, `then`.
+      const go = (to: number, time: number, ease: (k: number) => number, then?: () => void) => {
+        cancelAnimationFrame(frame);
+        const from = pulled;
+        const t0 = performance.now();
+        const step = (now: number) => {
+          const k = Math.min(1, (now - t0) / 1000 / time);
+          pullTo(from + (to - from) * ease(k));
+          if (k < 1) frame = requestAnimationFrame(step);
+          else {
+            frame = 0;
+            then?.();
+          }
+        };
+        frame = requestAnimationFrame(step);
+      };
+      const off = whilePointedAt(
+        host,
+        () => {
+          if (!pulled) pinch();
+          go(HELD, 0.34, (k) => 1 + 2.2 * (k - 1) ** 3 + 1.2 * (k - 1) ** 2);
+        },
+        () => go(0, 0.5, (k) => k * k * (3 - 2 * k), release),
+      );
+      return () => {
+        off();
+        cancelAnimationFrame(frame);
+        release();
+        host.classList.remove("rg-tug-host");
+        folds.remove();
+        defs.remove();
+      };
+    }
+
     // Once it's pulled up as far as it goes, it stays so.
     let held = false;
     const tick = (now: number) => {
@@ -1820,13 +1888,7 @@ function Tug({ children }: { children: ReactNode }) {
         timer = window.setTimeout(tug, 1000);
         return;
       }
-      fit();
-      // Its own pinch: about the usual spot, its pull uneven its own way.
-      const pinch = pinchHere();
-      image?.setAttribute("href", pinchMap(pinch));
-      folds.style.setProperty("--x", `${pinch.x * 100}%`);
-      folds.style.setProperty("--y", `${pinch.y * 100}%`);
-      host.style.filter = `url(#${id})`;
+      pinch();
       started = performance.now();
       frame = requestAnimationFrame(tick);
     };
@@ -1835,9 +1897,7 @@ function Tug({ children }: { children: ReactNode }) {
       cancelAnimationFrame(frame);
       window.clearTimeout(timer);
       frame = timer = 0;
-      if (held) return;
-      host.style.filter = "";
-      folds.style.opacity = "0";
+      if (!held) release();
     };
     const seen = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting && !frame && !timer && !held) timer = window.setTimeout(tug, 1200);
@@ -1859,7 +1919,7 @@ function Tug({ children }: { children: ReactNode }) {
       folds.remove();
       defs.remove();
     };
-  }, []);
+  }, [soft]);
 
   return <span ref={el}>{children}</span>;
 }
@@ -1880,7 +1940,7 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   if (!effect || effect === "napoletano" || ((effect === "pesca" || effect === "aragosta") && soft)) return <>{children}</>;
   if (effect === "pesca") return <Stickers emoji={PEACH} spots={PEACHES}>{children}</Stickers>;
   if (effect === "aragosta") return <Lobster>{children}</Lobster>;
-  if (effect === "maglietta") return soft ? <>{children}</> : <Tug>{children}</Tug>;
+  if (effect === "maglietta") return <Tug soft={soft}>{children}</Tug>;
   if (effect === "copione") return soft ? <CopioneRow>{children}</CopioneRow> : <Copione>{children}</Copione>;
   if (effect === "fulmini") return <Electric soft={soft}>{children}</Electric>;
   if (effect === "fumetto") return <Comic soft={soft}>{children}</Comic>;
