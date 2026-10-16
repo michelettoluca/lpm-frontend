@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
+import { Children, cloneElement, isValidElement, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { effectOf } from "@/app/lib/easter";
 import { COPIONE, type Battuta } from "./copione";
 
@@ -1924,6 +1924,209 @@ function Tug({ soft, children }: { soft: boolean; children: ReactNode }) {
   return <span ref={el}>{children}</span>;
 }
 
+/** Each string in `node`, in order, through the elements it's laid out in, made into what `make` makes of it. */
+function mapTexts(node: ReactNode, make: (text: string, n: number) => ReactNode): ReactNode {
+  let n = 0;
+  const walk = (x: ReactNode): ReactNode =>
+    Children.map(x, (c) =>
+      typeof c === "string"
+        ? make(c, n++)
+        : isValidElement<{ children?: ReactNode }>(c) && c.props.children !== undefined
+          ? cloneElement(c, undefined, walk(c.props.children))
+          : c,
+    );
+  return walk(node);
+}
+
+const LETTER = /[A-Za-zÀ-ÖØ-öø-ÿ]/;
+const LAST_WORD = /[A-Za-zÀ-ÖØ-öø-ÿ]\S*\s*$/;
+
+/** A puff of smoke and a burst of sparkles over `box`, the magic's flash. */
+function poof(box: HTMLElement) {
+  const w = box.offsetWidth;
+  const h = box.offsetHeight;
+  const size = Math.max(40, Math.min(w, h) * 0.75);
+  for (let i = 0; i < 11; i++) {
+    const cloud = document.createElement("span");
+    cloud.className = "rg-poof";
+    cloud.setAttribute("aria-hidden", "true");
+    const s = size * between(0.6, 1.1);
+    cloud.style.cssText = `width:${s}px;height:${s}px;left:${between(0.1, 0.9) * w - s / 2}px;top:${between(0.15, 0.85) * h - s / 2}px`;
+    box.append(cloud);
+    const dx = between(-0.25, 0.25) * s;
+    const dy = between(-0.35, -0.05) * s;
+    cloud
+      .animate(
+        [
+          { transform: "scale(0.2)", opacity: 0 },
+          { transform: "scale(1)", opacity: 0.95, offset: 0.22 },
+          { transform: `translate(${dx}px, ${dy}px) scale(1.45)`, opacity: 0 },
+        ],
+        { duration: between(800, 1100), delay: between(0, 90), easing: "cubic-bezier(0.2, 0.7, 0.3, 1)", fill: "both" },
+      )
+      .finished.then(() => cloud.remove(), () => cloud.remove());
+  }
+  for (let i = 0; i < 14; i++) {
+    const spark = document.createElement("span");
+    spark.className = "rg-poof-spark";
+    spark.setAttribute("aria-hidden", "true");
+    spark.textContent = Math.random() < 0.6 ? "✦" : "✧";
+    spark.style.left = `${w / 2}px`;
+    spark.style.top = `${h / 2}px`;
+    spark.style.fontSize = `${between(0.12, 0.28) * Math.min(h, 160)}px`;
+    box.append(spark);
+    const a = between(0, 2 * Math.PI);
+    const d = between(0.45, 0.8) * Math.max(w, h) * 0.6;
+    spark
+      .animate(
+        [
+          { transform: "translate(-50%, -50%) scale(0) rotate(0deg)", opacity: 1 },
+          { transform: `translate(calc(-50% + ${Math.cos(a) * d * 0.7}px), calc(-50% + ${Math.sin(a) * d * 0.7}px)) scale(1) rotate(90deg)`, opacity: 1, offset: 0.5 },
+          { transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d}px)) scale(0.4) rotate(200deg)`, opacity: 0 },
+        ],
+        { duration: between(650, 900), easing: "cubic-bezier(0.15, 0.8, 0.3, 1)", fill: "both" },
+      )
+      .finished.then(() => spark.remove(), () => spark.remove());
+  }
+}
+
+/**
+ * Matteo Riccardi, Ratteo Miccardi: on his page, once his name is on
+ * screen, his two initials get up and swap places, passing each other on
+ * the way like a juggler's balls; as they land, poof, a puff of smoke and
+ * sparkles, and his name is gone, a rat where it was; poof again and he's
+ * back, Ratteo Miccardi, the rat staying, between his names: his first
+ * behind it, his last in front. `soft`, in the standings,
+ * Ratteo Miccardi from the start, the rat wiggling while his row is
+ * pointed at. Screen readers still hear his real name. Reduced motion:
+ * swapped, no trick.
+ */
+function Ratteo({ soft, children }: { soft: boolean; children: ReactNode }) {
+  const el = useRef<HTMLSpanElement>(null);
+  const [swapped, setSwapped] = useState(soft);
+
+  useEffect(() => {
+    const name = el.current;
+    if (soft || !name) return;
+    let timer = 0;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      timer = window.setTimeout(() => setSwapped(true), 0);
+      return () => window.clearTimeout(timer);
+    }
+    let gone = false;
+    const after = (ms: number, then: () => void) => {
+      timer = window.setTimeout(() => !gone && then(), ms);
+    };
+    const trick = () => {
+      const [a, b] = Array.from(name.querySelectorAll<HTMLElement>(".rg-rat-initial"));
+      if (!a || !b) return setSwapped(true);
+      // Each to the other's place, out to either side of the way between them.
+      const ra = a.getBoundingClientRect();
+      const rb = b.getBoundingClientRect();
+      const dx = rb.left - ra.left;
+      const dy = rb.top - ra.top;
+      const len = Math.hypot(dx, dy) || 1;
+      const bulge = Math.max(30, len * 0.45);
+      const [px, py] = [(-dy / len) * bulge, (dx / len) * bulge];
+      const fly = (letter: HTMLElement, x: number, y: number, side: number) =>
+        letter.animate(
+          [
+            { transform: "translate(0, 0) rotate(0deg)" },
+            { transform: `translate(${x / 2 + side * px}px, ${y / 2 + side * py}px) rotate(${side * 25}deg) scale(1.15)`, offset: 0.5 },
+            { transform: `translate(${x}px, ${y}px) rotate(0deg)` },
+          ],
+          { duration: 1100, easing: "cubic-bezier(0.5, 0, 0.3, 1)" },
+        ).finished;
+      Promise.all([fly(a, dx, dy, 1), fly(b, -dx, -dy, -1)]).then(
+        () => {
+          if (gone) return;
+          // Landed: the letters swapped for good, and the trick.
+          setSwapped(true);
+          poof(name);
+          name.classList.add("rg-rat-magic");
+          after(1800, () => {
+            poof(name);
+            name.classList.remove("rg-rat-magic");
+            name.classList.add("rg-rat-done");
+          });
+        },
+        () => {},
+      );
+    };
+    const seen = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting || timer) return;
+      seen.disconnect();
+      after(1200, trick);
+    });
+    seen.observe(name);
+    return () => {
+      gone = true;
+      seen.disconnect();
+      window.clearTimeout(timer);
+      name.getAnimations({ subtree: true }).forEach((a) => a.cancel());
+      name.classList.remove("rg-rat-magic", "rg-rat-done");
+    };
+  }, [soft]);
+
+  // Where the two initials are: the first letter of it all, and the first of its last word.
+  const texts: string[] = [];
+  mapTexts(children, (t) => texts.push(t));
+  let firstAt = -1;
+  let lastAt = -1;
+  texts.forEach((t, n) => {
+    if (!LETTER.test(t)) return;
+    if (firstAt < 0) firstAt = n;
+    lastAt = n;
+  });
+  if (firstAt < 0) return <>{children}</>;
+  const a = { n: firstAt, i: texts[firstAt].search(LETTER) };
+  const b = { n: lastAt, i: texts[lastAt].search(LAST_WORD) };
+  if (a.n === b.n && a.i === b.i) return <>{children}</>;
+  const [ofA, ofB] = [texts[a.n][a.i], texts[b.n][b.i]];
+  const initial = (own: string, other: string) => <span className="rg-rat-initial">{swapped ? other : own}</span>;
+  const withA = (t: string, n: number) =>
+    a.n === n && a.i < t.length ? (
+      <>
+        {t.slice(0, a.i)}
+        {initial(ofA, ofB)}
+        {t.slice(a.i + 1)}
+      </>
+    ) : (
+      t
+    );
+  const shown = mapTexts(children, (t, n) =>
+    b.n === n ? (
+      <>
+        {withA(t.slice(0, b.i), n)}
+        {/* The last word and the rat kept together on one line. */}
+        <span className="rg-rat-word">
+          {initial(ofB, ofA)}
+          {t.slice(b.i + 1)}
+          {/* On his page the big rat stays instead. */}
+          {swapped && soft && <span className="rg-rat">🐀</span>}
+        </span>
+      </>
+    ) : (
+      withA(t, n)
+    ),
+  );
+
+  return (
+    <span ref={el} className={soft ? undefined : "rg-rat-name"}>
+      <span className="sr-only">{texts.join(" ")}</span>
+      <span aria-hidden="true" className="rg-rat-text">
+        {shown}
+      </span>
+      {/* What the trick turns him into, and leaves with him. */}
+      {!soft && (
+        <span aria-hidden="true" className="rg-rat-big">
+          🐀
+        </span>
+      )}
+    </span>
+  );
+}
+
 /**
  * The beer's colours: an amber lager, golden at its top and deeper at its
  * foot, see-through so the card's text shows under it, the
@@ -2430,6 +2633,7 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   if (effect === "pesca") return <Stickers emoji={PEACH} spots={PEACHES}>{children}</Stickers>;
   if (effect === "aragosta") return <Lobster>{children}</Lobster>;
   if (effect === "maglietta") return <Tug soft={soft}>{children}</Tug>;
+  if (effect === "ratteo") return <Ratteo soft={soft}>{children}</Ratteo>;
   if (effect === "birra") return <Beer soft={soft}>{children}</Beer>;
   if (effect === "copione") return soft ? <CopioneRow>{children}</CopioneRow> : <Copione>{children}</Copione>;
   if (effect === "fulmini") return <Electric soft={soft}>{children}</Electric>;

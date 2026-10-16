@@ -2059,6 +2059,117 @@ body:has(.lpm)::before {
   mask-image: radial-gradient(ellipse 100% 75% at var(--x) var(--y), #000 0, rgb(0 0 0 / 0.6) 30%, transparent 100%);
 }
 
+/* The easter eggs' rat (Easter.tsx): Matteo Riccardi as Ratteo Miccardi.
+   On his page his initials swap places in flight, and with a puff of smoke
+   and sparkles his name turns into a rat for a moment, then back, swapped,
+   the rat staying between his names, his first behind it, his last over it;
+   in the standings the rat after his name wiggles while his row is pointed
+   at. */
+.lpm .rg-rat-name {
+  position: relative;
+  display: inline-block;
+}
+.lpm .rg-rat-text {
+  display: inline-block;
+  transition:
+    opacity 0.2s ease,
+    transform 0.25s ease;
+}
+.lpm .rg-rat-word {
+  white-space: nowrap;
+}
+/* His last name over the rat; the rest of it under. */
+.lpm .rg-rat-name .rg-rat-word {
+  position: relative;
+  z-index: 3;
+}
+.lpm .rg-rat-initial {
+  display: inline-block;
+  position: relative;
+  z-index: 1;
+}
+.lpm .rg-rat {
+  display: inline-block;
+  margin-left: 0.18em;
+  font-size: 0.85em;
+  line-height: 1;
+}
+/* The rat the trick turns him into, where his name was, from its start,
+   facing into it. */
+.lpm .rg-rat-big {
+  position: absolute;
+  z-index: 2;
+  left: 0;
+  /* Low enough to leave his first name's R in sight. */
+  top: 70%;
+  font-size: 1.5em;
+  line-height: 1;
+  opacity: 0;
+  transform: translate(0, -50%) scaleX(-1) scale(0);
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease-in;
+}
+.lpm .rg-rat-magic .rg-rat-text {
+  opacity: 0;
+  transform: scale(0.8);
+}
+.lpm .rg-rat-magic .rg-rat-big,
+.lpm .rg-rat-done .rg-rat-big {
+  opacity: 1;
+  transform: translate(0, -50%) scaleX(-1) scale(1);
+  transition:
+    opacity 0.15s ease,
+    transform 0.45s cubic-bezier(0.3, 1.7, 0.5, 1);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .lpm .rg-rat-magic .rg-rat-big {
+    animation: rg-rat-sniff 0.9s ease-in-out 0.45s infinite;
+  }
+  .lpm .rg-row:hover .rg-rat {
+    animation: rg-rat-wiggle 0.5s ease-in-out infinite;
+  }
+}
+/* The puff: soft round clouds, and sparkles flying out of it. */
+.lpm .rg-poof {
+  position: absolute;
+  z-index: 2;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 40% 35%,
+    light-dark(rgb(255 255 255), rgb(240 242 246)) 0,
+    light-dark(rgb(214 218 226 / 0.95), rgb(196 202 214 / 0.9)) 45%,
+    transparent 70%
+  );
+  filter: blur(1px);
+}
+.lpm .rg-poof-spark {
+  position: absolute;
+  z-index: 3;
+  line-height: 1;
+  color: #ffcf3d;
+  text-shadow: 0 0 6px rgb(255 207 61 / 0.8);
+  pointer-events: none;
+}
+@keyframes rg-rat-sniff {
+  25% {
+    transform: translate(0, -50%) scaleX(-1) rotate(-6deg) scale(1.03);
+  }
+  75% {
+    transform: translate(0, -50%) scaleX(-1) rotate(6deg) scale(1.03);
+  }
+}
+@keyframes rg-rat-wiggle {
+  25% {
+    transform: rotate(-12deg) translateY(-1px);
+  }
+  75% {
+    transform: rotate(12deg) translateY(-1px);
+  }
+}
+
 /* The easter eggs' beer (Easter.tsx): Alessandro Saponara's card filling up
    like iBeer, drawn on a canvas over its text, see-through, clipped by the
    card. */
