@@ -650,14 +650,15 @@ function rainBear(back: HTMLElement, front: HTMLElement, small: boolean) {
   const spin = between(-1, 1) * between(90, 360);
   const start = between(0, 360);
   const drift = between(-30, 30);
-  // The big ones fall a little faster, as if nearer.
-  const speed = (small ? 70 : 140) + tall * 4;
+  const far = H + tall * 3;
   el.animate(
     [
       { transform: `translate(0, 0) rotate(${start}deg)` },
-      { transform: `translate(${drift}px, ${H + tall * 3}px) rotate(${start + spin}deg)` },
+      { transform: `translate(${drift}px, ${far}px) rotate(${start + spin}deg)` },
     ],
-    { duration: ((H + tall * 3) / speed) * 1000, easing: "linear", fill: "forwards" },
+    // Falling like things do: slow off the top, faster and faster down,
+    // through the card in about a second and a half, the big ones a touch quicker.
+    { duration: between(1300, 1700) - tall * 4, easing: "cubic-bezier(0.4, 0, 0.8, 0.5)", fill: "forwards" },
   ).finished.finally(() => el.remove());
 }
 
