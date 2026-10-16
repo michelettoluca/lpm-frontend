@@ -1713,44 +1713,35 @@ function pinchMap(p: Pinch, size = 256): string {
   return canvas.toDataURL();
 }
 
+/** How hard the cloth is pulled once he's done, as it stays. */
+const HELD = 0.9;
+
 /**
- * How hard the cloth is pulled `t` seconds into a tug, 0 to 1, and how the
- * pinch shakes, slowly, the way he does it over a game: pulled up a bit
- * and held, let go some and held, pulled up further and chewed on, then
- * let go to spring back. `null` once it's over.
+ * How hard the cloth is pulled `t` seconds into the tug, 0 to 1, slowly,
+ * the way he does it over a game: pulled up a bit and held, let go some
+ * and held, pulled up further. `null` once it's there, to stay.
  */
-function tugAt(t: number): { pull: number; shake: number } | null {
+function tugAt(t: number): number | null {
   const smooth = (k: number) => k * k * (3 - 2 * k);
   // From one pull to another over a stretch of time, eased in and out.
   const go = (from: number, to: number, t0: number, t1: number) => from + (to - from) * smooth(Math.min(1, Math.max(0, (t - t0) / (t1 - t0))));
-  if (t < 0.9) return { pull: go(0, 0.5, 0, 0.9), shake: 0 };
-  if (t < 1.9) return { pull: 0.5 + 0.02 * Math.sin(t * 3), shake: 0 };
-  if (t < 2.6) return { pull: go(0.5, 0.25, 1.9, 2.6), shake: 0 };
-  if (t < 3.4) return { pull: 0.25, shake: 0 };
-  if (t < 4.3) return { pull: go(0.25, 0.9, 3.4, 4.3), shake: 0 };
-  if (t < 6.3) {
-    // Chewed on: little sharp tugs, one after another.
-    const chew = Math.abs(Math.sin((t - 4.3) * 9));
-    return { pull: 0.9 + 0.08 * chew, shake: chew };
-  }
-  if (t < 7.6) {
-    // Let go: it springs back past still and settles.
-    const k = t - 6.3;
-    return { pull: 0.9 * Math.exp(-3.5 * k) * Math.cos(k * 10), shake: 0 };
-  }
+  if (t < 1) return go(0, 0.5, 0, 1);
+  if (t < 2.2) return 0.5;
+  if (t < 3) return go(0.5, 0.25, 2.2, 3);
+  if (t < 4) return 0.25;
+  if (t < 5.2) return go(0.25, HELD, 4, 5.2);
   return null;
 }
 
 /**
  * Edoardo Mantovani's first card, pulled like the shirt he tugs at over a
- * game: now and then something pinches it near its top and pulls it up,
- * slowly, a bit, then less, then more, chewing on it, the card stretching
- * towards the pinch, unevenly, pulled out past its edge, folds spreading
- * from the pinch; then lets go and it springs back. Each tug pinches a
- * little differently.
+ * game: once it's on screen something pinches it near its top and pulls it
+ * up, slowly, a bit, then less, then more, and leaves it so, the card
+ * stretched towards the pinch, unevenly, pulled out past its edge, folds
+ * spreading from the pinch. The pinch is a little different each time.
  * An SVG filter does it, a displacement map that pulls things towards the
- * pinch, on only while it's tugged so the text stays sharp the rest of the
- * time. From when the card is on screen. Nothing for reduced motion.
+ * pinch, on only once it's tugged. From when the card is on screen.
+ * Nothing for reduced motion.
  */
 function Tug({ children }: { children: ReactNode }) {
   const el = useRef<HTMLSpanElement>(null);
@@ -1794,29 +1785,32 @@ function Tug({ children }: { children: ReactNode }) {
         ["x", "y", "width", "height"].forEach((a, i) => el?.setAttribute(a, xywh[i].toFixed(1)));
       }
     };
+    // Pulled this hard: the filter's pull, and the folds as strong.
+    const pullTo = (pull: number) => {
+      displace?.setAttribute("scale", (pull * PULL * Math.min(w, h)).toFixed(2));
+      folds.style.opacity = String(Math.max(0, Math.min(1, pull * 1.4)));
+    };
+    // Once it's pulled up as far as it goes, it stays so.
+    let held = false;
     const tick = (now: number) => {
-      const t = (now - started) / 1000;
-      const at = tugAt(t);
-      if (!at) {
-        host.style.filter = "";
-        folds.style.opacity = "0";
-        timer = window.setTimeout(tug, 5000);
+      const pull = tugAt((now - started) / 1000);
+      if (pull === null) {
+        pullTo(HELD);
+        held = true;
+        frame = 0;
         return;
       }
-      displace?.setAttribute("scale", (at.pull * PULL * Math.min(w, h)).toFixed(2));
-      // The pinch shakes a little as it's tugged.
-      image?.setAttribute("x", ((-BEYOND + at.shake * 0.006) * w).toFixed(1));
-      image?.setAttribute("y", ((-BEYOND + at.shake * 0.004) * h).toFixed(1));
-      folds.style.opacity = String(Math.max(0, Math.min(1, at.pull * 1.4)));
+      pullTo(pull);
       frame = requestAnimationFrame(tick);
     };
     const tug = () => {
+      timer = 0;
       if (document.hidden) {
         timer = window.setTimeout(tug, 1000);
         return;
       }
       fit();
-      // Each tug its own pinch: a little off the last, its pull and its folds uneven their own way.
+      // Its own pinch: about the usual spot, its pull uneven its own way.
       const pinch = pinchHere();
       image?.setAttribute("href", pinchMap(pinch));
       folds.style.setProperty("--x", `${pinch.x * 100}%`);
@@ -1825,20 +1819,31 @@ function Tug({ children }: { children: ReactNode }) {
       started = performance.now();
       frame = requestAnimationFrame(tick);
     };
+    // Off screen before it's done: back as it was, to start again when it's seen.
     const stop = () => {
       cancelAnimationFrame(frame);
       window.clearTimeout(timer);
       frame = timer = 0;
+      if (held) return;
       host.style.filter = "";
       folds.style.opacity = "0";
     };
     const seen = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !frame && !timer) timer = window.setTimeout(tug, 1200);
+      if (entry.isIntersecting && !frame && !timer && !held) timer = window.setTimeout(tug, 1200);
       if (!entry.isIntersecting) stop();
     });
+    // A card that changes size, held, keeps its pull to its size.
+    const resized = new ResizeObserver(() => {
+      if (!held) return;
+      fit();
+      pullTo(HELD);
+    });
+    resized.observe(host);
     seen.observe(host);
     return () => {
       seen.disconnect();
+      resized.disconnect();
+      held = false;
       stop();
       folds.remove();
       defs.remove();
