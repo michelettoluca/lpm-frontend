@@ -2617,6 +2617,211 @@ function Beer({ soft, children }: { soft: boolean; children: ReactNode }) {
 }
 
 /**
+ * A three-toed footprint, toes up, in a 100 by 120 box: a round pad, and
+ * over it, a little apart, three toes close together like thorns, pointed,
+ * the middle one longest, the others leaning out.
+ */
+const FOOTPRINT = `<path d="M20 72 C18 94 32 117 50 117 C68 117 82 94 80 72 C78 61 66 58 50 59 C34 58 22 61 20 72 Z"/><path d="M21 54 C19 42 16 30 11 15 C22 23 33 36 38 52 C32 56 25 56 21 54 Z"/><path d="M42 52 C43 37 46 20 51 2 C55 20 58 37 59 52 C54 55 47 55 42 52 Z"/><path d="M63 52 C68 36 78 23 89 15 C84 30 81 42 79 54 C75 56 68 56 63 52 Z"/>`;
+
+/** A crack from (x, y) heading `angle` for about `reach` px, jagged, forking now and then: its lines as point lists. */
+function crack(x: number, y: number, angle: number, reach: number): [number, number][][] {
+  const lines: [number, number][][] = [];
+  const grow = (x0: number, y0: number, a0: number, left: number, depth: number) => {
+    const line: [number, number][] = [[x0, y0]];
+    let [cx, cy, a] = [x0, y0, a0];
+    while (left > 0) {
+      const step = Math.min(left, between(0.12, 0.26) * reach);
+      a += between(-0.45, 0.45);
+      cx += Math.cos(a) * step;
+      cy += Math.sin(a) * step;
+      left -= step;
+      line.push([cx, cy]);
+      if (depth < 2 && Math.random() < 0.28) grow(cx, cy, a + (Math.random() < 0.5 ? -1 : 1) * between(0.5, 1.1), left * between(0.35, 0.6), depth + 1);
+    }
+    lines.push(line);
+  };
+  grow(x, y, angle, reach, 0);
+  return lines;
+}
+
+/** Shake `el` like a quake, `strength` px at first, settling, over `time` ms. */
+function quake(el: HTMLElement, strength: number, time: number) {
+  const frames: Keyframe[] = [];
+  for (let i = 0; i < 9; i++) {
+    const k = strength * (1 - i / 9);
+    frames.push({ transform: `translate(${between(-k, k).toFixed(1)}px, ${between(-k, k).toFixed(1)}px) rotate(${between(-k, k) * 0.12}deg)` });
+  }
+  frames.push({ transform: "none" });
+  el.animate(frames, { duration: time, easing: "linear" });
+}
+
+/**
+ * Nicolò Morselli's dinosaur: once his card is on screen it starts to
+ * tremble, small at first, something coming; then a dinosaur crosses it
+ * from its bottom left to its top right, step by step, each a three-toed
+ * footprint stamped into the card, a quake, cracks running off from it,
+ * whatever's near it knocked askew; then it's gone, the last rumbles
+ * fading, footprints and cracks and all left as they are. `soft`, in the
+ * standings, three small steps across his row while it's pointed at.
+ * Nothing for reduced motion.
+ */
+function Dino({ soft, children }: { soft: boolean; children: ReactNode }) {
+  const el = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const host = el.current?.closest<HTMLElement>(soft ? ".rg-row" : ".rg-panel");
+    if (!host || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    host.classList.add("rg-dino-host");
+    const marks: Element[] = [];
+    const broken: HTMLElement[] = [];
+    let timers: number[] = [];
+    const after = (ms: number, then: () => void) => timers.push(window.setTimeout(then, ms));
+
+    // One step at (x, y) in px in the card, the foot turned `angle`, `size` px long.
+    const stamp = (x: number, y: number, angle: number, size: number) => {
+      const w = host.offsetWidth;
+      const h = host.offsetHeight;
+      const foot = document.createElementNS(SVG, "svg");
+      foot.setAttribute("viewBox", "0 0 100 120");
+      foot.setAttribute("aria-hidden", "true");
+      foot.setAttribute("class", "rg-dino-print");
+      // Pressed in: in shade along one edge, lit along the other, its floor between.
+      foot.innerHTML = [
+        ["rg-dino-shade", "-1.2 -1.2"],
+        ["rg-dino-lit", "1.2 1.2"],
+        ["rg-dino-floor", "0 0"],
+      ]
+        .map(([tone, at]) => `<g class="${tone}" fill="currentColor" transform="translate(${at})">${FOOTPRINT}</g>`)
+        .join("");
+      const turn = `${((angle * 180) / Math.PI + 90).toFixed(1)}deg`;
+      foot.style.cssText = `left:${((x / w) * 100).toFixed(2)}%;top:${((y / h) * 100).toFixed(2)}%;width:${size * 0.83}px;height:${size}px;--turn:${turn}`;
+      host.append(foot);
+      marks.push(foot);
+      foot.animate(
+        [
+          { transform: `translate(-50%, -50%) rotate(${turn}) scale(1.5)`, opacity: 0 },
+          { transform: `translate(-50%, -50%) rotate(${turn}) scale(1)`, opacity: 1 },
+        ],
+        { duration: 140, easing: "cubic-bezier(0.6, 0, 1, 1)", fill: "backwards" },
+      );
+      if (soft) return quake(host, 2, 260);
+      quake(host, between(5, 8), 460);
+
+      // The cracks, running off from round its edge.
+      const cracks = document.createElementNS(SVG, "svg");
+      cracks.setAttribute("aria-hidden", "true");
+      cracks.setAttribute("class", "rg-dino-cracks");
+      cracks.setAttribute("viewBox", `0 0 ${w} ${h}`);
+      cracks.setAttribute("preserveAspectRatio", "none");
+      let paths = "";
+      for (let i = 0, n = Math.round(between(3, 5)); i < n; i++) {
+        const a = between(0, 2 * Math.PI);
+        for (const line of crack(x + Math.cos(a) * size * 0.4, y + Math.sin(a) * size * 0.4, a, between(0.8, 1.8) * size)) {
+          const d = "M" + line.map(([px, py]) => `${px.toFixed(1)} ${py.toFixed(1)}`).join(" L");
+          paths += `<path class="rg-dino-crack-lit" d="${d}" transform="translate(1 1)"/><path class="rg-dino-crack" d="${d}"/>`;
+        }
+      }
+      cracks.innerHTML = paths;
+      host.append(cracks);
+      marks.push(cracks);
+      cracks.querySelectorAll("path").forEach((p) => {
+        const len = (p as SVGPathElement).getTotalLength();
+        p.style.strokeDasharray = `${len}`;
+        p.animate([{ strokeDashoffset: len }, { strokeDashoffset: 0 }], { duration: 220, easing: "ease-out", fill: "backwards" });
+      });
+
+      // Whatever's near it, knocked askew.
+      const box = host.getBoundingClientRect();
+      for (const thing of host.querySelectorAll<HTMLElement>("h1, p, dt, dd, dl > div, .rg-hr")) {
+        if (broken.includes(thing) || [...broken].some((b) => b.contains(thing) || thing.contains(b))) continue;
+        const r = thing.getBoundingClientRect();
+        const near = Math.hypot(
+          Math.max(r.left - box.left - x, 0, x - (r.right - box.left)),
+          Math.max(r.top - box.top - y, 0, y - (r.bottom - box.top)),
+        );
+        if (near > size * 0.5) continue;
+        broken.push(thing);
+        thing.classList.add("rg-dino-broken");
+        thing.style.transformOrigin = Math.random() < 0.5 ? "left bottom" : "right bottom";
+        thing.style.transform = `translateY(${between(2, 6).toFixed(1)}px) rotate(${((Math.random() < 0.5 ? -1 : 1) * between(2.5, 6)).toFixed(1)}deg)`;
+      }
+    };
+
+    // Its walk: from the foot of the card's left to the top of its right, or across a row.
+    const walk = () => {
+      const w = host.offsetWidth;
+      const h = host.offsetHeight;
+      const size = soft ? h * 0.75 : Math.max(52, Math.min(w, h) * 0.2);
+      const [x0, y0, x1, y1] = soft ? [w * 0.06, h * 0.5, w * 0.94, h * 0.5] : [w * 0.04, h * 1.02, w * 0.98, -h * 0.02];
+      const angle = Math.atan2(y1 - y0, x1 - x0);
+      const len = Math.hypot(x1 - x0, y1 - y0);
+      const steps = soft ? 3 : Math.max(4, Math.round(len / (size * 1.7)));
+      const pace = soft ? 260 : 700;
+      for (let i = 0; i < steps; i++) {
+        const k = (i + 0.5) / steps;
+        const side = (i % 2 ? 1 : -1) * size * (soft ? 0.25 : 0.32);
+        const x = x0 + (x1 - x0) * k - Math.sin(angle) * side;
+        const y = y0 + (y1 - y0) * k + Math.cos(angle) * side;
+        after(i * pace, () => stamp(x, y, angle, size));
+      }
+      return steps * pace;
+    };
+
+    const clear = () => {
+      timers.forEach((t) => window.clearTimeout(t));
+      timers = [];
+      marks.splice(0).forEach((m) => m.remove());
+      broken.splice(0).forEach((b) => {
+        b.classList.remove("rg-dino-broken");
+        b.style.transform = "";
+        b.style.transformOrigin = "";
+      });
+    };
+
+    if (soft) {
+      const off = whilePointedAt(
+        host,
+        () => {
+          quake(host, 1, 300);
+          after(300, walk);
+        },
+        clear,
+      );
+      return () => {
+        off();
+        clear();
+        host.classList.remove("rg-dino-host");
+      };
+    }
+
+    let started = false;
+    const seen = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting || started) return;
+      started = true;
+      seen.disconnect();
+      // Something coming: a tremble, and another, bigger.
+      after(700, () => quake(host, 1, 380));
+      after(1300, () => quake(host, 1.8, 420));
+      after(1850, () => quake(host, 2.8, 440));
+      after(2400, () => {
+        const time = walk();
+        // Gone: the last of it, further and further off.
+        after(time + 500, () => quake(host, 2.5, 420));
+        after(time + 1200, () => quake(host, 1.2, 380));
+      });
+    });
+    seen.observe(host);
+    return () => {
+      seen.disconnect();
+      clear();
+      host.classList.remove("rg-dino-host");
+    };
+  }, [soft]);
+
+  return <span ref={el}>{children}</span>;
+}
+
+/**
  * A player's name with their easter egg, if they have one: a charge of
  * lightning round it, a mist drifting past, peaches stuck on like stickers,
  * an infection eating the card's edge, or a chat of his messages piling up
@@ -2635,6 +2840,7 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   if (effect === "maglietta") return <Tug soft={soft}>{children}</Tug>;
   if (effect === "ratteo") return <Ratteo soft={soft}>{children}</Ratteo>;
   if (effect === "birra") return <Beer soft={soft}>{children}</Beer>;
+  if (effect === "dinosauro") return <Dino soft={soft}>{children}</Dino>;
   if (effect === "copione") return soft ? <CopioneRow>{children}</CopioneRow> : <Copione>{children}</Copione>;
   if (effect === "fulmini") return <Electric soft={soft}>{children}</Electric>;
   if (effect === "fumetto") return <Comic soft={soft}>{children}</Comic>;
