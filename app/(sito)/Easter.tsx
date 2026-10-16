@@ -657,9 +657,9 @@ function rainBear(back: HTMLElement, front: HTMLElement, small: boolean) {
       { transform: `translate(0, 0) rotate(${start}deg)` },
       { transform: `translate(${drift}px, ${far}px) rotate(${start + spin}deg)` },
     ],
-    // Falling like things do: slow off the top, faster and faster down,
-    // through the card in about a second and a half, the big ones a touch quicker.
-    { duration: between(1300, 1700) - tall * 4, easing: "cubic-bezier(0.4, 0, 0.8, 0.5)", fill: "forwards" },
+    // Already falling at full speed when they come in, like rain: a steady
+    // pace through the card, the big ones a touch quicker, as if nearer.
+    { duration: (far / ((small ? 140 : 360) + tall * 3)) * 1000, easing: "linear", fill: "forwards" },
   ).finished.finally(() => el.remove());
 }
 
