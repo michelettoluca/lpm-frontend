@@ -1489,6 +1489,45 @@ function Mold({ soft, children }: { soft: boolean; children: ReactNode }) {
   return <span ref={el}>{children}</span>;
 }
 
+/** Tommaso Cavallini's hand, left to right: his lands and his goblins. */
+const FURNACE = "/easter/ventaglio/great-furnace.webp";
+const RAIDER = "/easter/ventaglio/goblin-tomb-raider.webp";
+const HAND = [FURNACE, RAIDER, FURNACE, RAIDER, RAIDER];
+/** How far each card in the hand is turned, from the first to the last. */
+const SPREAD = 28;
+const turnOf = (i: number) => -SPREAD + (2 * SPREAD * i) / (HAND.length - 1);
+
+/**
+ * Tommaso Cavallini's hand of cards, fanned out in the bottom right corner
+ * of his first card as if held just under it: dealt in one after another
+ * from under its edge as the page opens, then rocking a little in the hand
+ * (sito.css). Over the card's text; the card's edges cut them off.
+ */
+function Fan({ children }: { children: ReactNode }) {
+  const el = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    const host = el.current?.closest<HTMLElement>(".rg-panel");
+    if (!host) return;
+    const hand = document.createElement("div");
+    hand.className = "rg-fan";
+    hand.setAttribute("aria-hidden", "true");
+    HAND.forEach((src, i) => {
+      const card = document.createElement("img");
+      card.src = src;
+      card.alt = "";
+      card.className = "rg-fan-card";
+      card.style.setProperty("--turn", `${turnOf(i)}deg`);
+      card.style.setProperty("--deal", `${0.35 + i * 0.12}s`);
+      hand.append(card);
+    });
+    host.append(hand);
+    return () => hand.remove();
+  }, []);
+
+  return <span ref={el}>{children}</span>;
+}
+
 /**
  * A player's name with their easter egg, if they have one: a charge of
  * lightning round it, a mist drifting past, peaches stuck on like stickers,
@@ -1509,6 +1548,8 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   if (effect === "orsetti") return <Bears soft={soft}>{children}</Bears>;
   if (effect === "peek") return <Peek soft={soft}>{children}</Peek>;
   if (effect === "infezione") return <Mold soft={soft}>{children}</Mold>;
+  // In the standings his hand is a little one after the name, put there by `EasterMark`.
+  if (effect === "ventaglio") return soft ? <>{children}</> : <Fan>{children}</Fan>;
   return (
     <Burst effect={effect} soft={soft}>
       {children}
@@ -1528,10 +1569,13 @@ const MARK_PEACHES = [
  * Arturo Precioso's peaches in the standings: a little bunch just after
  * his name, popping on one after another while the row is pointed at
  * (sito.css). Its own element beside the name, not in it: a name cut short
- * with an ellipsis would cut them off too.
+ * with an ellipsis would cut them off too. Tommaso Cavallini's little hand
+ * of cards goes there the same way.
  */
 export function EasterMark({ playerId }: { playerId: number | string }) {
-  if (effectOf(playerId) !== "pesca") return null;
+  const effect = effectOf(playerId);
+  if (effect === "ventaglio") return <FanMark />;
+  if (effect !== "pesca") return null;
   return (
     <span aria-hidden="true" className="rg-peach-mark">
       {MARK_PEACHES.map((p, i) => (
@@ -1550,6 +1594,24 @@ export function EasterMark({ playerId }: { playerId: number | string }) {
         >
           {PEACH}
         </span>
+      ))}
+    </span>
+  );
+}
+
+/** Tommaso Cavallini's hand in the standings: just after his name, cut off by the row's bottom edge, dealt in while the row is pointed at (sito.css). */
+function FanMark() {
+  return (
+    <span aria-hidden="true" className="rg-fan-mark">
+      {HAND.map((src, i) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={i}
+          src={src}
+          alt=""
+          className="rg-fan-card"
+          style={{ "--turn": `${turnOf(i)}deg`, "--deal": `${i * 0.05}s` } as CSSProperties}
+        />
       ))}
     </span>
   );
