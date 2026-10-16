@@ -1532,12 +1532,13 @@ function Fan({ children }: { children: ReactNode }) {
 }
 
 /**
- * Filippo Pezza's championship belt, for winning a Pauper Geddon: its centre
- * plate, drawn about its middle, 380 wide. Gold, its edge notched at the
- * corners, wings onto the strap, a crown on top, gems at its sides; in the
- * middle a red enamel field with PAUPER GEDDON round the top and CHAMPION
- * across it; and a glint that sweeps across the gold now and then
- * (sito.css). Its gradients are named on the page, for the side plates too.
+ * Filippo Pezza's championship belt, for winning the Paupergeddon in Pisa
+ * in 2024: its centre plate, drawn about its middle, 380 wide. Gold, its
+ * edge notched at the corners, wings onto the strap, a crown on top, gems
+ * at its sides; in the middle a red enamel field with PAUPERGEDDON round
+ * the top, CHAMPION across it and PISA 2024 under it; and a glint that
+ * sweeps across the gold now and then (sito.css). Its gradients are named
+ * on the page, for the side plates too.
  */
 const PLATE_EDGE =
   "M0 -96C40 -96 70 -84 92 -70L118 -78C138 -56 152 -30 152 0C152 30 138 56 118 78L92 70C70 84 40 96 0 96C-40 96 -70 84 -92 70L-118 78C-138 56 -152 30 -152 0C-152 -30 -138 -56 -118 -78L-92 -70C-70 -84 -40 -96 0 -96Z";
@@ -1566,9 +1567,9 @@ const BELT_PLATE = `<svg class="rg-belt-plate" viewBox="-190 -126 380 226" aria-
   <path d="${PLATE_EDGE}" transform="scale(0.85)" fill="none" stroke="#7a560f" stroke-width="1.5"/>
   <ellipse rx="112" ry="66" fill="url(#rg-belt-red)" stroke="#6b4a0c" stroke-width="3"/>
   <ellipse rx="104" ry="59" fill="none" stroke="#ffd75e" stroke-width="1.5"/>
-  <text class="rg-belt-words" font-size="19" letter-spacing="1.5" fill="#ffe27a"><textPath href="#rg-belt-arc" startOffset="50%" text-anchor="middle">PAUPER GEDDON</textPath></text>
+  <text class="rg-belt-words" font-size="19" letter-spacing="1.5" fill="#ffe27a"><textPath href="#rg-belt-arc" startOffset="50%" text-anchor="middle">PAUPERGEDDON</textPath></text>
   <text class="rg-belt-words" y="16" font-size="28" letter-spacing="1" text-anchor="middle" fill="url(#rg-belt-gold)" stroke="#5a3c06" stroke-width="0.8">CHAMPION</text>
-  <text class="rg-belt-words" y="44" font-size="13" letter-spacing="6" text-anchor="middle" fill="#ffe27a">★★★</text>
+  <text class="rg-belt-words" y="45" font-size="14" letter-spacing="2" text-anchor="middle" fill="#ffe27a">★ PISA 2024 ★</text>
   <g stroke="#6b4a0c" stroke-width="2"><circle cx="-132" cy="0" r="7" fill="#c50f22"/><circle cx="132" cy="0" r="7" fill="#c50f22"/><circle cx="0" cy="83" r="6" fill="#c50f22"/></g>
   <g fill="#fff" opacity="0.8"><circle cx="-134" cy="-2" r="2"/><circle cx="130" cy="-2" r="2"/><circle cx="-2" cy="81" r="1.6"/></g>
   <g clip-path="url(#rg-belt-clip)"><rect class="rg-belt-glint" x="-40" y="-110" width="80" height="220" fill="url(#rg-belt-glint)"/></g>
