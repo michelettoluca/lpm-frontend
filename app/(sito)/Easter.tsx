@@ -12,8 +12,8 @@ const SVG = "http://www.w3.org/2000/svg";
  * A puff of mist, drifting past the name and thinning out, or lying low
  * along its foot. Behind ones blend so the letters stay crisp over them
  * (sito.css), front ones are the card's paper and hide the letters in a
- * fog. Each is fixed on the screen on its own, not in a layer: a layer
- * would blend them with nothing.
+ * fog. Each is placed on the page on its own, not in a layer: a layer would
+ * blend them with nothing.
  */
 function puff(box: DOMRect, foot: number, front: boolean, ground: boolean) {
   const site = document.querySelector<HTMLElement>(".lpm");
@@ -31,8 +31,10 @@ function puff(box: DOMRect, foot: number, front: boolean, ground: boolean) {
   const el = document.createElement("div");
   el.className = `rg-mist ${front ? "rg-mist-front" : "rg-mist-back"}`;
   el.setAttribute("aria-hidden", "true");
-  el.style.left = `${x}px`;
-  el.style.top = `${y}px`;
+  // On the page, not the screen, so it scrolls with the name.
+  const at = site.getBoundingClientRect();
+  el.style.left = `${x - at.left}px`;
+  el.style.top = `${y - at.top}px`;
   el.style.width = `${w}px`;
   el.style.height = `${h}px`;
   site.append(el);
@@ -497,7 +499,8 @@ function bubblePath(w: number, h: number, tail: "left" | "right" | "middle"): st
 /**
  * One of his lines in a speech bubble drawn by hand, beside the name or
  * above it, its tail pointing back at it, springing out of the tail until
- * told to go. Fixed on the screen, so no row or panel clips it. The longer
+ * told to go. On the page, over the cards, so no row or panel clips it and
+ * it scrolls with the name. The longer
  * the line, the smaller the type. Returns what takes it off.
  */
 function speak(box: DOMRect, text: string, small: boolean): (() => void) | null {
@@ -522,8 +525,10 @@ function speak(box: DOMRect, text: string, small: boolean): (() => void) | null 
   const el = document.createElement("div");
   el.className = "rg-comic";
   el.setAttribute("aria-hidden", "true");
-  el.style.left = `${Math.max(4, Math.min(window.innerWidth - w - 4, x))}px`;
-  el.style.top = `${y}px`;
+  // On the page, not the screen, so it scrolls with the name; kept inside it sideways.
+  const at = site.getBoundingClientRect();
+  el.style.left = `${Math.max(4, Math.min(at.width - w - 4, x - at.left))}px`;
+  el.style.top = `${y - at.top}px`;
   el.style.width = `${w}px`;
   el.style.height = `${h}px`;
   el.style.fontSize = `${size}px`;

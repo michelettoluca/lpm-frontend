@@ -73,6 +73,11 @@ body:has(.lpm)::before {
 
   /* A column as tall as the screen, so a page can stretch to the bottom. */
   display: flex;
+  /* The box the easter eggs' puffs and bubbles sit in, on the page so they
+     scroll with it; clipped sideways, so one near the edge never widens the
+     page (clip, not hidden: sticky still sticks). */
+  position: relative;
+  overflow-x: clip;
   flex-direction: column;
   min-height: 100vh;
   min-height: 100dvh;
@@ -1284,12 +1289,12 @@ body:has(.lpm)::before {
   }
 }
 
-/* The easter eggs' mist (Easter.tsx): soft puffs fixed on the screen, over
-   the grain. The ones behind blend so only the paper takes them and the
+/* The easter eggs' mist (Easter.tsx): soft puffs on the page, scrolling with
+   the name, over the grain. The ones behind blend so only the paper takes them and the
    letters stay crisp: darker on light, lighter on dark. The ones in front
    are the paper itself, and hide the letters in a fog. */
 .lpm .rg-mist {
-  position: fixed;
+  position: absolute;
   z-index: 105;
   border-radius: 50%;
   pointer-events: none;
@@ -1492,7 +1497,7 @@ body:has(.lpm)::before {
    name in a white bubble drawn by hand, its tail at the name, the words in a
    goofy hand. The same on light and dark, like a page of comics. */
 .lpm .rg-comic {
-  position: fixed;
+  position: absolute;
   z-index: 110;
   display: flex;
   align-items: center;
