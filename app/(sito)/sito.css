@@ -1242,3 +1242,22 @@ body:has(.lpm)::before {
   border-radius: 2px;
   background: var(--rg-ink);
 }
+
+/* The easter eggs' bolts (Easter.tsx): yellow with an inked edge, flying in a
+   layer over the whole screen, above the grain, never in the way. */
+.lpm .rg-sparks {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  overflow: hidden;
+  pointer-events: none;
+}
+.lpm .rg-spark {
+  position: absolute;
+  overflow: visible;
+  fill: #ffd23f;
+  stroke: var(--rg-ink);
+  stroke-width: 1.1;
+  stroke-linejoin: round;
+  will-change: transform, opacity;
+}

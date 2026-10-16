@@ -8,6 +8,7 @@ import { SeasonPicker } from "../../SeasonPicker";
 import { ColHeads, Head, MarkerCircle, PixelStar, Section, plural } from "../../ui";
 import { FaceOff } from "./FaceOff";
 import { DeckTag } from "../../DeckTag";
+import { Easter } from "../../Easter";
 
 
 export async function generateMetadata(props: PageProps<"/giocatori/[id]">) {
@@ -45,13 +46,15 @@ export default async function PlayerPage(props: PageProps<"/giocatori/[id]">) {
         </Link>
         {p.season && <p className="rg-eyebrow mt-4">stagione {p.season.name.toLowerCase()}</p>}
         <h1 className="rg-display rg-tight mt-2 text-[48px] leading-[0.95] break-words sm:text-[72px] lg:text-[104px]">
-          {p.first}
-          {p.last && (
-            <>
-              <br />
-              {p.last}
-            </>
-          )}
+          <Easter playerId={id} greet>
+            {p.first}
+            {p.last && (
+              <>
+                <br />
+                {p.last}
+              </>
+            )}
+          </Easter>
         </h1>
 
         <dl className="rg-hr mt-8 grid grid-cols-2 gap-x-6 gap-y-6 pt-6 sm:grid-cols-4 lg:mt-12 lg:pt-8">

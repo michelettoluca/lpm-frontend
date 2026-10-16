@@ -6,6 +6,7 @@ import { ArrowLink, ColHeads, Comune, Head, PixelStar, Section, plural, sameRome
 import { Matrix } from "../../Matrix";
 import { Metagame } from "./Metagame";
 import { DeckTag } from "../../DeckTag";
+import { Easter } from "../../Easter";
 
 export async function generateMetadata(props: PageProps<"/tappe/[id]">) {
   const { id } = await props.params;
@@ -103,7 +104,7 @@ export default async function EventPage(props: PageProps<"/tappe/[id]">) {
                   <span className="min-w-0 pb-0.5">
                     <span className="rg-eyebrow block">vince la serata</span>
                     <span className="rg-display mt-2 flex items-center gap-2 text-[26px] leading-[1.05] sm:text-[32px] lg:text-[44px]">
-                      {first.player_name}
+                      <Easter playerId={first.player_id}>{first.player_name}</Easter>
                       {first.prize && <PixelStar size={14} className="shrink-0 text-[var(--rg-o)]" label="9 punti o più" />}
                     </span>
                     <span className="rg-muted mt-1 flex min-w-0 items-center gap-2 text-[14px] tnum">
@@ -127,7 +128,7 @@ export default async function EventPage(props: PageProps<"/tappe/[id]">) {
                   <span className="rg-display tnum text-[52px] leading-[0.85] lg:text-[60px]">{s.rank}</span>
                   <span className="min-w-0">
                     <span className="rg-display flex items-center gap-2 text-[22px] leading-[1.1] lg:text-[28px]">
-                      {s.player_name}
+                      <Easter playerId={s.player_id}>{s.player_name}</Easter>
                       {s.prize && <PixelStar size={13} className="shrink-0 text-[var(--rg-o)]" label="9 punti o più" />}
                     </span>
                     <span className="rg-muted mt-0.5 flex min-w-0 items-center gap-2 text-[14px] tnum">
@@ -158,7 +159,7 @@ export default async function EventPage(props: PageProps<"/tappe/[id]">) {
                         <span className="rg-muted tnum text-[15px] font-semibold">{s.rank}</span>
                         <span className="min-w-0 py-2">
                           <span className="flex min-w-0 items-center gap-2 text-[16px] font-semibold">
-                            <span className="truncate">{s.player_name}</span>
+                            <span className="truncate"><Easter playerId={s.player_id}>{s.player_name}</Easter></span>
                             {s.prize && <PixelStar size={12} className="shrink-0 text-[var(--rg-o)]" label="9 punti o più" />}
                           </span>
                           {s.deck && <DeckTag deck={s.deck} className="rg-muted flex text-[13px]" />}
