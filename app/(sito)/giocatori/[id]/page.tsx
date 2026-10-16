@@ -12,12 +12,19 @@ import { Easter } from "../../Easter";
 import { Drift } from "../../Drift";
 import { paroleFor } from "../../parole";
 import type { TeamLogo } from "@/app/lib/api";
+import { SITE, shareMeta } from "@/app/lib/share";
 
 
 export async function generateMetadata(props: PageProps<"/giocatori/[id]">) {
   const { id } = await props.params;
   const p = await getPlayerData(id);
-  return { title: p ? `${p.name} · Lega Pauper Milano` : "Giocatore · Lega Pauper Milano" };
+  if (!p) return shareMeta(`Giocatore · ${SITE}`, SITE, `/giocatori/${id}`, true);
+  // Their season in a line, for a shared link: where they stand and how they've played.
+  const season = p.season ? `stagione ${p.season.name}` : SITE;
+  const line = p.rank
+    ? `${p.rank}° in classifica con ${p.points} punti · ${p.wins}-${p.losses}-${p.draws} · ${season}`
+    : `${season}: nessuna tappa giocata finora`;
+  return shareMeta(`${p.name} · ${SITE}`, line, `/giocatori/${id}`, true);
 }
 
 function Big({ label, children }: { label: string; children: ReactNode }) {

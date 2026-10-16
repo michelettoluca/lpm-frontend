@@ -6,11 +6,17 @@ import { ArrowLink, ColHeads, Comune, Head, PixelStar, Section, plural, sameRome
 import { Matrix } from "../../Matrix";
 import { Metagame } from "./Metagame";
 import { DeckTag } from "../../DeckTag";
+import { SITE, shareMeta } from "@/app/lib/share";
 
 export async function generateMetadata(props: PageProps<"/tappe/[id]">) {
   const { id } = await props.params;
   const e = await getEventData(id);
-  return { title: e ? `${e.title} · Lega Pauper Milano` : "Tappa · Lega Pauper Milano" };
+  if (!e) return shareMeta(`Tappa · ${SITE}`, SITE, `/tappe/${id}`, true);
+  // The tappa in a line, for a shared link: what, when, and who won, once it's played.
+  const what = e.subtitle !== SITE && e.subtitle !== e.title ? `${e.subtitle} · ` : "";
+  const winner = e.standings[0];
+  const how = winner ? `vinta da ${winner.player_name} · ${plural(e.standings.length, "giocatore", "giocatori")}` : e.status;
+  return shareMeta(`${e.title} · ${SITE}`, `${what}${weekday(e.event.played_at)} ${e.date} · ${how}`, `/tappe/${id}`, true);
 }
 
 const rec = (s: Standing) => `${s.wins + s.byes}-${s.losses}-${s.draws}`;

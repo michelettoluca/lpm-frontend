@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import { RULES } from "@/app/lib/rules";
 import { Section } from "../ui";
+import { SITE, shareMeta } from "@/app/lib/share";
 
-export const metadata = { title: "Privacy · Lega Pauper Milano" };
+export const metadata = shareMeta(`Privacy · ${SITE}`, "Cosa tiene il sito, e perché.", "/privacy");
 
 /** Bump when the text below changes. */
 const UPDATED = "16 ottobre 2026";
