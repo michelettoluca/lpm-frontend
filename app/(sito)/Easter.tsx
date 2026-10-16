@@ -1647,9 +1647,9 @@ function Belt({ children }: { children: ReactNode }) {
 
 /**
  * Where Edoardo Mantovani's card is pinched, as a share of its width and
- * height, and how far round it the pull is felt.
+ * height, right on its top edge, and how far round it the pull is felt.
  */
-const PINCH = { x: 0.72, y: 0.1, reach: 0.6 };
+const PINCH = { x: 0.72, y: 0, reach: 0.6 };
 /** Which way it's pulled: up, a little to the right. */
 const TUG_WAY = { x: 0.2, y: -0.98 };
 /** The map runs this far past the card each way, so the pinched cloth can be pulled out past its edge. */
@@ -1661,7 +1661,8 @@ const PULL = 0.16;
 type Pinch = { x: number; y: number; ph: number[] };
 const pinchHere = (): Pinch => ({
   x: PINCH.x + between(-0.03, 0.03),
-  y: PINCH.y + between(-0.03, 0.03),
+  // Right on its edge, always.
+  y: PINCH.y,
   ph: Array.from({ length: 3 }, () => between(0, 2 * Math.PI)),
 });
 
