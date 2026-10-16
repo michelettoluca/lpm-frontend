@@ -1286,8 +1286,8 @@ body:has(.lpm)::before {
 
 /* The easter eggs' mist (Easter.tsx): soft puffs fixed on the screen, over
    the grain. The ones behind blend so only the paper takes them and the
-   letters stay crisp: darken on light, lighten on dark. The ones in front
-   simply veil, faintly. */
+   letters stay crisp: darker on light, lighter on dark. The ones in front
+   are the paper itself, and hide the letters in a fog. */
 .lpm .rg-mist {
   position: fixed;
   z-index: 105;
@@ -1296,11 +1296,13 @@ body:has(.lpm)::before {
   will-change: transform, opacity;
 }
 .lpm .rg-mist-back {
-  background: radial-gradient(closest-side, light-dark(#c3cad5, #3c475a), transparent);
+  background: radial-gradient(closest-side, light-dark(#a9b2bf, #4c5a70), transparent);
   mix-blend-mode: darken;
 }
+/* In front, the card's own paper, thick at the heart: the name sinks into a
+   fog it's hard to read through, but never quite gone. */
 .lpm .rg-mist-front {
-  background: radial-gradient(closest-side, light-dark(rgb(255 255 255 / 0.75), rgb(200 210 225 / 0.22)), transparent);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--rg-paper) 88%, transparent), transparent);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .lpm .rg-mist-back {

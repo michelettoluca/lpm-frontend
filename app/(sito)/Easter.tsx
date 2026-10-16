@@ -10,9 +10,9 @@ const SVG = "http://www.w3.org/2000/svg";
 
 /**
  * A puff of mist, drifting past the name and thinning out. Behind ones blend
- * so the letters stay crisp over them (sito.css), front ones veil the letters
- * a little. Each is fixed on the screen on its own, not in a layer: a layer
- * would blend them with nothing.
+ * so the letters stay crisp over them (sito.css), front ones are the card's
+ * paper and hide the letters in a fog. Each is fixed on the screen on its
+ * own, not in a layer: a layer would blend them with nothing.
  */
 function puff(box: DOMRect, front: boolean) {
   const site = document.querySelector<HTMLElement>(".lpm");
@@ -45,7 +45,8 @@ function puff(box: DOMRect, front: boolean) {
 
 type Play = { first: number; each: number; every: number; draw: (box: DOMRect, i: number) => void };
 
-const MIST: Play = { first: 12, each: 1, every: 420, draw: (box, i) => puff(box, i % 3 === 0) };
+// Every other puff in front, so the name keeps sinking into the fog.
+const MIST: Play = { first: 12, each: 1, every: 420, draw: (box, i) => puff(box, i % 2 === 0) };
 
 /** What the mist throws as it starts, then how much and how often: the same on his page and in the standings. */
 const PLAY: Record<"nebbia", { full: Play; soft: Play }> = {
