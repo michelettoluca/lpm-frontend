@@ -89,7 +89,7 @@ export function ErrorPanel({
         return (
           <Panel title="I dati di melee.gg non coincidono">
             <p>
-              Il backend ha ricalcolato la classifica dai match scaricati da melee.gg e non torna con la classifica di
+              Il backend ha ricalcolato la classifica dai match scaricati da melee.gg ma non coincide con quella di
               melee.gg, quindi ha annullato l&apos;import. <strong>Non è stato scritto nulla</strong>.
             </p>
             <p>
@@ -104,7 +104,7 @@ export function ErrorPanel({
       return (
         <Panel title="I due file non coincidono">
           <p>
-            Il backend ha ricalcolato la classifica dai match e non torna con il
+            Il backend ha ricalcolato la classifica dai match ma non coincide con il
             file delle standings, quindi ha annullato l&apos;import.{" "}
             <strong>Non è stato scritto nulla</strong>: l&apos;evento e i dati
             esistenti sono rimasti invariati.

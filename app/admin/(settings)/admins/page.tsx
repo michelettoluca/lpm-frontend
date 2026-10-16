@@ -183,7 +183,7 @@ export default function AdminsPage() {
                 />
                 {emailError && (
                   <FieldError
-                    message={error?.kind === "conflict" ? "Questa email è già un amministratore." : "Email non valida."}
+                    message={error?.kind === "conflict" ? "Questa email è già di un amministratore." : "Email non valida."}
                   />
                 )}
               </Field>

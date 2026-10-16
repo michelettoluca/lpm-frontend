@@ -83,7 +83,7 @@ export default function DeclarationsPage() {
               {/* The descriptions cover both choices, so switching doesn't move the page. */}
               <Setting
                 title="Raccolta mazzi"
-                description="Attiva, sul sito compare il pulsante «il mio mazzo» e i giocatori indicano il proprio. Disattivata, il pulsante sparisce e i mazzi li modifichi solo tu."
+                description="Quando è attiva, sul sito compare il pulsante «il mio mazzo» e i giocatori indicano il proprio. Quando è disattivata, il pulsante sparisce e i mazzi li modifichi solo tu."
               >
                 <Segmented
                   value={t.open ? "on" : "off"}

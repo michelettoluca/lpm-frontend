@@ -134,7 +134,7 @@ export function EventDecks({ eventId, eventName }: { eventId: number; eventName:
       />
       <p className="mb-3 text-[13px] text-ink/50">
         {fromMelee
-          ? "All'import ogni giocatore riceve il mazzo indicato durante la serata. Sincronizza copia quelli arrivati dopo, senza toccare le correzioni. Tocca una riga per cambiare il mazzo."
+          ? "All'import ogni giocatore riceve il mazzo indicato durante la serata. «Sincronizza» copia quelli arrivati dopo, senza toccare le correzioni. Tocca una riga per cambiare il mazzo."
           : "La tappa non viene da un torneo Melee: i mazzi si inseriscono a mano. Tocca una riga per scegliere il mazzo."}
       </p>
 

@@ -97,7 +97,7 @@ export default async function Home() {
           <div>
             <dl className="grid grid-cols-2 gap-6">
               <Stat label="in classifica" value={leaderboard.length} sub="giocatori" />
-              <Stat label="in media al tavolo" value={avg} sub="giocatori" />
+              <Stat label="in media a serata" value={avg} sub="giocatori" />
             </dl>
             <p className="rg-muted mt-4 text-[14px] leading-snug">
               Per la classifica contano le migliori {counted} tappe di ognuno.
@@ -174,7 +174,7 @@ export default async function Home() {
         title="Le tappe"
         aside={
           <>
-            {totalEvents} giovedì, quattro turni di svizzera a sera. Chi chiude con 9 punti o più si prende la stellina{" "}
+            {totalEvents} giovedì, quattro turni di svizzera per serata. Chi chiude con 9 punti o più si prende la stellina{" "}
             <PixelStar size={12} className="inline-block align-baseline text-[var(--rg-o)]" />.
           </>
         }

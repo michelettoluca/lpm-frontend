@@ -68,8 +68,8 @@ export default async function EventPage(props: PageProps<"/tappe/[id]">) {
           <div>
             <Head label="risultati" title="Le carte sono ancora nel mazzo." />
             <p className="rg-muted mt-4 text-[16px] leading-relaxed">
-              Primo turno alle 20.30 alla Casa dei Giochi, quattro turni di svizzera. La classifica della serata compare
-              qui quando i risultati sono caricati.
+              Primo turno alle 20.30 alla Casa dei Giochi, quattro turni di svizzera. La classifica della serata comparirà
+              qui appena saranno caricati i risultati.
             </p>
             <div className="mt-6 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:gap-6">
               <Link href="/mazzo" className="rg-btn rg-btn-fill">
@@ -88,7 +88,7 @@ export default async function EventPage(props: PageProps<"/tappe/[id]">) {
           aside={
             <>
               Record in vinte-perse-patte, bye contati come vittorie. Con {PRIZE_POINTS} punti o più arriva la stellina{" "}
-              <PixelStar size={12} className="inline-block text-[var(--rg-o)]" />: ci {prizeCount === 1 ? "è riuscito uno" : `sono riusciti in ${prizeCount}`}.
+              <PixelStar size={12} className="inline-block text-[var(--rg-o)]" />: ci {prizeCount === 1 ? "è riuscito uno solo" : `sono riusciti in ${prizeCount}`}.
             </>
           }
         >

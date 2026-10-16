@@ -2021,3 +2021,35 @@ body:has(.lpm)::before {
       rg-lobster-sway 3.2s ease-in-out 1.6s infinite alternate;
   }
 }
+
+/* The easter eggs' tug (Easter.tsx): Edoardo Mantovani's card pulled like
+   cloth. The filter itself lives in a hidden svg; over the card, the folds
+   spreading from the pinch, rays of shade and light that fade out away
+   from it, shown as hard as it's pulled. */
+.rg-tug-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+.lpm .rg-tug-folds {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  mix-blend-mode: soft-light;
+  background:
+    repeating-conic-gradient(
+      from 200deg at var(--x) var(--y),
+      rgb(0 0 0 / 0.55) 0deg 3deg,
+      rgb(255 255 255 / 0.5) 5deg 7deg,
+      transparent 9deg 13deg
+    ),
+    repeating-conic-gradient(
+      from 207deg at var(--x) var(--y),
+      rgb(0 0 0 / 0.35) 0deg 2deg,
+      transparent 4deg 17deg
+    );
+  mask-image: radial-gradient(circle at var(--x) var(--y), #000 0, rgb(0 0 0 / 0.6) 18%, transparent 55%);
+}
