@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type CSSProperties, type ReactNode } from "react";
 import { effectOf } from "@/app/lib/easter";
+import { COPIONE, type Battuta } from "./copione";
 
 /* A lightning bolt in a 10 by 20 box: down to the left, a step, down again. */
 const BOLT: [number, number][] = [
@@ -241,9 +242,142 @@ function Peaches({ children }: { children: ReactNode }) {
   );
 }
 
+/** One line of the script as an element: the speaker's name in small caps before their words, or a stage direction. */
+function lineOf(b: Battuta): { el: HTMLElement; words: HTMLElement } {
+  const el = document.createElement("p");
+  const words = document.createElement("span");
+  if (b.who) {
+    const who = document.createElement("span");
+    who.className = "rg-copione-who";
+    who.textContent = `${b.who} `;
+    el.append(who);
+  } else {
+    el.className = "rg-copione-note";
+  }
+  el.append(words);
+  return { el, words };
+}
+
+/**
+ * Writes the script out, line after line, his words fast, the directions a
+ * touch slower, keeping only as many lines as fit and starting over at the
+ * end. Returns what stops it.
+ */
+function writeScript(page: HTMLElement, from: number): () => void {
+  let line = from % COPIONE.length;
+  let char = 0;
+  let wait = 0;
+  let frame = 0;
+  let current: HTMLElement | null = null;
+  const fits = () => Math.ceil(page.clientHeight / (parseFloat(getComputedStyle(page).lineHeight) || 16)) + 2;
+  const tick = () => {
+    frame = requestAnimationFrame(tick);
+    if (wait > 0) return void wait--;
+    const b = COPIONE[line];
+    if (!current) {
+      const { el, words } = lineOf(b);
+      page.append(el);
+      current = words;
+      while (page.childElementCount > fits()) page.firstElementChild?.remove();
+    }
+    char = Math.min(b.text.length, char + (b.who === "LODOVICO" ? 3 : 2));
+    current.textContent = b.text.slice(0, char);
+    if (char === b.text.length) {
+      line = (line + 1) % COPIONE.length;
+      char = 0;
+      current = null;
+      wait = b.who ? 8 : 18;
+    }
+  };
+  frame = requestAnimationFrame(tick);
+  return () => cancelAnimationFrame(frame);
+}
+
+/** The script as it stands, for reduced motion: the first lines, still. */
+function stillScript(page: HTMLElement) {
+  page.replaceChildren(
+    ...COPIONE.slice(0, 12).map((b) => {
+      const { el, words } = lineOf(b);
+      words.textContent = b.text;
+      return el;
+    }),
+  );
+}
+
+/**
+ * Lodovico's script behind his page's first card, writing itself out for as
+ * long as it is on screen. It sits in the card, which is its own layer,
+ * behind the text; the name stays as it is.
+ */
+function Copione({ children }: { children: ReactNode }) {
+  const page = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const el = page.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return stillScript(el);
+    let stop: (() => void) | null = null;
+    const seen = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !stop) stop = writeScript(el, 0);
+      if (!entry.isIntersecting && stop) {
+        stop();
+        stop = null;
+      }
+    });
+    seen.observe(el);
+    return () => {
+      seen.disconnect();
+      stop?.();
+    };
+  }, []);
+  return (
+    <>
+      {children}
+      <span ref={page} aria-hidden="true" className="rg-copione" />
+    </>
+  );
+}
+
+/** His script in the standings: behind his row, small, from a random line, while the row is pointed at. */
+function CopioneRow({ children }: { children: ReactNode }) {
+  const el = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const row = el.current?.closest<HTMLElement>(".rg-row");
+    if (!row) return;
+    let shown: { page: HTMLElement; stop: () => void } | null = null;
+    const start = () => {
+      if (shown) return;
+      row.classList.add("rg-copione-host");
+      const page = document.createElement("span");
+      page.className = "rg-copione rg-copione-row";
+      page.setAttribute("aria-hidden", "true");
+      row.prepend(page);
+      const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (still) stillScript(page);
+      shown = { page, stop: still ? () => {} : writeScript(page, Math.floor(Math.random() * COPIONE.length)) };
+    };
+    const stop = () => {
+      if (!shown) return;
+      shown.stop();
+      shown.page.remove();
+      shown = null;
+    };
+    row.addEventListener("pointerenter", start);
+    row.addEventListener("pointerleave", stop);
+    row.addEventListener("pointercancel", stop);
+    return () => {
+      row.removeEventListener("pointerenter", start);
+      row.removeEventListener("pointerleave", stop);
+      row.removeEventListener("pointercancel", stop);
+      stop();
+    };
+  }, []);
+  return <span ref={el}>{children}</span>;
+}
+
 /**
  * A player's name with their easter egg, if they have one: bolts thrown out
- * like sparks, a mist drifting past, or peaches stuck on like stickers. On
+ * like sparks, a mist drifting past, peaches stuck on like stickers, or a
+ * play's script writing itself out behind it. On
  * the player's own page in full; `soft` in the standings, fewer and smaller,
  * where the peach is a single one, put after the name by `EasterMark`.
  * Anyone else's name comes back as it is.
@@ -252,6 +386,7 @@ export function Easter({ playerId, soft = false, children }: { playerId: number 
   const effect = effectOf(playerId);
   if (!effect || (effect === "pesca" && soft)) return <>{children}</>;
   if (effect === "pesca") return <Peaches>{children}</Peaches>;
+  if (effect === "copione") return soft ? <CopioneRow>{children}</CopioneRow> : <Copione>{children}</Copione>;
   return (
     <Burst effect={effect} soft={soft}>
       {children}
